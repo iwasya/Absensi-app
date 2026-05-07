@@ -22,6 +22,15 @@ class NotifikasiController extends Controller
             ->where('id_notifikasi', $id)
             ->update(['status_baca' => true]);
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'unread_count' => Notifikasi::where('id_user', $request->user()->id_user)
+                    ->where('status_baca', false)
+                    ->count(),
+            ]);
+        }
+
         return back()->with('success', 'Notifikasi ditandai sudah dibaca.');
     }
 }

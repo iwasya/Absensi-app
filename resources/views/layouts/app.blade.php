@@ -14,6 +14,24 @@
         .sidebar .muted { color: #cbd5e1; }
         .content-shell { min-width: 0; }
         header { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        .top-actions { display: flex; align-items: center; gap: 10px; }
+        .top-actions a { display: inline-block; color: #374151; background: #f3f4f6; padding: 9px 12px; border-radius: 6px; font-size: 14px; }
+        .top-actions a:hover { background: #e5e7eb; color: #111827; }
+        .notification-wrap { position: relative; }
+        .notification-button { position: relative; width: 40px; height: 40px; display: grid; place-items: center; background: #f3f4f6; color: #374151; border-radius: 999px; }
+        .notification-button:hover { background: #e5e7eb; color: #111827; }
+        .notification-button svg { width: 20px; height: 20px; }
+        .notification-badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; display: grid; place-items: center; background: #dc2626; color: #fff; border-radius: 999px; font-size: 11px; font-weight: 700; line-height: 1; }
+        .notification-panel { display: none; position: absolute; top: calc(100% + 10px); right: 0; width: min(360px, calc(100vw - 32px)); background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 18px 50px rgba(15, 23, 42, 0.14); z-index: 40; overflow: hidden; }
+        .notification-panel.open { display: block; }
+        .notification-head { padding: 12px 14px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .notification-list { max-height: 360px; overflow-y: auto; }
+        .notification-item { padding: 12px 14px; border-bottom: 1px solid #f3f4f6; }
+        .notification-item:last-child { border-bottom: 0; }
+        .notification-title { font-weight: 700; margin-bottom: 4px; }
+        .notification-message { color: #4b5563; font-size: 13px; line-height: 1.4; margin-bottom: 8px; }
+        .notification-empty { padding: 18px 14px; color: #6b7280; }
+        .notification-read-button { background: #eef2ff; color: #3730a3; padding: 7px 9px; font-size: 12px; }
         nav { display: grid; gap: 8px; }
         a { color: #2563eb; text-decoration: none; font-weight: 700; }
         nav a { color: #e5e7eb; background: rgba(255, 255, 255, 0.08); padding: 10px 12px; border-radius: 6px; font-size: 14px; display: block; }
@@ -120,7 +138,6 @@
                     <a href="{{ route('admin.logs.index') }}">Log</a>
                 @endif
                 <div class="nav-section">Akun</div>
-                <a href="{{ route('notifikasi.index') }}">Notifikasi</a>
                 <form method="POST" action="{{ route('logout') }}" class="inline">
                     @csrf
                     <button type="submit" class="dark">Logout</button>
@@ -136,6 +153,52 @@
                         <div class="muted">{{ auth()->user()->role->nama_role ?? '' }}</div>
                     @endauth
                 </div>
+                @auth
+                    <div class="top-actions">
+                        @php
+                            $unreadNotifications = \App\Models\Notifikasi::where('id_user', auth()->id())->where('status_baca', false)->count();
+                            $headerNotifications = \App\Models\Notifikasi::where('id_user', auth()->id())->latest('id_notifikasi')->limit(5)->get();
+                        @endphp
+                        <div class="notification-wrap" id="notificationWrap">
+                            <button type="button" class="notification-button" id="notificationToggle" aria-label="Buka notifikasi" aria-expanded="false">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"></path>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                                </svg>
+                                @if($unreadNotifications > 0)
+                                    <span class="notification-badge" id="notificationBadge">{{ $unreadNotifications > 99 ? '99+' : $unreadNotifications }}</span>
+                                @endif
+                            </button>
+                            <div class="notification-panel" id="notificationPanel">
+                                <div class="notification-head">
+                                    <strong>Notifikasi</strong>
+                                    <span class="muted" id="notificationUnreadText">{{ $unreadNotifications }} belum dibaca</span>
+                                </div>
+                                <div class="notification-list">
+                                    @forelse($headerNotifications as $notification)
+                                        <div class="notification-item" data-notification-id="{{ $notification->id_notifikasi }}">
+                                            <div class="notification-title">{{ $notification->judul ?? 'Notifikasi' }}</div>
+                                            <div class="notification-message">{{ $notification->pesan ?? '-' }}</div>
+                                            <div class="actions">
+                                                <span class="badge {{ $notification->status_baca ? 'approve' : 'pending' }}" data-status-badge>
+                                                    {{ $notification->status_baca ? 'Dibaca' : 'Baru' }}
+                                                </span>
+                                                @if(! $notification->status_baca)
+                                                    <form method="POST" action="{{ route('notifikasi.read', $notification->id_notifikasi) }}" data-notification-read-form>
+                                                        @csrf
+                                                        <button type="submit" class="notification-read-button">Tandai dibaca</button>
+                                                    </form>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <div class="notification-empty">Belum ada notifikasi.</div>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endauth
             </header>
             <main>
                 @if(session('success'))
@@ -151,5 +214,86 @@
             </main>
         </div>
     </div>
+    <script>
+        var notificationToggle = document.getElementById('notificationToggle');
+        var notificationPanel = document.getElementById('notificationPanel');
+        var notificationWrap = document.getElementById('notificationWrap');
+        var notificationBadge = document.getElementById('notificationBadge');
+        var notificationUnreadText = document.getElementById('notificationUnreadText');
+
+        if (notificationToggle && notificationPanel && notificationWrap) {
+            notificationToggle.addEventListener('click', function () {
+                var isOpen = notificationPanel.classList.toggle('open');
+                notificationToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            });
+
+            document.addEventListener('click', function (event) {
+                if (!notificationWrap.contains(event.target)) {
+                    notificationPanel.classList.remove('open');
+                    notificationToggle.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            notificationPanel.querySelectorAll('[data-notification-read-form]').forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+
+                    var button = form.querySelector('button');
+                    var item = form.closest('[data-notification-id]');
+                    var statusBadge = item ? item.querySelector('[data-status-badge]') : null;
+
+                    if (button) {
+                        button.disabled = true;
+                        button.textContent = 'Menyimpan...';
+                    }
+
+                    fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': form.querySelector('input[name="_token"]').value,
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    })
+                        .then(function (response) {
+                            if (!response.ok) {
+                                throw new Error('Gagal menandai notifikasi.');
+                            }
+
+                            return response.json();
+                        })
+                        .then(function (data) {
+                            if (statusBadge) {
+                                statusBadge.classList.remove('pending');
+                                statusBadge.classList.add('approve');
+                                statusBadge.textContent = 'Dibaca';
+                            }
+
+                            form.remove();
+
+                            if (notificationUnreadText) {
+                                notificationUnreadText.textContent = data.unread_count + ' belum dibaca';
+                            }
+
+                            if (notificationBadge) {
+                                if (data.unread_count > 0) {
+                                    notificationBadge.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
+                                } else {
+                                    notificationBadge.remove();
+                                    notificationBadge = null;
+                                }
+                            }
+                        })
+                        .catch(function () {
+                            if (button) {
+                                button.disabled = false;
+                                button.textContent = 'Tandai dibaca';
+                            }
+                            alert('Notifikasi belum bisa ditandai. Coba lagi.');
+                        });
+                });
+            });
+        }
+    </script>
 </body>
 </html>
