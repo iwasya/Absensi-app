@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@yield('title', config('app.name'))</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Arial, sans-serif; background: #f6f7fb; color: #1f2937; }
+        .app-shell { min-height: 100vh; display: grid; grid-template-columns: 260px minmax(0, 1fr); }
+        .sidebar { background: #111827; color: #f9fafb; padding: 18px; position: sticky; top: 0; min-height: 100vh; align-self: start; }
+        .brand { padding-bottom: 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); margin-bottom: 16px; }
+        .brand strong { display: block; font-size: 18px; margin-bottom: 6px; }
+        .sidebar .muted { color: #cbd5e1; }
+        .content-shell { min-width: 0; }
+        header { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        nav { display: grid; gap: 8px; }
+        a { color: #2563eb; text-decoration: none; font-weight: 700; }
+        nav a { color: #e5e7eb; background: rgba(255, 255, 255, 0.08); padding: 10px 12px; border-radius: 6px; font-size: 14px; display: block; }
+        nav a:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+        .nav-section { margin: 14px 0 8px; color: #93c5fd; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+        .dropdown { display: grid; gap: 6px; }
+        .dropdown > button { width: 100%; text-align: left; color: #e5e7eb; background: rgba(255, 255, 255, 0.08); padding: 10px 12px; border-radius: 6px; font-size: 14px; }
+        .dropdown-menu { display: grid; gap: 6px; padding-left: 12px; }
+        .dropdown-menu a { background: rgba(255, 255, 255, 0.05); font-size: 13px; }
+        main { max-width: 1180px; margin: 28px auto; padding: 0 20px; }
+        h1 { margin: 0 0 18px; font-size: 26px; }
+        h2 { margin: 0 0 14px; font-size: 18px; }
+        .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+        .panel, .stat { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px; margin-bottom: 18px; }
+        .stat strong { display: block; font-size: 26px; margin-top: 8px; }
+        .muted { color: #6b7280; }
+        .success, .error { padding: 12px 14px; border-radius: 6px; margin-bottom: 16px; }
+        .success { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+        .error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+        table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: left; vertical-align: top; font-size: 14px; }
+        th { background: #f9fafb; color: #374151; }
+        tr:last-child td { border-bottom: 0; }
+        input, select, textarea { width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 9px 10px; font-size: 14px; }
+        textarea { min-height: 74px; resize: vertical; }
+        label { display: block; font-weight: 700; font-size: 13px; margin-bottom: 5px; }
+        .form-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); align-items: end; }
+        button { border: 0; border-radius: 6px; background: #2563eb; color: #fff; padding: 9px 12px; font-weight: 700; cursor: pointer; }
+        button.danger { background: #dc2626; }
+        button.dark { background: #1f2937; }
+        .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #eef2ff; color: #3730a3; font-size: 12px; font-weight: 700; }
+        .badge.pending { background: #fff7ed; color: #c2410c; }
+        .badge.approve, .badge.hadir, .badge.kegiatan { background: #ecfdf5; color: #047857; }
+        .badge.reject, .badge.telat { background: #fef2f2; color: #b91c1c; }
+        .badge.libur, .badge.cuti_bersama { background: #fef2f2; color: #b91c1c; }
+        .pagination { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
+        .pagination .pager-links { display: flex; gap: 8px; }
+        .pagination a, .pagination span.disabled { padding: 8px 10px; border-radius: 6px; background: #f3f4f6; color: #374151; font-size: 14px; }
+        .pagination span.disabled { color: #9ca3af; }
+        .filter-bar { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; }
+        .filter-bar .filter-control { min-width: 260px; }
+        .filter-bar button, .filter-bar a { display: inline-block; padding: 9px 12px; border-radius: 6px; }
+        .filter-bar a { background: #f3f4f6; color: #374151; }
+        .calendar-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #fff; }
+        .calendar-day-name { background: #f9fafb; padding: 10px; font-weight: 700; color: #4b5563; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; text-align: center; }
+        .calendar-cell { min-height: 118px; padding: 8px; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; background: #fff; }
+        .calendar-cell:nth-child(7n), .calendar-day-name:nth-child(7n) { border-right: 0; }
+        .calendar-cell.muted-day { background: #f9fafb; color: #9ca3af; }
+        .calendar-date { font-weight: 700; margin-bottom: 6px; }
+        .calendar-event { display: block; margin: 5px 0; padding: 6px; border-radius: 6px; background: #f3f4f6; font-size: 12px; line-height: 1.25; }
+        .calendar-event.libur, .calendar-event.cuti_bersama { background: #fee2e2; color: #991b1b; }
+        .calendar-event.kegiatan { background: #dcfce7; color: #166534; }
+        .inline { display: inline; }
+        @media (max-width: 760px) {
+            .app-shell { grid-template-columns: 1fr; }
+            .sidebar { position: static; min-height: auto; }
+            header { align-items: flex-start; flex-direction: column; }
+            table { display: block; overflow-x: auto; }
+            .calendar-grid { grid-template-columns: 1fr; }
+            .calendar-day-name { display: none; }
+            .calendar-cell { min-height: auto; border-right: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        @auth
+        <aside class="sidebar">
+            <div class="brand">
+                <strong>{{ config('app.name') }}</strong>
+                <div class="muted">{{ auth()->user()->nama }} - {{ auth()->user()->role->nama_role ?? '' }}</div>
+            </div>
+            <nav>
+                <div class="nav-section">Utama</div>
+                <a href="{{ route('dashboard') }}">Dashboard</a>
+                @if(auth()->user()->isPetugas())
+                    <div class="nav-section">Petugas</div>
+                    <a href="{{ route('petugas.absensi.index') }}">Absensi</a>
+                    <a href="{{ route('petugas.cuti.index') }}">Cuti</a>
+                    <div class="dropdown">
+                        <button type="button">Tugas</button>
+                        <div class="dropdown-menu">
+                            <a href="{{ route('petugas.tugas.input') }}">Input Tugas Harian</a>
+                            <a href="{{ route('petugas.tugas.laporan') }}">Lap. Tugas Harian</a>
+                            <a href="{{ route('petugas.tugas.kalender') }}">Kalender</a>
+                        </div>
+                    </div>
+                @endif
+                @if(auth()->user()->isAtasan())
+                    <div class="nav-section">Atasan</div>
+                    <a href="{{ route('atasan.absensi.index') }}">Pantau Absensi</a>
+                    <a href="{{ route('atasan.cuti.index') }}">Approve Cuti</a>
+                    <a href="{{ route('atasan.tugas.index') }}">Approve Tugas</a>
+                @endif
+                @if(auth()->user()->isAdmin())
+                    <div class="nav-section">Admin</div>
+                    <a href="{{ route('admin.users.index') }}">Users</a>
+                    <a href="{{ route('admin.tempat.index') }}">Tempat</a>
+                    <a href="{{ route('admin.periode.index') }}">Periode</a>
+                    <a href="{{ route('admin.kalender.index') }}">Kalender</a>
+                    <a href="{{ route('admin.sanksi.index') }}">Sanksi</a>
+                    <a href="{{ route('admin.logs.index') }}">Log</a>
+                @endif
+                <div class="nav-section">Akun</div>
+                <a href="{{ route('notifikasi.index') }}">Notifikasi</a>
+                <form method="POST" action="{{ route('logout') }}" class="inline">
+                    @csrf
+                    <button type="submit" class="dark">Logout</button>
+                </form>
+            </nav>
+        </aside>
+        @endauth
+        <div class="content-shell">
+            <header>
+                <div>
+                    <strong>@yield('title', config('app.name'))</strong>
+                    @auth
+                        <div class="muted">{{ auth()->user()->role->nama_role ?? '' }}</div>
+                    @endauth
+                </div>
+            </header>
+            <main>
+                @if(session('success'))
+                    <div class="success">{{ session('success') }}</div>
+                @endif
+                @if(session('error'))
+                    <div class="error">{{ session('error') }}</div>
+                @endif
+                @if($errors->any())
+                    <div class="error">{{ $errors->first() }}</div>
+                @endif
+                @yield('content')
+            </main>
+        </div>
+    </div>
+</body>
+</html>
