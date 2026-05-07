@@ -105,9 +105,9 @@
             <button type="submit">Masuk</button>
         </form>
 
-        <div class="foot">
+        <!-- <div class="foot">
             Belum punya akun? <a href="{{ route('register') }}">Daftar</a>
-        </div>
+        </div> -->
     </main>
 </body>
 </html>
