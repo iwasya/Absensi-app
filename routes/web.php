@@ -95,6 +95,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/periode', [AdminController::class, 'periode'])->name('periode.index');
         Route::post('/periode', [AdminController::class, 'storePeriode'])->name('periode.store');
         Route::put('/periode/{id}', [AdminController::class, 'updatePeriode'])->name('periode.update');
+        Route::delete('/periode/{id}', [AdminController::class, 'deletePeriode'])->name('periode.delete');
 
         Route::get('/kalender', [AdminController::class, 'kalender'])->name('kalender.index');
         Route::post('/kalender', [AdminController::class, 'storeKalender'])->name('kalender.store');

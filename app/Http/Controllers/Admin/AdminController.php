@@ -180,6 +180,14 @@ class AdminController extends Controller
         return back()->with('success', 'Periode berhasil diperbarui.');
     }
 
+    public function deletePeriode(Request $request, int $id): RedirectResponse
+    {
+        Periode::findOrFail($id)->delete();
+        ActivityLogger::log($request, 'Menghapus periode', 'periode', $id, Periode::class);
+
+        return back()->with('success', 'Periode berhasil dihapus.');
+    }
+
     public function kalender(): View
     {
         return view('admin.kalender', [
