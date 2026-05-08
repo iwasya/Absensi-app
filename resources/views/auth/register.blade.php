@@ -92,7 +92,7 @@
             <div class="notice">Akun pertama otomatis dibuat sebagai Admin Absensi untuk setup awal.</div>
         @endif
 
-        <form method="POST" action="{{ route('register') }}">
+        <form method="POST" action="{{ route('register', [], false) }}">
             @csrf
 
             <label for="nama">Nama</label>
@@ -137,7 +137,7 @@
         </form>
 
         <div class="foot">
-            Sudah punya akun? <a href="{{ route('login') }}">Login</a>
+            Sudah punya akun? <a href="{{ route('login', [], false) }}">Login</a>
         </div>
     </main>
 </body>
