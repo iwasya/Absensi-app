@@ -87,7 +87,7 @@
         <h1>Login</h1>
         <p>Masuk ke sistem absensi PPSU lokal.</p>
 
-        <form method="POST" action="{{ route('login') }}">
+        <form method="POST" action="{{ route('login', [], false) }}">
             @csrf
 
             <label for="login">Email atau Username</label>
