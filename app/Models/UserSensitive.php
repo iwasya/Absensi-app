@@ -14,4 +14,9 @@ class UserSensitive extends Model
         'id_user',
         'nik_encrypted',
     ];
+
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'id_user', 'id_user');
+    }
 }

@@ -19,7 +19,7 @@
         </form>
     </div>
 
-    @include('partials.periode-filter')
+    <!-- @include('partials.periode-filter') -->
 
     <table>
         <thead><tr><th>Mulai</th><th>Selesai</th><th>Jenis</th><th>Alasan</th><th>Status</th></tr></thead>

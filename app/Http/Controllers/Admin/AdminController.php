@@ -10,10 +10,12 @@ use App\Models\Role;
 use App\Models\Sanksi;
 use App\Models\TempatTugas;
 use App\Models\User;
+use App\Models\UserSensitive;
 use App\Support\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -211,30 +213,7 @@ class AdminController extends Controller
     {
         return view('admin.sanksi', [
             'items' => Sanksi::with('user')->orderByDesc('tanggal')->orderByDesc('id_sanksi')->paginate(20),
-            'users' => User::orderBy('nama')->get(),
         ]);
-    }
-
-    public function storeSanksi(Request $request): RedirectResponse
-    {
-        $sanksi = Sanksi::create($request->validate([
-            'id_user' => ['required', 'exists:users,id_user'],
-            'jenis_sanksi' => ['nullable', 'string', 'max:100'],
-            'tanggal' => ['nullable', 'date'],
-            'keterangan' => ['nullable', 'string'],
-        ]));
-
-        ActivityLogger::log($request, 'Membuat sanksi', 'sanksi', $sanksi->id_sanksi, Sanksi::class);
-
-        return back()->with('success', 'Sanksi berhasil dibuat.');
-    }
-
-    public function deleteSanksi(Request $request, int $id): RedirectResponse
-    {
-        Sanksi::findOrFail($id)->delete();
-        ActivityLogger::log($request, 'Menghapus sanksi', 'sanksi', $id, Sanksi::class);
-
-        return back()->with('success', 'Sanksi berhasil dihapus.');
     }
 
     public function logs(): View
@@ -242,5 +221,71 @@ class AdminController extends Controller
         return view('admin.logs', [
             'items' => ActivityLog::with('user')->latest('id_log')->paginate(50),
         ]);
+    }
+
+    public function bukaAksesAbsen(): View
+    {
+        return view('admin.buka_absen', [
+            'users' => User::whereHas('role', function ($q) {
+                $q->where('nama_role', 'like', '%petugas%')
+                  ->orWhere('nama_role', 'like', '%karyawan%');
+            })->orderBy('nama')->get(),
+            'items' => \App\Models\Absensi::with('user')
+                ->whereDate('tanggal', today())
+                ->where('status', 'akses_dibuka')
+                ->latest('id_absensi')
+                ->get(),
+        ]);
+    }
+
+    public function storeAksesAbsen(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'id_user' => ['required', 'exists:users,id_user'],
+        ]);
+
+        $absensi = \App\Models\Absensi::firstOrNew([
+            'id_user' => $validated['id_user'],
+            'tanggal' => today()->toDateString(),
+        ]);
+
+        $absensi->id_periode = optional(Periode::aktif())->id_periode;
+        $absensi->status = 'akses_dibuka';
+        $absensi->keterangan = 'Akses absen telat diberikan oleh Admin.';
+        $absensi->save();
+
+        ActivityLogger::log($request, 'Membuka akses absen telat', 'absensi', $absensi->id_absensi, \App\Models\Absensi::class);
+
+        return back()->with('success', 'Akses absen telat berhasil diberikan untuk user tersebut hari ini.');
+    }
+
+    public function dataSensitif(): View
+    {
+        return view('admin.data_sensitif', [
+            'users' => User::with('userSensitive')->orderBy('nama')->paginate(50),
+        ]);
+    }
+
+    public function updateDataSensitif(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'id_user' => ['required', 'exists:users,id_user'],
+            'nik' => ['nullable', 'string', 'max:20'],
+        ]);
+
+        $userSensitive = UserSensitive::firstOrNew(['id_user' => $validated['id_user']]);
+
+        if (!empty($validated['nik'])) {
+            $userSensitive->nik_encrypted = Crypt::encryptString($validated['nik']);
+            $userSensitive->save();
+        } else {
+            if ($userSensitive->exists) {
+                $userSensitive->delete();
+            }
+        }
+
+        ActivityLogger::log($request, 'Mengubah NIK sensitif', 'user_sensitive', $validated['id_user'], UserSensitive::class);
+
+        return back()->with('success', 'Data NIK sensitif berhasil disimpan.');
     }
 }

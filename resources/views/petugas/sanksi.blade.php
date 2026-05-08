@@ -1,27 +1,30 @@
 @extends('layouts.app')
 
-@section('title', 'Sanksi')
+@section('title', 'Sanksi Saya')
 
 @section('content')
-    <h1>Sanksi</h1>
+    <h1>Sanksi Saya</h1>
+    
     <table>
         <thead>
             <tr>
-                <th>User</th>
                 <th>Jenis</th>
                 <th>Tanggal</th>
                 <th>Keterangan</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($items as $item)
+            @forelse($items as $item)
                 <tr>
-                    <td>{{ $item->user->nama ?? '-' }}</td>
                     <td>{{ $item->jenis_sanksi }}</td>
                     <td>{{ $item->tanggal?->format('d/m/Y') ?? '-' }}</td>
                     <td>{{ $item->keterangan }}</td>
                 </tr>
-            @endforeach
+            @empty
+                <tr>
+                    <td colspan="3" style="text-align: center;">Belum ada sanksi.</td>
+                </tr>
+            @endforelse
         </tbody>
     </table>
     {{ $items->links('pagination.simple') }}
