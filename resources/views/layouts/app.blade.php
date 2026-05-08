@@ -121,12 +121,14 @@
                             <a href="{{ route('petugas.tugas.kalender') }}">Kalender</a>
                         </div>
                     </div>
+                    <a href="{{ route('petugas.sanksi.index') }}">Sanksi</a>
                 @endif
                 @if(auth()->user()->isAtasan())
                     <div class="nav-section">Atasan</div>
                     <a href="{{ route('atasan.absensi.index') }}">Pantau Absensi</a>
                     <a href="{{ route('atasan.cuti.index') }}">Approve Cuti</a>
                     <a href="{{ route('atasan.tugas.index') }}">Approve Tugas</a>
+                    <a href="{{ route('atasan.sanksi.index') }}">Sanksi</a>
                 @endif
                 @if(auth()->user()->isAdmin())
                     <div class="nav-section">Admin</div>
@@ -134,7 +136,9 @@
                     <a href="{{ route('admin.tempat.index') }}">Tempat</a>
                     <a href="{{ route('admin.periode.index') }}">Periode</a>
                     <a href="{{ route('admin.kalender.index') }}">Kalender</a>
+                    <a href="{{ route('admin.buka-absen.index') }}">Akses Telat</a>
                     <a href="{{ route('admin.sanksi.index') }}">Sanksi</a>
+                    <a href="{{ route('admin.data-sensitif.index') }}">Data Sensitif</a>
                     <a href="{{ route('admin.logs.index') }}">Log</a>
                 @endif
                 <div class="nav-section">Akun</div>
@@ -155,6 +159,20 @@
                 </div>
                 @auth
                     <div class="top-actions">
+                        
+                        <form method="POST" action="{{ route('set.periode') }}" style="display:flex; align-items:center; gap:8px; margin-right:12px; border-right:1px solid #e5e7eb; padding-right:16px;">
+                            @csrf
+                            <label for="global_periode" style="margin:0; font-size:13px; color:#6b7280; font-weight:normal;">Periode:</label>
+                            <select name="global_periode_id" id="global_periode" onchange="this.form.submit()" style="padding:4px 28px 4px 8px; font-size:13px; height:auto; width:auto; border-radius:4px;">
+                                @foreach($globalPeriodes ?? [] as $p)
+                                    <option value="{{ $p->id_periode }}" {{ (isset($globalSelectedPeriode) && $globalSelectedPeriode->id_periode == $p->id_periode) ? 'selected' : '' }}>
+                                        {{ \Carbon\Carbon::parse($p->tanggal_mulai)->format('Y') }}
+                                        {{ $p->status === 'aktif' ? '(Aktif)' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </form>
+
                         @php
                             $unreadNotifications = \App\Models\Notifikasi::where('id_user', auth()->id())->where('status_baca', false)->count();
                             $headerNotifications = \App\Models\Notifikasi::where('id_user', auth()->id())->latest('id_notifikasi')->limit(5)->get();
@@ -197,6 +215,21 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <a href="{{ route('profile.index') }}" style="display:flex; align-items:center; gap:10px; margin-left:12px; padding-left:16px; border-left:1px solid #e5e7eb; text-decoration:none;">
+                            @if(auth()->user()->foto_profil)
+                                <img src="{{ Storage::url(auth()->user()->foto_profil) }}" alt="Foto" style="width:38px; height:38px; border-radius:50%; object-fit:cover;">
+                            @else
+                                <div style="width:38px; height:38px; border-radius:50%; background:#2563eb; color:#fff; display:grid; place-items:center; font-weight:bold; font-size:16px;">
+                                    {{ strtoupper(substr(auth()->user()->nama ?? 'U', 0, 1)) }}
+                                </div>
+                            @endif
+                            <div style="display:flex; flex-direction:column; align-items:flex-start;">
+                                <span style="font-weight:700; font-size:14px; color:#111827; line-height:1.2;">{{ auth()->user()->nama ?? 'User' }}</span>
+                                <span style="font-size:12px; color:#6b7280; line-height:1.2;">{{ auth()->user()->role->nama_role ?? '-' }}</span>
+                            </div>
+                        </a>
+
                     </div>
                 @endauth
             </header>

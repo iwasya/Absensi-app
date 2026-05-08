@@ -9,7 +9,7 @@
         <a href="{{ route('petugas.tugas.input') }}">Input tugas baru</a>
     </div>
 
-    @include('partials.periode-filter')
+    <!-- @include('partials.periode-filter') -->
 
     <table>
         <thead><tr><th>Mulai</th><th>Selesai</th><th>Uraian</th><th>Status</th></tr></thead>

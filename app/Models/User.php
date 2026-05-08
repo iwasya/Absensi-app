@@ -25,6 +25,7 @@ class User extends Authenticatable
         'nama',
         'username',
         'email',
+        'foto_profil',
         'password',
         'id_role',
         'id_tempat',
@@ -70,6 +71,11 @@ class User extends Authenticatable
     public function tugas(): HasMany
     {
         return $this->hasMany(Tugas::class, 'id_user', 'id_user');
+    }
+
+    public function userSensitive(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(UserSensitive::class, 'id_user', 'id_user');
     }
 
     public function roleName(): string

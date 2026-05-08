@@ -8,6 +8,8 @@ use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\Petugas\AbsensiController;
 use App\Http\Controllers\Petugas\CutiController;
 use App\Http\Controllers\Petugas\TugasController;
+use App\Http\Controllers\Petugas\SanksiController as PetugasSanksiController;
+use App\Http\Controllers\Atasan\SanksiController as AtasanSanksiController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -41,6 +43,12 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/notifikasi', [NotifikasiController::class, 'index'])->name('notifikasi.index');
     Route::post('/notifikasi/{id}/read', [NotifikasiController::class, 'read'])->name('notifikasi.read');
+    Route::post('/notifikasi/read-all', [NotifikasiController::class, 'readAll'])->name('notifikasi.read-all');
+
+    Route::post('/set-periode', [\App\Http\Controllers\Controller::class, 'setPeriode'])->name('set.periode');
+
+    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
+    Route::post('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
 
     Route::prefix('petugas')->name('petugas.')->middleware('role:petugas')->group(function () {
         Route::get('/absensi', [AbsensiController::class, 'index'])->name('absensi.index');
@@ -55,6 +63,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/tugas/laporan', [TugasController::class, 'laporan'])->name('tugas.laporan');
         Route::get('/tugas/kalender', [TugasController::class, 'kalender'])->name('tugas.kalender');
         Route::post('/tugas', [TugasController::class, 'store'])->name('tugas.store');
+        
+        Route::get('/sanksi', [PetugasSanksiController::class, 'index'])->name('sanksi.index');
     });
 
     Route::prefix('atasan')->name('atasan.')->middleware('role:atasan')->group(function () {
@@ -65,6 +75,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/tugas', [ApprovalController::class, 'tugas'])->name('tugas.index');
         Route::post('/tugas/{id}/approve', [ApprovalController::class, 'approveTugas'])->name('tugas.approve');
         Route::post('/tugas/{id}/reject', [ApprovalController::class, 'rejectTugas'])->name('tugas.reject');
+
+        Route::get('/sanksi', [AtasanSanksiController::class, 'index'])->name('sanksi.index');
+        Route::post('/sanksi', [AtasanSanksiController::class, 'store'])->name('sanksi.store');
+        Route::delete('/sanksi/{id}', [AtasanSanksiController::class, 'delete'])->name('sanksi.delete');
     });
 
     Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
@@ -87,8 +101,12 @@ Route::middleware('auth')->group(function () {
         Route::delete('/kalender/{id}', [AdminController::class, 'deleteKalender'])->name('kalender.delete');
 
         Route::get('/sanksi', [AdminController::class, 'sanksi'])->name('sanksi.index');
-        Route::post('/sanksi', [AdminController::class, 'storeSanksi'])->name('sanksi.store');
-        Route::delete('/sanksi/{id}', [AdminController::class, 'deleteSanksi'])->name('sanksi.delete');
+
+        Route::get('/buka-absen', [AdminController::class, 'bukaAksesAbsen'])->name('buka-absen.index');
+        Route::post('/buka-absen', [AdminController::class, 'storeAksesAbsen'])->name('buka-absen.store');
+
+        Route::get('/data-sensitif', [AdminController::class, 'dataSensitif'])->name('data-sensitif.index');
+        Route::post('/data-sensitif', [AdminController::class, 'updateDataSensitif'])->name('data-sensitif.update');
 
         Route::get('/logs', [AdminController::class, 'logs'])->name('logs.index');
     });
