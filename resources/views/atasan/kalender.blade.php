@@ -1,38 +1,15 @@
 @extends('layouts.app')
 
-@section('title', 'Kalender Tugas')
+@section('title', 'Kalender Monitoring')
 
 @section('content')
-    <h1>Kalender</h1>
-
-    <div class="panel">
-        <h2>Hari Ini</h2>
-        @forelse($todayItems as $item)
-            <p>
-                <span class="badge {{ $item->jenis_event }}">{{ $item->jenis_event }}</span>
-                {{ $item->nama_event ?? '-' }}
-                <span class="muted">{{ $item->keterangan }}</span>
-            </p>
-        @empty
-            <p class="muted">Tidak ada libur atau kegiatan khusus hari ini.</p>
-        @endforelse
-
-        @if(isset($todayTugas) && $todayTugas->isNotEmpty())
-            <h3 style="margin-top: 16px; font-size: 16px;">Tugas Hari Ini</h3>
-            @foreach($todayTugas as $tugas)
-                <p>
-                    <span class="badge {{ $tugas->status == 'approved' ? 'approve' : ($tugas->status == 'rejected' ? 'reject' : 'pending') }}">{{ ucfirst($tugas->status) }}</span>
-                    <strong>{{ $tugas->uraian }}</strong>
-                </p>
-            @endforeach
-        @endif
-    </div>
+    <h1>Kalender Monitoring Tugas</h1>
 
     <div class="panel">
         <div class="calendar-head">
-            <a href="{{ route('petugas.tugas.kalender', ['month' => $previousMonth->month, 'year' => $previousMonth->year]) }}">Sebelumnya</a>
+            <a href="{{ route('atasan.kalender.index', ['month' => $previousMonth->month, 'year' => $previousMonth->year]) }}">Sebelumnya</a>
             <h2>{{ $currentMonth->translatedFormat('F Y') }}</h2>
-            <a href="{{ route('petugas.tugas.kalender', ['month' => $nextMonth->month, 'year' => $nextMonth->year]) }}">Berikutnya</a>
+            <a href="{{ route('atasan.kalender.index', ['month' => $nextMonth->month, 'year' => $nextMonth->year]) }}">Berikutnya</a>
         </div>
 
         <div class="calendar-grid">
@@ -56,12 +33,28 @@
                     @endforeach
                     @foreach($dayTugas as $tugas)
                         <div class="calendar-event" style="background: #eef2ff; color: #3730a3; border-left: 3px solid #6366f1;">
-                            <strong>Tugas:</strong> {{ \Illuminate\Support\Str::limit($tugas->uraian, 30) }}<br>
+                            <strong style="color: #4338ca;">{{ $tugas->user->nama }}:</strong><br>
+                            {{ \Illuminate\Support\Str::limit($tugas->uraian, 30) }}<br>
                             <span style="font-size: 10px; font-weight: bold; text-transform: uppercase;">{{ $tugas->status }}</span>
                         </div>
                     @endforeach
                 </div>
             @endforeach
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3>Keterangan</h3>
+        <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="display: inline-block; width: 12px; height: 12px; background: #fee2e2; border-radius: 2px;"></span> Libur
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="display: inline-block; width: 12px; height: 12px; background: #dcfce7; border-radius: 2px;"></span> Kegiatan
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="display: inline-block; width: 12px; height: 12px; background: #eef2ff; border-left: 3px solid #6366f1;"></span> Tugas Petugas
+            </div>
         </div>
     </div>
 @endsection

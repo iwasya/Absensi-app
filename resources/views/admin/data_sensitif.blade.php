@@ -12,6 +12,16 @@
         Gunakan halaman ini untuk memasukkan NIK pengguna. NIK akan dienkripsi secara aman sebelum disimpan ke database, dan tidak dapat dilihat secara langsung oleh siapa pun selain pengguna itu sendiri melalui halaman Profil.
     </div>
 
+    <form method="GET" action="{{ route('admin.data-sensitif.index') }}" class="filter-bar" style="margin-bottom: 16px;">
+        <div class="filter-control" style="flex: 1; max-width: 400px;">
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama, username, email..." style="width: 100%;">
+        </div>
+        <button type="submit" style="background:#2563eb; color:#fff; padding:9px 16px;">Cari</button>
+        @if(request()->filled('search'))
+            <a href="{{ route('admin.data-sensitif.index') }}" style="background:#f3f4f6; color:#374151; padding:9px 12px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:14px;">Reset</a>
+        @endif
+    </form>
+
     <div style="overflow-x: auto;">
         <table style="min-width: 800px;">
             <thead>

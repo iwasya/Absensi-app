@@ -17,24 +17,87 @@ class ApprovalController extends Controller
 {
     public function absensi(Request $request): View
     {
-        $periodes = Periode::orderByDesc('tanggal_mulai')->get();
-        $selectedPeriode = $periodes->firstWhere('id_periode', (int) $request->query('id_periode'));
         $items = Absensi::with(['user.tempatTugas', 'periode']);
 
-        if ($selectedPeriode) {
-            $items->where(function ($query) use ($selectedPeriode) {
-                $query->where('id_periode', $selectedPeriode->id_periode)
-                    ->orWhereBetween('tanggal', [
-                        $selectedPeriode->tanggal_mulai->toDateString(),
-                        $selectedPeriode->tanggal_selesai->toDateString(),
-                    ]);
+        if ($request->filled('month')) {
+            $items->whereMonth('tanggal', $request->month);
+        }
+
+        if ($request->filled('id_user')) {
+            $items->where('id_user', $request->id_user);
+        }
+
+        if ($request->filled('status')) {
+            $items->where('status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $items->where(function($q) use ($search) {
+                $q->whereHas('user', function($qu) use ($search) {
+                    $qu->where('nama', 'like', "%{$search}%");
+                })->orWhere('lokasi_masuk', 'like', "%{$search}%")
+                  ->orWhere('keterangan', 'like', "%{$search}%");
             });
+        }
+
+        if (!$request->filled('month') && !$request->filled('id_user') && !$request->filled('status') && !$request->filled('search')) {
+            $periodes = Periode::orderByDesc('tanggal_mulai')->get();
+            $selectedPeriode = $periodes->firstWhere('id_periode', (int) $request->query('id_periode'));
+            if ($selectedPeriode) {
+                $items->where(function ($query) use ($selectedPeriode) {
+                    $query->where('id_periode', $selectedPeriode->id_periode)
+                        ->orWhereBetween('tanggal', [
+                            $selectedPeriode->tanggal_mulai->toDateString(),
+                            $selectedPeriode->tanggal_selesai->toDateString(),
+                        ]);
+                });
+            }
+        } else {
+            $periodes = Periode::orderByDesc('tanggal_mulai')->get();
+            $selectedPeriode = null;
         }
 
         return view('atasan.absensi', [
             'items' => $items->latest('tanggal')->latest('id_absensi')->paginate(25)->withQueryString(),
             'periodes' => $periodes,
             'selectedPeriode' => $selectedPeriode,
+            'users' => \App\Models\User::orderBy('nama')->get(),
+        ]);
+    }
+
+    public function printAbsensi(Request $request): View
+    {
+        $items = Absensi::with(['user.tempatTugas', 'periode']);
+
+        if ($request->filled('month')) {
+            $items->whereMonth('tanggal', $request->month);
+        }
+
+        if ($request->filled('id_user')) {
+            $items->where('id_user', $request->id_user);
+        }
+
+        if ($request->filled('status')) {
+            $items->where('status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $items->where(function($q) use ($search) {
+                $q->whereHas('user', function($qu) use ($search) {
+                    $qu->where('nama', 'like', "%{$search}%");
+                })->orWhere('lokasi_masuk', 'like', "%{$search}%")
+                  ->orWhere('keterangan', 'like', "%{$search}%");
+            });
+        }
+
+        $items = $items->latest('tanggal')->get();
+
+        return view('atasan.absensi_print', [
+            'items' => $items,
+            'month' => $request->month,
+            'selectedUser' => $request->id_user ? \App\Models\User::find($request->id_user) : null,
         ]);
     }
 
@@ -42,7 +105,7 @@ class ApprovalController extends Controller
     {
         $periodes = Periode::orderByDesc('tanggal_mulai')->get();
         $selectedPeriode = $periodes->firstWhere('id_periode', (int) $request->query('id_periode'));
-        $items = Cuti::with(['user', 'approver', 'periode']);
+        $items = Cuti::with(['user', 'approver', 'periode', 'pengganti']);
 
         if ($selectedPeriode) {
             $items->where(function ($query) use ($selectedPeriode) {
@@ -145,5 +208,63 @@ class ApprovalController extends Controller
         ActivityLogger::log($request, ucfirst($status) . ' tugas', 'tugas', $tugas->id_tugas, Tugas::class);
 
         return back()->with('success', 'Status tugas berhasil diperbarui.');
+    }
+    public function kalender(Request $request): View
+    {
+        $month = (int) $request->query('month', now()->month);
+        $year = (int) $request->query('year', now()->year);
+
+        if ($month < 1 || $month > 12) $month = now()->month;
+        if ($year < 2000 || $year > 2100) $year = now()->year;
+
+        $currentMonth = \Carbon\Carbon::create($year, $month, 1)->startOfDay();
+        $calendarStart = $currentMonth->copy()->startOfWeek(\Carbon\Carbon::SUNDAY);
+        $calendarEnd = $currentMonth->copy()->endOfMonth()->endOfWeek(\Carbon\Carbon::SATURDAY);
+
+        $events = \App\Models\Kalender::whereBetween('tanggal', [
+                $calendarStart->toDateString(),
+                $calendarEnd->toDateString(),
+            ])
+            ->orderBy('tanggal')
+            ->get()
+            ->groupBy(fn ($item) => $item->tanggal->format('Y-m-d'));
+
+        // For Atasan, show all tasks to see who is working
+        $allTugas = Tugas::with('user')
+            ->where(function($query) use ($calendarStart, $calendarEnd) {
+                $query->whereBetween('tanggal_mulai', [$calendarStart->startOfDay(), $calendarEnd->endOfDay()])
+                      ->orWhereBetween('tanggal_selesai', [$calendarStart->startOfDay(), $calendarEnd->endOfDay()])
+                      ->orWhere(function($q) use ($calendarStart, $calendarEnd) {
+                          $q->where('tanggal_mulai', '<=', $calendarStart->startOfDay())
+                            ->whereNotNull('tanggal_selesai')
+                            ->where('tanggal_selesai', '>=', $calendarEnd->endOfDay());
+                      });
+            })
+            ->get();
+
+        $tugasByDate = [];
+        foreach ($allTugas as $tugas) {
+            $start = $tugas->tanggal_mulai->copy()->startOfDay();
+            $end = $tugas->tanggal_selesai ? $tugas->tanggal_selesai->copy()->startOfDay() : $start->copy();
+            for ($d = $start->copy(); $d->lte($end); $d->addDay()) {
+                $dateKey = $d->format('Y-m-d');
+                if (!isset($tugasByDate[$dateKey])) $tugasByDate[$dateKey] = collect();
+                $tugasByDate[$dateKey]->push($tugas);
+            }
+        }
+
+        $days = collect();
+        for ($day = $calendarStart->copy(); $day->lte($calendarEnd); $day->addDay()) {
+            $days->push($day->copy());
+        }
+
+        return view('atasan.kalender', [
+            'currentMonth' => $currentMonth,
+            'previousMonth' => $currentMonth->copy()->subMonth(),
+            'nextMonth' => $currentMonth->copy()->addMonth(),
+            'days' => $days,
+            'events' => $events,
+            'tugasByDate' => $tugasByDate,
+        ]);
     }
 }

@@ -90,7 +90,7 @@
         <form method="POST" action="{{ route('login', [], false) }}">
             @csrf
 
-            <label for="login">Email atau Username</label>
+            <label for="login">Email, Username, atau NIK</label>
             <input id="login" type="text" name="login" value="{{ old('login') }}" required autofocus autocomplete="username">
             @error('login')
                 <div class="error">{{ $message }}</div>

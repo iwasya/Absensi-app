@@ -20,6 +20,24 @@
         </form>
     </div>
 
+    <form method="GET" action="{{ route('admin.users.index') }}" class="filter-bar" style="margin-bottom: 16px;">
+        <div class="filter-control" style="flex: 1; min-width: 200px;">
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama, username, email..." style="width: 100%;">
+        </div>
+        <div class="filter-control">
+            <select name="role" style="width: 100%;">
+                <option value="">Semua Role</option>
+                @foreach($roles as $role)
+                    <option value="{{ $role->id_role }}" {{ request('role') == $role->id_role ? 'selected' : '' }}>{{ $role->nama_role }}</option>
+                @endforeach
+            </select>
+        </div>
+        <button type="submit" style="background:#2563eb; color:#fff; padding:9px 16px;">Filter</button>
+        @if(request()->hasAny(['search', 'role']) && (request('search') != '' || request('role') != ''))
+            <a href="{{ route('admin.users.index') }}" style="background:#f3f4f6; color:#374151; padding:9px 12px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:14px;">Reset</a>
+        @endif
+    </form>
+
     <table>
         <thead><tr><th>Nama</th><th>Login</th><th>Role</th><th>Tempat</th><th>Update</th><th>Hapus</th></tr></thead>
         <tbody>

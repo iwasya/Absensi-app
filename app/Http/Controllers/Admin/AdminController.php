@@ -21,10 +21,25 @@ use Illuminate\View\View;
 
 class AdminController extends Controller
 {
-    public function users(): View
+    public function users(Request $request): View
     {
+        $query = User::with(['role', 'tempatTugas']);
+        
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('username', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('role')) {
+            $query->where('id_role', $request->role);
+        }
+
         return view('admin.users', [
-            'items' => User::with(['role', 'tempatTugas'])->orderBy('nama')->paginate(25),
+            'items' => $query->orderBy('nama')->paginate(25)->withQueryString(),
             'roles' => Role::orderBy('id_role')->get(),
             'tempatTugas' => TempatTugas::orderBy('nama_tempat')->get(),
         ]);
@@ -197,16 +212,48 @@ class AdminController extends Controller
 
     public function storeKalender(Request $request): RedirectResponse
     {
-        $kalender = Kalender::create($request->validate([
-            'tanggal' => ['required', 'date'],
+        $validated = $request->validate([
+            'tanggal' => [
+                'required', 
+                'date', 
+                \Illuminate\Validation\Rule::unique('kalender')->where(fn ($query) => $query->where('nama_event', $request->nama_event))
+            ],
             'nama_event' => ['nullable', 'string', 'max:150'],
             'jenis_event' => ['required', 'in:libur,kegiatan,cuti_bersama'],
             'keterangan' => ['nullable', 'string'],
-        ]));
+        ], [
+            'tanggal.unique' => 'Jadwal dengan tanggal dan nama event ini sudah ada di kalender.',
+        ]);
+
+        $kalender = Kalender::create($validated);
 
         ActivityLogger::log($request, 'Membuat kalender', 'kalender', $kalender->id_kalender, Kalender::class);
 
-        return back()->with('success', 'Kalender berhasil dibuat.');
+        $waktu = now();
+        $judul = "Info Jadwal Kalender";
+        $jenisStr = ucfirst(str_replace('_', ' ', $kalender->jenis_event));
+        $namaEvent = $kalender->nama_event ? " ({$kalender->nama_event})" : "";
+        $tglStr = \Carbon\Carbon::parse($kalender->tanggal)->translatedFormat('d F Y');
+        $pesan = "Terdapat jadwal baru: {$jenisStr}{$namaEvent} pada tanggal {$tglStr}.";
+
+        User::select('id_user')->chunk(200, function($users) use ($pesan, $judul, $waktu, $kalender) {
+            $notifikasis = [];
+            foreach ($users as $u) {
+                $notifikasis[] = [
+                    'id_user' => $u->id_user,
+                    'judul' => $judul,
+                    'pesan' => $pesan,
+                    'tipe' => 'system',
+                    'status_baca' => false,
+                    'created_at' => $waktu,
+                    'reference_id' => $kalender->id_kalender,
+                    'reference_type' => Kalender::class,
+                ];
+            }
+            \App\Models\Notifikasi::insert($notifikasis);
+        });
+
+        return back()->with('success', 'Kalender berhasil dibuat dan notifikasi telah dikirim.');
     }
 
     public function deleteKalender(Request $request, int $id): RedirectResponse
@@ -224,11 +271,83 @@ class AdminController extends Controller
         ]);
     }
 
+    public function pengaturan(): View
+    {
+        return view('admin.pengaturan', [
+            'app_logo' => \App\Models\Pengaturan::getNilai('app_logo'),
+            'app_theme' => \App\Models\Pengaturan::getNilai('app_theme', 'light'),
+        ]);
+    }
+
+    public function storePengaturan(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'app_logo' => ['nullable', 'image', 'max:2048'],
+            'app_theme' => ['required', 'in:light,dark'],
+        ]);
+
+        if ($request->hasFile('app_logo')) {
+            $oldLogo = \App\Models\Pengaturan::getNilai('app_logo');
+            if ($oldLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($oldLogo)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($oldLogo);
+            }
+            $logoPath = $request->file('app_logo')->store('pengaturan', 'public');
+            \App\Models\Pengaturan::updateOrCreate(
+                ['kunci' => 'app_logo'],
+                ['nilai' => $logoPath]
+            );
+        }
+
+        \App\Models\Pengaturan::updateOrCreate(
+            ['kunci' => 'app_theme'],
+            ['nilai' => $request->app_theme]
+        );
+
+        ActivityLogger::log($request, 'Memperbarui pengaturan aplikasi', 'pengaturan', null, \App\Models\Pengaturan::class);
+
+        return back()->with('success', 'Pengaturan berhasil disimpan.');
+    }
+
     public function logs(): View
     {
         return view('admin.logs', [
-            'items' => ActivityLog::with('user')->latest('id_log')->paginate(50),
+            'items' => ActivityLog::with('user')->latest('id_log')->paginate(15),
         ]);
+    }
+
+    public function exportLogs(Request $request)
+    {
+        $headers = [
+            'Content-type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename=activity_log.csv',
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0'
+        ];
+
+        $callback = function() {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Waktu', 'User', 'Aktivitas', 'Modul', 'Status', 'IP', 'Device']);
+
+            ActivityLog::with('user')->latest('id_log')->chunk(500, function ($logs) use ($file) {
+                foreach ($logs as $log) {
+                    fputcsv($file, [
+                        $log->created_at,
+                        $log->user->nama ?? '-',
+                        $log->aktivitas,
+                        $log->modul,
+                        $log->status,
+                        $log->ip_address,
+                        $log->device,
+                    ]);
+                }
+            });
+            fclose($file);
+        };
+
+        ActivityLogger::log($request, 'Export activity log ke CSV', 'activity_logs', null, ActivityLog::class);
+
+        return response()->stream($callback, 200, $headers);
     }
 
     public function bukaAksesAbsen(): View
@@ -242,7 +361,7 @@ class AdminController extends Controller
                 ->whereDate('tanggal', today())
                 ->where('status', 'akses_dibuka')
                 ->latest('id_absensi')
-                ->get(),
+                ->paginate(15),
         ]);
     }
 
@@ -267,10 +386,21 @@ class AdminController extends Controller
         return back()->with('success', 'Akses absen telat berhasil diberikan untuk user tersebut hari ini.');
     }
 
-    public function dataSensitif(): View
+    public function dataSensitif(Request $request): View
     {
+        $query = User::with('userSensitive');
+        
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('username', 'like', "%{$search}%");
+            });
+        }
+
         return view('admin.data_sensitif', [
-            'users' => User::with('userSensitive')->orderBy('nama')->paginate(50),
+            'users' => $query->orderBy('nama')->paginate(50)->withQueryString(),
         ]);
     }
 

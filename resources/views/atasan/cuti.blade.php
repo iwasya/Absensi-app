@@ -7,14 +7,21 @@
     @include('partials.periode-filter')
 
     <table>
-        <thead><tr><th>Petugas</th><th>Tanggal</th><th>Jenis</th><th>Alasan</th><th>Status</th><th>Approver</th><th>Aksi</th></tr></thead>
+        <thead><tr><th>Petugas</th><th>Tanggal</th><th>Jenis</th><th>Alasan & Alamat</th><th>Pengganti</th><th>Status</th><th>Aksi</th></tr></thead>
         <tbody>
             @forelse($items as $item)
                 <tr>
                     <td>{{ $item->user->nama ?? '-' }}</td>
                     <td>{{ $item->tanggal_mulai->format('d/m/Y') }} - {{ $item->tanggal_selesai->format('d/m/Y') }}</td>
-                    <td>{{ $item->jenis_cuti ?? '-' }}</td>
-                    <td>{{ $item->alasan ?? '-' }}</td>
+                    <td>{{ $item->jenis_cuti }}</td>
+                    <td>
+                        <strong>{{ $item->alasan }}</strong>
+                        @if($item->alasan == 'Alasan Lainnya')
+                            <br><small class="muted">({{ $item->alasan_lainnya }})</small>
+                        @endif
+                        <br><small>Alamat: {{ $item->alamat_cuti }}</small>
+                    </td>
+                    <td>{{ $item->pengganti->nama ?? '-' }}</td>
                     <td><span class="badge {{ $item->status }}">{{ $item->status }}</span></td>
                     <td>{{ $item->approver->nama ?? '-' }}</td>
                     <td class="actions">

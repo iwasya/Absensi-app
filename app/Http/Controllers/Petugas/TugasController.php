@@ -29,25 +29,62 @@ class TugasController extends Controller
 
     public function laporan(Request $request): View
     {
-        $periodes = Periode::orderByDesc('tanggal_mulai')->get();
-        $selectedPeriode = $periodes->firstWhere('id_periode', (int) $request->query('id_periode'));
-        $items = Tugas::where('id_user', $request->user()->id_user);
+        $user = $request->user();
+        $items = Tugas::where('id_user', $user->id_user);
 
-        if ($selectedPeriode) {
-            $items->where(function ($query) use ($selectedPeriode) {
-                $query->where('id_periode', $selectedPeriode->id_periode)
-                    ->orWhereBetween('tanggal_mulai', [
-                        $selectedPeriode->tanggal_mulai->startOfDay(),
-                        $selectedPeriode->tanggal_selesai->endOfDay(),
-                    ]);
+        if ($request->filled('month')) {
+            $items->whereMonth('tanggal_mulai', $request->month);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $items->where(function($q) use ($search) {
+                $q->where('uraian', 'like', "%{$search}%")
+                  ->orWhere('status', 'like', "%{$search}%");
             });
+        }
+
+        if (!$request->filled('month') && !$request->filled('search')) {
+            $activePeriodeId = session('global_periode_id') ?? optional(Periode::aktif())->id_periode;
+            $selectedPeriode = Periode::find($activePeriodeId);
+            if ($selectedPeriode) {
+                $items->where(function ($query) use ($selectedPeriode) {
+                    $query->where('id_periode', $selectedPeriode->id_periode)
+                        ->orWhereBetween('tanggal_mulai', [
+                            $selectedPeriode->tanggal_mulai->startOfDay(),
+                            $selectedPeriode->tanggal_selesai->endOfDay(),
+                        ]);
+                });
+            }
         }
 
         return view('petugas.tugas-laporan', [
             'items' => $items->latest('id_tugas')->paginate(15)->withQueryString(),
             'periodeAktif' => Periode::aktif(),
-            'periodes' => $periodes,
-            'selectedPeriode' => $selectedPeriode,
+        ]);
+    }
+
+    public function printLaporan(Request $request): View
+    {
+        $user = $request->user();
+        $items = Tugas::where('id_user', $user->id_user);
+
+        if ($request->filled('month')) {
+            $items->whereMonth('tanggal_mulai', $request->month);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $items->where(function($q) use ($search) {
+                $q->where('uraian', 'like', "%{$search}%")
+                  ->orWhere('status', 'like', "%{$search}%");
+            });
+        }
+
+        return view('petugas.tugas-laporan-print', [
+            'items' => $items->latest('tanggal_mulai')->get(),
+            'user' => $user,
+            'month' => $request->month,
         ]);
     }
 
@@ -77,6 +114,39 @@ class TugasController extends Controller
             ->get()
             ->groupBy(fn (Kalender $item) => $item->tanggal->format('Y-m-d'));
 
+        $userTugas = Tugas::where('id_user', $request->user()->id_user)
+            ->where(function($query) use ($calendarStart, $calendarEnd) {
+                $query->whereBetween('tanggal_mulai', [$calendarStart->startOfDay(), $calendarEnd->endOfDay()])
+                      ->orWhereBetween('tanggal_selesai', [$calendarStart->startOfDay(), $calendarEnd->endOfDay()])
+                      ->orWhere(function($q) use ($calendarStart, $calendarEnd) {
+                          $q->where('tanggal_mulai', '<=', $calendarStart->startOfDay())
+                            ->whereNotNull('tanggal_selesai')
+                            ->where('tanggal_selesai', '>=', $calendarEnd->endOfDay());
+                      });
+            })
+            ->get();
+
+        $tugasByDate = [];
+        $todayTugas = collect();
+        $todayKey = today()->format('Y-m-d');
+
+        foreach ($userTugas as $tugas) {
+            $start = $tugas->tanggal_mulai->copy()->startOfDay();
+            $end = $tugas->tanggal_selesai ? $tugas->tanggal_selesai->copy()->startOfDay() : $start->copy();
+            
+            for ($d = $start->copy(); $d->lte($end); $d->addDay()) {
+                $dateKey = $d->format('Y-m-d');
+                if (!isset($tugasByDate[$dateKey])) {
+                    $tugasByDate[$dateKey] = collect();
+                }
+                $tugasByDate[$dateKey]->push($tugas);
+                
+                if ($dateKey === $todayKey) {
+                    $todayTugas->push($tugas);
+                }
+            }
+        }
+
         $days = collect();
         for ($day = $calendarStart->copy(); $day->lte($calendarEnd); $day->addDay()) {
             $days->push($day->copy());
@@ -84,11 +154,13 @@ class TugasController extends Controller
 
         return view('petugas.kalender', [
             'todayItems' => Kalender::whereDate('tanggal', today())->orderBy('id_kalender')->get(),
+            'todayTugas' => $todayTugas,
             'currentMonth' => $currentMonth,
             'previousMonth' => $currentMonth->copy()->subMonth(),
             'nextMonth' => $currentMonth->copy()->addMonth(),
             'days' => $days,
             'events' => $events,
+            'tugasByDate' => $tugasByDate,
         ]);
     }
 
