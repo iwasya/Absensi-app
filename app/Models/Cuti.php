@@ -13,11 +13,14 @@ class Cuti extends Model
 
     protected $fillable = [
         'id_user',
+        'id_pengganti',
         'id_periode',
         'tanggal_mulai',
         'tanggal_selesai',
         'jenis_cuti',
         'alasan',
+        'alasan_lainnya',
+        'alamat_cuti',
         'status',
         'approver_id',
     ];
@@ -30,6 +33,11 @@ class Cuti extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'id_user', 'id_user');
+    }
+
+    public function pengganti(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'id_pengganti', 'id_user');
     }
 
     public function approver(): BelongsTo

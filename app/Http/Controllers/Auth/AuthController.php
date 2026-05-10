@@ -27,17 +27,37 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $field = filter_var($validated['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        $loginInput = $validated['login'];
+        $field = filter_var($loginInput, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        $user = User::where($field, $loginInput)->first();
 
-        if (! Auth::attempt([$field => $validated['login'], 'password' => $validated['password']])) {
-            return back()
-                ->withErrors(['login' => 'Email/username atau password tidak sesuai.'])
-                ->onlyInput('login');
+        // Coba cari dari tabel sensitif (NIK) jika tidak ketemu dari users
+        if (!$user) {
+            $sensitives = \App\Models\UserSensitive::all();
+            foreach ($sensitives as $sensitive) {
+                if ($sensitive->nik_encrypted) {
+                    try {
+                        $decrypted = \Illuminate\Support\Facades\Crypt::decryptString($sensitive->nik_encrypted);
+                        if ($decrypted === $loginInput) {
+                            $user = User::find($sensitive->id_user);
+                            break;
+                        }
+                    } catch (\Exception $e) {
+                        continue;
+                    }
+                }
+            }
         }
 
-        $request->session()->regenerate();
+        if ($user && Hash::check($validated['password'], $user->password)) {
+            Auth::login($user);
+            $request->session()->regenerate();
+            return redirect()->intended(route('dashboard'));
+        }
 
-        return redirect()->intended(route('dashboard'));
+        return back()
+            ->withErrors(['login' => 'Email/Username/NIK atau password tidak sesuai.'])
+            ->onlyInput('login');
     }
 
     public function showRegister(): View

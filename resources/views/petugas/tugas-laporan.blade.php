@@ -9,7 +9,30 @@
         <a href="{{ route('petugas.tugas.input') }}">Input tugas baru</a>
     </div>
 
-    <!-- @include('partials.periode-filter') -->
+    <div class="panel" style="margin-bottom: 24px;">
+        <form action="{{ route('petugas.tugas.laporan') }}" method="GET" class="filter-bar">
+            <div class="filter-control">
+                <label>Bulan</label>
+                <select name="month">
+                    <option value="">-- Pilih Bulan --</option>
+                    @for($m=1; $m<=12; $m++)
+                        <option value="{{ $m }}" {{ request('month') == $m ? 'selected' : '' }}>
+                            {{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}
+                        </option>
+                    @endfor
+                </select>
+            </div>
+            <div class="filter-control">
+                <label>Cari</label>
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Uraian atau status...">
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="submit">Tampilkan</button>
+                <a href="{{ route('petugas.tugas.laporan') }}" class="button" style="background:#f3f4f6; color:#374151; padding: 10px 15px; border-radius: 6px; font-weight: bold;">Reset</a>
+                <a href="{{ route('petugas.tugas.laporan.print', request()->all()) }}" target="_blank" style="background: #059669; color: white; padding: 10px 15px; border-radius: 6px; font-weight: bold;">Cetak</a>
+            </div>
+        </form>
+    </div>
 
     <table>
         <thead><tr><th>Mulai</th><th>Selesai</th><th>Uraian</th><th>Status</th></tr></thead>

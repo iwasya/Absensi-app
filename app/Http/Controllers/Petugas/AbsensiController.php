@@ -14,24 +14,38 @@ class AbsensiController extends Controller
 {
     public function index(Request $request): View
     {
-        $activePeriodeId = session('global_periode_id') ?? optional(Periode::aktif())->id_periode;
-        $selectedPeriode = Periode::find($activePeriodeId);
-        
-        $items = Absensi::where('id_user', $request->user()->id_user);
+        $user = $request->user();
+        $items = Absensi::where('id_user', $user->id_user);
 
-        if ($selectedPeriode) {
-            $items->where(function ($query) use ($selectedPeriode) {
-                $query->where('id_periode', $selectedPeriode->id_periode)
-                    ->orWhereBetween('tanggal', [
-                        $selectedPeriode->tanggal_mulai->toDateString(),
-                        $selectedPeriode->tanggal_selesai->toDateString(),
-                    ]);
+        if ($request->filled('month')) {
+            $items->whereMonth('tanggal', $request->month);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $items->where(function($q) use ($search) {
+                $q->where('status', 'like', "%{$search}%")
+                  ->orWhere('keterangan', 'like', "%{$search}%")
+                  ->orWhere('lokasi_masuk', 'like', "%{$search}%");
             });
+        }
+
+        if (!$request->filled('month') && !$request->filled('search')) {
+            $activePeriodeId = session('global_periode_id') ?? optional(Periode::aktif())->id_periode;
+            $selectedPeriode = Periode::find($activePeriodeId);
+            if ($selectedPeriode) {
+                $items->where(function ($query) use ($selectedPeriode) {
+                    $query->where('id_periode', $selectedPeriode->id_periode)
+                        ->orWhereBetween('tanggal', [
+                            $selectedPeriode->tanggal_mulai->toDateString(),
+                            $selectedPeriode->tanggal_selesai->toDateString(),
+                        ]);
+                });
+            }
         }
 
         // Lazy evaluation for 'tidak_absen'
         $now = now();
-        $user = $request->user();
         if ($now->format('H:i:s') > '07:15:00') {
             $existingToday = Absensi::where('id_user', $user->id_user)
                 ->whereDate('tanggal', today())
@@ -49,7 +63,7 @@ class AbsensiController extends Controller
         }
 
         return view('petugas.absensi', [
-            'today' => Absensi::where('id_user', $request->user()->id_user)->whereDate('tanggal', today())->first(),
+            'today' => Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first(),
             'items' => $items
                 ->latest('tanggal')
                 ->latest('id_absensi')
@@ -58,6 +72,45 @@ class AbsensiController extends Controller
             'periodeAktif' => Periode::aktif(),
             'tempatTugas' => $user->tempatTugas,
         ]);
+    }
+
+    public function print(Request $request): View
+    {
+        $user = $request->user();
+        $items = Absensi::where('id_user', $user->id_user);
+
+        if ($request->filled('month')) {
+            $items->whereMonth('tanggal', $request->month);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $items->where(function($q) use ($search) {
+                $q->where('status', 'like', "%{$search}%")
+                  ->orWhere('keterangan', 'like', "%{$search}%")
+                  ->orWhere('lokasi_masuk', 'like', "%{$search}%");
+            });
+        }
+
+        $items = $items->latest('tanggal')->get();
+
+        return view('petugas.absensi_print', [
+            'items' => $items,
+            'user' => $user,
+            'month' => $request->month,
+        ]);
+    }
+
+    public function show($id): View
+    {
+        $item = Absensi::with('user.tempatTugas')->findOrFail($id);
+        
+        // Authorization: petugas only see their own, atasan/admin see all
+        if (auth()->user()->role === 'petugas' && $item->id_user !== auth()->user()->id_user) {
+            abort(403);
+        }
+
+        return view('petugas.absensi-detail', compact('item'));
     }
 
     private function calculateDistance($lat1, $lon1, $lat2, $lon2)

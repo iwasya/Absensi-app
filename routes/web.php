@@ -47,20 +47,25 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/set-periode', [\App\Http\Controllers\Controller::class, 'setPeriode'])->name('set.periode');
 
+    Route::get('/absensi/{id}/detail', [\App\Http\Controllers\Petugas\AbsensiController::class, 'show'])->name('absensi.detail');
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
     Route::post('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password');
 
     Route::prefix('petugas')->name('petugas.')->middleware('role:petugas')->group(function () {
         Route::get('/absensi', [AbsensiController::class, 'index'])->name('absensi.index');
+        Route::get('/absensi/print', [AbsensiController::class, 'print'])->name('absensi.print');
         Route::post('/absensi/masuk', [AbsensiController::class, 'masuk'])->name('absensi.masuk');
         Route::post('/absensi/pulang', [AbsensiController::class, 'pulang'])->name('absensi.pulang');
 
         Route::get('/cuti', [CutiController::class, 'index'])->name('cuti.index');
+        Route::get('/cuti/{id}/print', [CutiController::class, 'print'])->name('cuti.print');
         Route::post('/cuti', [CutiController::class, 'store'])->name('cuti.store');
 
         Route::get('/tugas', [TugasController::class, 'index'])->name('tugas.index');
         Route::get('/tugas/input', [TugasController::class, 'input'])->name('tugas.input');
         Route::get('/tugas/laporan', [TugasController::class, 'laporan'])->name('tugas.laporan');
+        Route::get('/tugas/laporan/print', [TugasController::class, 'printLaporan'])->name('tugas.laporan.print');
         Route::get('/tugas/kalender', [TugasController::class, 'kalender'])->name('tugas.kalender');
         Route::post('/tugas', [TugasController::class, 'store'])->name('tugas.store');
         
@@ -69,6 +74,7 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('atasan')->name('atasan.')->middleware('role:atasan')->group(function () {
         Route::get('/absensi', [ApprovalController::class, 'absensi'])->name('absensi.index');
+        Route::get('/absensi/print', [ApprovalController::class, 'printAbsensi'])->name('absensi.print');
         Route::get('/cuti', [ApprovalController::class, 'cuti'])->name('cuti.index');
         Route::post('/cuti/{id}/approve', [ApprovalController::class, 'approveCuti'])->name('cuti.approve');
         Route::post('/cuti/{id}/reject', [ApprovalController::class, 'rejectCuti'])->name('cuti.reject');
@@ -76,7 +82,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/tugas/{id}/approve', [ApprovalController::class, 'approveTugas'])->name('tugas.approve');
         Route::post('/tugas/{id}/reject', [ApprovalController::class, 'rejectTugas'])->name('tugas.reject');
 
+        Route::get('/kalender', [ApprovalController::class, 'kalender'])->name('kalender.index');
         Route::get('/sanksi', [AtasanSanksiController::class, 'index'])->name('sanksi.index');
+        Route::get('/sanksi/print', [AtasanSanksiController::class, 'print'])->name('sanksi.print');
         Route::post('/sanksi', [AtasanSanksiController::class, 'store'])->name('sanksi.store');
         Route::delete('/sanksi/{id}', [AtasanSanksiController::class, 'delete'])->name('sanksi.delete');
     });
@@ -95,6 +103,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/periode', [AdminController::class, 'periode'])->name('periode.index');
         Route::post('/periode', [AdminController::class, 'storePeriode'])->name('periode.store');
         Route::put('/periode/{id}', [AdminController::class, 'updatePeriode'])->name('periode.update');
+        Route::delete('/periode/{id}', [AdminController::class, 'deletePeriode'])->name('periode.delete');
 
         Route::get('/kalender', [AdminController::class, 'kalender'])->name('kalender.index');
         Route::post('/kalender', [AdminController::class, 'storeKalender'])->name('kalender.store');
@@ -108,7 +117,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/data-sensitif', [AdminController::class, 'dataSensitif'])->name('data-sensitif.index');
         Route::post('/data-sensitif', [AdminController::class, 'updateDataSensitif'])->name('data-sensitif.update');
 
+        Route::get('/pengaturan', [AdminController::class, 'pengaturan'])->name('pengaturan.index');
+        Route::post('/pengaturan', [AdminController::class, 'storePengaturan'])->name('pengaturan.store');
+
         Route::get('/logs', [AdminController::class, 'logs'])->name('logs.index');
+        Route::get('/logs/export', [AdminController::class, 'exportLogs'])->name('logs.export');
     });
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

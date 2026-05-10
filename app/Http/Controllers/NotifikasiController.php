@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Notifikasi;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -16,7 +17,7 @@ class NotifikasiController extends Controller
         ]);
     }
 
-    public function read(Request $request, int $id): RedirectResponse
+    public function read(Request $request, int $id): RedirectResponse|JsonResponse
     {
         Notifikasi::where('id_user', $request->user()->id_user)
             ->where('id_notifikasi', $id)

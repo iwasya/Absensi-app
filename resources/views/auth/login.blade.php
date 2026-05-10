@@ -324,35 +324,14 @@
             Khusus petugas Pendamsos, Admin, dan Kasie Ekbang
         </div>
 
-        <form method="POST" action="{{ route('login') }}">
+        <form method="POST" action="{{ route('login', [], false) }}">
             @csrf
 
-            {{-- Email / Username --}}
-            <div class="form-group">
-                <label for="login">Email atau Username</label>
-                <div class="input-wrap">
-                    <svg fill="none" viewBox="0 0 16 16">
-                        <circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.3"/>
-                        <path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-                    </svg>
-                    <input
-                        id="login"
-                        type="text"
-                        name="login"
-                        value="{{ old('login') }}"
-                        placeholder="Masukkan email atau username"
-                        required
-                        autofocus
-                        autocomplete="username"
-                    >
-                </div>
-                @error('login')
-                    <div class="error-msg">
-                        <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3M8 10v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                        {{ $message }}
-                    </div>
-                @enderror
-            </div>
+            <label for="login">Email atau Username</label>
+            <input id="login" type="text" name="login" value="{{ old('login') }}" required autofocus autocomplete="username">
+            @error('login')
+                <div class="error">{{ $message }}</div>
+            @enderror
 
             {{-- Password --}}
             <div class="form-group">

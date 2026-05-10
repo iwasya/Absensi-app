@@ -49,4 +49,5 @@
             @endforelse
         </tbody>
     </table>
+    {{ $items->links('pagination.simple') }}
 @endsection
