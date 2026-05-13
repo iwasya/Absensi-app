@@ -50,15 +50,16 @@
         /* ── HEADER STRIP ── */
         .panel-header {
             background: var(--sidebar);
-            padding: 28px 32px 24px;
+            padding: 25px 32px 22px;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 14px;
+            gap: 9px;
         }
         .logo-box {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
             background: var(--accent);
             display: flex;
             align-items: center;
@@ -66,20 +67,23 @@
             flex-shrink: 0;
         }
         .logo-box svg {
-            width: 22px;
-            height: 22px;
+            width: 28px;
+            height: 28px;
             color: #fff;
+        }
+        .header-text {
+            text-align: center;
         }
         .header-text h1 {
             font-size: 15px;
             font-weight: 600;
             color: #ffffff;
-            line-height: 1.3;
+            line-height: 1.4;
         }
         .header-text p {
-            font-size: 11px;
+            font-size: 13px;
             color: #64A8C0;
-            margin-top: 2px;
+            margin-top: 4px;
         }
 
         /* ── BODY ── */
@@ -293,8 +297,8 @@
             </svg>
         </div>
         <div class="header-text">
-            <h1>Sistem Presensi & Kinerja Pendamsos</h1>
-            <p>Dinas Sosial Provinsi DKI Jakarta</p>
+            <h1>Petugas Penanganan Prasarana dan Sarana Umum</h1>
+            <p>Kelurahan Pisangan Baru</p>
         </div>
     </div>
 
@@ -327,11 +331,22 @@
         <form method="POST" action="{{ route('login', [], false) }}">
             @csrf
 
-            <label for="login">Email atau Username</label>
-            <input id="login" type="text" name="login" value="{{ old('login') }}" required autofocus autocomplete="username">
-            @error('login')
-                <div class="error">{{ $message }}</div>
-            @enderror
+            <div class="form-group">
+                <label for="login">Email atau Username</label>
+                <div class="input-wrap">
+                    <svg fill="none" viewBox="0 0 16 16">
+                        <path d="M2 4.5A1.5 1.5 0 013.5 3h9A1.5 1.5 0 0114 4.5v7A1.5 1.5 0 0112.5 13h-9A1.5 1.5 0 012 11.5v-7z" stroke="currentColor" stroke-width="1.3"/>
+                        <path d="M2 5l6 4.5L14 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <input id="login" type="text" name="login" value="{{ old('login') }}" placeholder="Email atau username" required autofocus autocomplete="username">
+                </div>
+                @error('login')
+                    <div class="error-msg">
+                        <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3M8 10v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                        {{ $message }}
+                    </div>
+                @enderror
+            </div>
 
             {{-- Password --}}
             <div class="form-group">
