@@ -67,7 +67,7 @@ class AbsensiController extends Controller
             'items' => $items
                 ->latest('tanggal')
                 ->latest('id_absensi')
-                ->paginate(15)
+                ->paginate($request->get("per_page", 15))
                 ->withQueryString(),
             'periodeAktif' => Periode::aktif(),
             'tempatTugas' => $user->tempatTugas,
@@ -105,8 +105,9 @@ class AbsensiController extends Controller
     {
         $item = Absensi::with('user.tempatTugas')->findOrFail($id);
         
+        $user = auth()->user();
         // Authorization: petugas only see their own, atasan/admin see all
-        if (auth()->user()->role === 'petugas' && $item->id_user !== auth()->user()->id_user) {
+        if ($user->isPetugas() && $item->id_user !== $user->id_user) {
             abort(403);
         }
 
@@ -126,6 +127,64 @@ class AbsensiController extends Controller
         return $earthRadius * $c;
     }
 
+    private function processBase64Image(string $base64String, string $folder): ?string
+    {
+        // Validate base64 format
+        if (!preg_match('/^data:image\\/(jpeg|jpg|png|webp);base64,/', $base64String, $matches)) {
+            return null;
+        }
+
+        $allowedTypes = ['jpeg', 'jpg', 'png', 'webp'];
+        $imageType = $matches[1];
+
+        if (!in_array($imageType, $allowedTypes)) {
+            return null;
+        }
+
+        // Extract base64 data
+        $imageParts = explode(';base64,', $base64String);
+        if (count($imageParts) !== 2) {
+            return null;
+        }
+
+        $imageBase64 = base64_decode($imageParts[1], true);
+        if ($imageBase64 === false) {
+            return null;
+        }
+
+        // Validate file size (max 5MB)
+        if (strlen($imageBase64) > 5 * 1024 * 1024) {
+            return null;
+        }
+
+        // Verify it is actually an image using getimagesizefromstring
+        $imageInfo = @getimagesizefromstring($imageBase64);
+        if ($imageInfo === false) {
+            return null;
+        }
+
+        // Verify MIME type matches
+        $mimeType = $imageInfo['mime'];
+        $validMimes = [
+            'image/jpeg' => 'jpg',
+            'image/jpg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+        ];
+
+        if (!isset($validMimes[$mimeType])) {
+            return null;
+        }
+
+        // Use extension from actual MIME type, not from user input
+        $extension = $validMimes[$mimeType];
+        $fileName = $folder . '/' . uniqid() . '_' . time() . '.' . $extension;
+
+        \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $imageBase64);
+
+        return $fileName;
+    }
+
     public function masuk(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -136,17 +195,17 @@ class AbsensiController extends Controller
         ]);
 
         $user = $request->user();
-        $existing = Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first();
+        $now = now()->format('H:i:s');
 
-        if ($existing && $existing->status !== 'akses_dibuka') {
-            return back()->with('error', 'Kamu sudah absen masuk hari ini atau waktu absen telah berakhir.');
+        $existing = Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first();
+        $isLateAccess = $existing && $existing->status === 'akses_dibuka';
+
+        if (!$isLateAccess && ($now < '06:00:00' || $now > '07:15:00')) {
+            return back()->with('error', 'Absen masuk hanya dibuka dari jam 06:00 sampai 07:15.');
         }
 
-        $now = now()->format('H:i:s');
-        $isLateAccess = ($existing && $existing->status === 'akses_dibuka');
-        
-        if (!$isLateAccess && ($now < '07:00:00' || $now > '07:15:00')) {
-            return back()->with('error', 'Absen masuk hanya dibuka dari jam 07:00 sampai 07:15.');
+        if ($existing && $existing->jam_masuk && $existing->status !== 'akses_dibuka') {
+            return back()->with('error', 'Kamu sudah absen masuk hari ini.');
         }
 
         $tempat = $user->tempatTugas;
@@ -164,16 +223,12 @@ class AbsensiController extends Controller
 
         $foto = null;
         if ($request->filled('foto_masuk')) {
-            $imageParts = explode(";base64,", $request->input('foto_masuk'));
-            if (count($imageParts) === 2) {
-                $imageTypeAux = explode("image/", $imageParts[0]);
-                $imageType = $imageTypeAux[1] ?? 'png';
-                $imageBase64 = base64_decode($imageParts[1]);
-                $fileName = 'absensi/' . uniqid() . '.' . $imageType;
-                \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $imageBase64);
-                $foto = $fileName;
+            $foto = $this->processBase64Image($request->input('foto_masuk'), 'absensi');
+            if (!$foto) {
+                return back()->with('error', 'Format foto tidak valid. Hanya menerima JPEG, PNG, atau WebP.');
             }
         }
+
         $status = $isLateAccess ? 'telat' : 'hadir';
         $keteranganOtomatis = $isLateAccess ? 'Hadir terlambat (Akses Telat Admin)' : 'Hadir tepat waktu';
 
@@ -248,14 +303,9 @@ class AbsensiController extends Controller
 
         $fotoPath = $absensi->foto_pulang;
         if ($request->filled('foto_pulang')) {
-            $imageParts = explode(";base64,", $request->input('foto_pulang'));
-            if (count($imageParts) === 2) {
-                $imageTypeAux = explode("image/", $imageParts[0]);
-                $imageType = $imageTypeAux[1] ?? 'png';
-                $imageBase64 = base64_decode($imageParts[1]);
-                $fileName = 'absensi/' . uniqid() . '.' . $imageType;
-                \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $imageBase64);
-                $fotoPath = $fileName;
+            $fotoPath = $this->processBase64Image($request->input('foto_pulang'), 'absensi');
+            if (!$fotoPath) {
+                return back()->with('error', 'Format foto tidak valid. Hanya menerima JPEG, PNG, atau WebP.');
             }
         }
 

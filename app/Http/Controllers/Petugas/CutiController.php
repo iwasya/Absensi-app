@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Cuti;
 use App\Models\Periode;
 use App\Support\ActivityLogger;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -35,11 +36,13 @@ class CutiController extends Controller
             ->get();
 
         return view('petugas.cuti', [
-            'items' => $items->latest('id_cuti')->paginate(15)->withQueryString(),
+            'items' => $items->latest('id_cuti')->paginate($request->get("per_page", 15))->withQueryString(),
             'periodeAktif' => Periode::aktif(),
             'periodes' => $periodes,
             'selectedPeriode' => $selectedPeriode,
             'petugasList' => $petugasList,
+            'cutiTerpakaiTahunIni' => $this->jumlahCutiTahunan($request->user()->id_user, now()->year),
+            'batasCutiTahunan' => 12,
         ]);
     }
 
@@ -54,6 +57,15 @@ class CutiController extends Controller
             'alamat_cuti' => ['required', 'string'],
             'id_pengganti' => ['required', 'exists:users,id_user'],
         ]);
+
+        $tahunCuti = Carbon::parse($validated['tanggal_mulai'])->year;
+        $jumlahCutiTahunan = $this->jumlahCutiTahunan($request->user()->id_user, $tahunCuti);
+
+        if ($jumlahCutiTahunan >= 12) {
+            return back()
+                ->withInput()
+                ->with('error', "Kuota cuti tahun {$tahunCuti} sudah habis. Maksimal 12 kali pengajuan cuti per tahun.");
+        }
 
         $cuti = Cuti::create([
             'id_user' => $request->user()->id_user,
@@ -100,5 +112,13 @@ class CutiController extends Controller
         }
 
         return view('petugas.cuti_print', compact('cuti'));
+    }
+
+    private function jumlahCutiTahunan(int $userId, int $year): int
+    {
+        return Cuti::where('id_user', $userId)
+            ->whereYear('tanggal_mulai', $year)
+            ->whereIn('status', ['pending', 'approve'])
+            ->count();
     }
 }

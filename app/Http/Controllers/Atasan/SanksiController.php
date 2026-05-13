@@ -36,7 +36,7 @@ class SanksiController extends Controller
         }
 
         return view('atasan.sanksi', [
-            'items' => $items->orderByDesc('tanggal')->orderByDesc('id_sanksi')->paginate(20)->withQueryString(),
+            'items' => $items->orderByDesc('tanggal')->orderByDesc('id_sanksi')->paginate($request->get("per_page", 20))->withQueryString(),
             'users' => User::orderBy('nama')->get(),
         ]);
     }
@@ -75,12 +75,20 @@ class SanksiController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $sanksi = Sanksi::create($request->validate([
+        $validated = $request->validate([
             'id_user' => ['required', 'exists:users,id_user'],
             'jenis_sanksi' => ['required', 'string', 'max:100'],
             'tanggal' => ['required', 'date'],
             'keterangan' => ['nullable', 'string'],
-        ]));
+        ]);
+
+        // Verify user is petugas (atasan should only give sanksi to petugas)
+        $targetUser = User::findOrFail($validated['id_user']);
+        if (!$targetUser->isPetugas()) {
+            return back()->with('error', 'Sanksi hanya dapat diberikan kepada petugas.');
+        }
+
+        $sanksi = Sanksi::create($validated);
 
         \App\Models\Notifikasi::create([
             'id_user' => $sanksi->id_user,
@@ -99,7 +107,15 @@ class SanksiController extends Controller
 
     public function delete(Request $request, int $id): RedirectResponse
     {
-        Sanksi::findOrFail($id)->delete();
+        $sanksi = Sanksi::findOrFail($id);
+        
+        // Authorization: Only allow deletion if sanksi was created recently (within 24 hours)
+        // This prevents manipulation of historical data
+        if ($sanksi->created_at->diffInHours(now()) > 24) {
+            return back()->with('error', 'Sanksi yang sudah lebih dari 24 jam tidak dapat dihapus.');
+        }
+
+        $sanksi->delete();
         ActivityLogger::log($request, 'Menghapus sanksi', 'sanksi', $id, Sanksi::class);
 
         return back()->with('success', 'Sanksi berhasil dihapus.');

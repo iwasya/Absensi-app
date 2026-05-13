@@ -28,28 +28,44 @@ class AuthController extends Controller
         ]);
 
         $loginInput = $validated['login'];
+        $user = null;
+        
+        // Try to find user by email or username first (fast lookup)
         $field = filter_var($loginInput, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
         $user = User::where($field, $loginInput)->first();
 
-        // Coba cari dari tabel sensitif (NIK) jika tidak ketemu dari users
+        // If not found, try NIK lookup (slower, but only as fallback)
         if (!$user) {
-            $sensitives = \App\Models\UserSensitive::all();
-            foreach ($sensitives as $sensitive) {
-                if ($sensitive->nik_encrypted) {
-                    try {
-                        $decrypted = \Illuminate\Support\Facades\Crypt::decryptString($sensitive->nik_encrypted);
-                        if ($decrypted === $loginInput) {
-                            $user = User::find($sensitive->id_user);
-                            break;
-                        }
-                    } catch (\Exception $e) {
-                        continue;
+            // Use a more efficient approach: find by hashed NIK if possible
+            // For now, we limit the search and add constant-time comparison
+            $userSensitives = \App\Models\UserSensitive::with('user')
+                ->whereNotNull('nik_encrypted')
+                ->get();
+            
+            foreach ($userSensitives as $sensitive) {
+                try {
+                    $decrypted = \Illuminate\Support\Facades\Crypt::decryptString($sensitive->nik_encrypted);
+                    // Use hash_equals for constant-time comparison to prevent timing attacks
+                    if (hash_equals($decrypted, $loginInput)) {
+                        $user = $sensitive->user;
+                        break;
                     }
+                } catch (\Exception $e) {
+                    continue;
                 }
             }
         }
 
-        if ($user && Hash::check($validated['password'], $user->password)) {
+        // Always check password even if user not found (prevent user enumeration)
+        $passwordValid = false;
+        if ($user) {
+            $passwordValid = Hash::check($validated['password'], $user->password);
+        } else {
+            // Perform dummy hash check to maintain constant time
+            Hash::check($validated['password'], '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
+        }
+
+        if ($user && $passwordValid) {
             Auth::login($user);
             $request->session()->regenerate();
             return redirect()->intended(route('dashboard'));
@@ -75,7 +91,7 @@ class AuthController extends Controller
             'username' => ['required', 'string', 'max:100', 'unique:users,username'],
             'email' => ['required', 'email', 'max:150', 'unique:users,email'],
             'id_tempat' => ['nullable', 'exists:tempat_tugas,id_tempat'],
-            'password' => ['required', 'confirmed', Password::min(8)],
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
         ]);
 
         $roleId = User::count() === 0

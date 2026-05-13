@@ -6,6 +6,10 @@
     <h1>Pengajuan Cuti</h1>
     <div class="panel" style="max-width: 100%;">
         <h2>Ajukan Cuti</h2>
+        <p class="muted">
+            Kuota cuti tahun ini: {{ $cutiTerpakaiTahunIni }} dari {{ $batasCutiTahunan }} kali terpakai.
+            Sisa {{ max($batasCutiTahunan - $cutiTerpakaiTahunIni, 0) }} kali.
+        </p>
         <form method="POST" action="{{ route('petugas.cuti.store') }}">
             @csrf
             <div class="form-grid">
