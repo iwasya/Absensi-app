@@ -39,7 +39,7 @@ class AdminController extends Controller
         }
 
         return view('admin.users', [
-            'items' => $query->orderBy('nama')->paginate(25)->withQueryString(),
+            'items' => $query->orderBy('created_at', 'asc')->paginate($request->get("per_page", 25))->withQueryString(),
             'roles' => Role::orderBy('id_role')->get(),
             'tempatTugas' => TempatTugas::orderBy('nama_tempat')->get(),
         ]);
@@ -54,12 +54,22 @@ class AdminController extends Controller
             'password' => ['required', 'string', 'min:8'],
             'id_role' => ['required', 'exists:roles,id_role'],
             'id_tempat' => ['nullable', 'exists:tempat_tugas,id_tempat'],
+            'nik' => ['nullable', 'string', 'max:20'],
         ]);
 
         $user = User::create([
             ...$validated,
             'password' => Hash::make($validated['password']),
         ]);
+
+
+        // Simpan NIK ke data sensitif (encrypted)
+        if (!empty($validated['nik'])) {
+            $sensitive = new UserSensitive();
+            $sensitive->id_user = $user->id_user;
+            $sensitive->nik_encrypted = Crypt::encryptString($validated['nik']);
+            $sensitive->save();
+        }
 
         ActivityLogger::log($request, 'Membuat user', 'users', $user->id_user, User::class);
 
@@ -76,6 +86,7 @@ class AdminController extends Controller
             'password' => ['nullable', 'string', 'min:8'],
             'id_role' => ['required', 'exists:roles,id_role'],
             'id_tempat' => ['nullable', 'exists:tempat_tugas,id_tempat'],
+            'nik' => ['nullable', 'string', 'max:20'],
         ]);
 
         if (! empty($validated['password'])) {
@@ -105,10 +116,10 @@ class AdminController extends Controller
         return back()->with('success', 'User berhasil dihapus.');
     }
 
-    public function tempat(): View
+    public function tempat(Request $request): View
     {
         return view('admin.tempat', [
-            'items' => TempatTugas::orderBy('nama_tempat')->paginate(15),
+            'items' => TempatTugas::orderBy('id_tempat', 'asc')->paginate($request->get('per_page', 15)),
         ]);
     }
 
@@ -149,10 +160,10 @@ class AdminController extends Controller
         return back()->with('success', 'Tempat tugas berhasil dihapus.');
     }
 
-    public function periode(): View
+    public function periode(Request $request): View
     {
         return view('admin.periode', [
-            'items' => Periode::orderByDesc('tanggal_mulai')->paginate(15),
+            'items' => Periode::orderBy('id_periode', 'asc')->paginate($request->get('per_page', 15)),
         ]);
     }
 
@@ -203,10 +214,10 @@ class AdminController extends Controller
         return back()->with('success', 'Periode berhasil dihapus.');
     }
 
-    public function kalender(): View
+    public function kalender(Request $request): View
     {
         return view('admin.kalender', [
-            'items' => Kalender::orderByDesc('tanggal')->orderByDesc('id_kalender')->paginate(20),
+            'items' => Kalender::orderBy('id_kalender', 'asc')->paginate($request->get('per_page', 20)),
         ]);
     }
 
@@ -264,10 +275,10 @@ class AdminController extends Controller
         return back()->with('success', 'Kalender berhasil dihapus.');
     }
 
-    public function sanksi(): View
+    public function sanksi(Request $request): View
     {
         return view('admin.sanksi', [
-            'items' => Sanksi::with('user')->orderByDesc('tanggal')->orderByDesc('id_sanksi')->paginate(20),
+            'items' => Sanksi::with('user')->orderBy('id_sanksi', 'asc')->paginate($request->get('per_page', 20)),
         ]);
     }
 
@@ -308,10 +319,10 @@ class AdminController extends Controller
         return back()->with('success', 'Pengaturan berhasil disimpan.');
     }
 
-    public function logs(): View
+    public function logs(Request $request): View
     {
         return view('admin.logs', [
-            'items' => ActivityLog::with('user')->latest('id_log')->paginate(15),
+            'items' => ActivityLog::with('user')->orderBy('id_log', 'asc')->paginate($request->get('per_page', 15)),
         ]);
     }
 
@@ -329,7 +340,7 @@ class AdminController extends Controller
             $file = fopen('php://output', 'w');
             fputcsv($file, ['Waktu', 'User', 'Aktivitas', 'Modul', 'Status', 'IP', 'Device']);
 
-            ActivityLog::with('user')->latest('id_log')->chunk(500, function ($logs) use ($file) {
+            ActivityLog::with('user')->orderBy('created_at', 'asc')->chunk(500, function ($logs) use ($file) {
                 foreach ($logs as $log) {
                     fputcsv($file, [
                         $log->created_at,
@@ -350,7 +361,7 @@ class AdminController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
-    public function bukaAksesAbsen(): View
+    public function bukaAksesAbsen(Request $request): View
     {
         return view('admin.buka_absen', [
             'users' => User::whereHas('role', function ($q) {
@@ -360,8 +371,8 @@ class AdminController extends Controller
             'items' => \App\Models\Absensi::with('user')
                 ->whereDate('tanggal', today())
                 ->where('status', 'akses_dibuka')
-                ->latest('id_absensi')
-                ->paginate(15),
+                ->orderBy('id_absensi', 'asc')
+                ->paginate($request->get('per_page', 15)),
         ]);
     }
 
@@ -400,7 +411,7 @@ class AdminController extends Controller
         }
 
         return view('admin.data_sensitif', [
-            'users' => $query->orderBy('nama')->paginate(50)->withQueryString(),
+            'users' => $query->orderBy('id_user', 'asc')->paginate($request->get("per_page", 50))->withQueryString(),
         ]);
     }
 
@@ -426,4 +437,62 @@ class AdminController extends Controller
 
         return back()->with('success', 'Data NIK sensitif berhasil disimpan.');
     }
+
+    public function downloadUsersTemplate(Request $request)
+    {
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\UsersTemplateExport, 'template_import_users.xlsx');
+    }
+
+    public function importUsers(Request $request): RedirectResponse
+    {
+        // Set timeout lebih lama untuk import besar
+        set_time_limit(300); // 5 menit
+        ini_set('memory_limit', '512M');
+        
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls|max:2048',
+        ]);
+
+        try {
+            $import = new \App\Imports\UsersImport;
+            \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('file'));
+
+
+            ActivityLogger::log($request, 'Import users dari Excel', 'user', null, User::class);
+
+            return back()->with('success', 'Data user berhasil diimport dari Excel.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal import: ' . $e->getMessage());
+        }
+    }
+
+    public function bulkDeleteUsers(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'user_ids' => 'required|array|min:1',
+            'user_ids.*' => 'exists:users,id_user',
+            'delete_nik_data' => 'nullable|boolean',
+        ]);
+
+        $userIds = $request->user_ids;
+        $deleteNikData = $request->has('delete_nik_data');
+
+        // Hapus data NIK sensitif jika diminta
+        if ($deleteNikData) {
+            UserSensitive::whereIn('id_user', $userIds)->delete();
+        }
+
+        // Hapus users
+        User::whereIn('id_user', $userIds)->delete();
+
+        ActivityLogger::log($request, 'Bulk delete ' . count($userIds) . ' users', 'user', null, User::class);
+
+        $message = count($userIds) . ' user berhasil dihapus';
+        if ($deleteNikData) {
+            $message .= ' beserta data NIK sensitif';
+        }
+
+        return back()->with('success', $message);
+    }
 }
+

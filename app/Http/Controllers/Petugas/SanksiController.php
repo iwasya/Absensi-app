@@ -14,7 +14,7 @@ class SanksiController extends Controller
         $items = Sanksi::where('id_user', $request->user()->id_user)
             ->orderByDesc('tanggal')
             ->orderByDesc('id_sanksi')
-            ->paginate(20);
+            ->paginate($request->get("per_page", 20));
 
         return view('petugas.sanksi', [
             'items' => $items,

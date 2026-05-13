@@ -16,7 +16,7 @@
         <div class="filter-control" style="flex: 1; max-width: 400px;">
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama, username, email..." style="width: 100%;">
         </div>
-        <button type="submit" style="background:#2563eb; color:#fff; padding:9px 16px;">Cari</button>
+        <button type="submit" style="background:#2563eb; color:#fff; padding:9px 16px;">Cari</button>        <div class="filter-control" style="max-width:120px;">            <select name="per_page" onchange="this.form.submit()" style="width:100%;">                <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10 / hal</option>                <option value="15" {{ request('per_page') == 15 ? 'selected' : (request('per_page') ? '' : 'selected') }}>15 / hal</option>                <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 / hal</option>                <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 / hal</option>                <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100 / hal</option>            </select>        </div>
         @if(request()->filled('search'))
             <a href="{{ route('admin.data-sensitif.index') }}" style="background:#f3f4f6; color:#374151; padding:9px 12px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:14px;">Reset</a>
         @endif
@@ -68,3 +68,4 @@
     </div>
 </div>
 @endsection
+

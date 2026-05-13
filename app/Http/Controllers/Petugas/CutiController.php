@@ -35,7 +35,7 @@ class CutiController extends Controller
             ->get();
 
         return view('petugas.cuti', [
-            'items' => $items->latest('id_cuti')->paginate(15)->withQueryString(),
+            'items' => $items->latest('id_cuti')->paginate($request->get("per_page", 15))->withQueryString(),
             'periodeAktif' => Periode::aktif(),
             'periodes' => $periodes,
             'selectedPeriode' => $selectedPeriode,

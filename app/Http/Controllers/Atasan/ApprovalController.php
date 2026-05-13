@@ -59,7 +59,7 @@ class ApprovalController extends Controller
         }
 
         return view('atasan.absensi', [
-            'items' => $items->latest('tanggal')->latest('id_absensi')->paginate(25)->withQueryString(),
+            'items' => $items->latest('tanggal')->latest('id_absensi')->paginate($request->get("per_page", 25))->withQueryString(),
             'periodes' => $periodes,
             'selectedPeriode' => $selectedPeriode,
             'users' => \App\Models\User::orderBy('nama')->get(),
@@ -118,7 +118,7 @@ class ApprovalController extends Controller
         }
 
         return view('atasan.cuti', [
-            'items' => $items->latest('id_cuti')->paginate(25)->withQueryString(),
+            'items' => $items->latest('id_cuti')->paginate($request->get("per_page", 25))->withQueryString(),
             'periodes' => $periodes,
             'selectedPeriode' => $selectedPeriode,
         ]);
@@ -134,14 +134,14 @@ class ApprovalController extends Controller
             $items->where(function ($query) use ($selectedPeriode) {
                 $query->where('id_periode', $selectedPeriode->id_periode)
                     ->orWhereBetween('tanggal_mulai', [
-                        $selectedPeriode->tanggal_mulai->startOfDay(),
-                        $selectedPeriode->tanggal_selesai->endOfDay(),
+                        $selectedPeriode->tanggal_mulai->toDateString(),
+                        $selectedPeriode->tanggal_selesai->toDateString(),
                     ]);
             });
         }
 
         return view('atasan.tugas', [
-            'items' => $items->latest('id_tugas')->paginate(25)->withQueryString(),
+            'items' => $items->latest('id_tugas')->paginate($request->get("per_page", 25))->withQueryString(),
             'periodes' => $periodes,
             'selectedPeriode' => $selectedPeriode,
         ]);
@@ -169,7 +169,18 @@ class ApprovalController extends Controller
 
     private function updateCuti(Request $request, int $id, string $status): RedirectResponse
     {
-        $cuti = Cuti::findOrFail($id);
+        $cuti = Cuti::with('user')->findOrFail($id);
+        
+        // Authorization: Verify the user is petugas (atasan should only approve petugas cuti)
+        if (!$cuti->user->isPetugas()) {
+            abort(403, 'Anda tidak memiliki akses untuk mengubah cuti ini.');
+        }
+        
+        // Prevent re-approval of already processed cuti
+        if ($cuti->status !== 'pending') {
+            return back()->with('error', 'Cuti ini sudah diproses sebelumnya.');
+        }
+        
         $cuti->update([
             'status' => $status,
             'approver_id' => $request->user()->id_user,
@@ -192,7 +203,18 @@ class ApprovalController extends Controller
 
     private function updateTugas(Request $request, int $id, string $status): RedirectResponse
     {
-        $tugas = Tugas::findOrFail($id);
+        $tugas = Tugas::with('user')->findOrFail($id);
+        
+        // Authorization: Verify the user is petugas (atasan should only approve petugas tugas)
+        if (!$tugas->user->isPetugas()) {
+            abort(403, 'Anda tidak memiliki akses untuk mengubah tugas ini.');
+        }
+        
+        // Prevent re-approval of already processed tugas
+        if ($tugas->status !== 'pending') {
+            return back()->with('error', 'Tugas ini sudah diproses sebelumnya.');
+        }
+        
         $tugas->update(['status' => $status]);
 
         Notifikasi::create([
@@ -209,6 +231,7 @@ class ApprovalController extends Controller
 
         return back()->with('success', 'Status tugas berhasil diperbarui.');
     }
+    
     public function kalender(Request $request): View
     {
         $month = (int) $request->query('month', now()->month);

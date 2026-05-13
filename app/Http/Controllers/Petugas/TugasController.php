@@ -59,7 +59,7 @@ class TugasController extends Controller
         }
 
         return view('petugas.tugas-laporan', [
-            'items' => $items->latest('id_tugas')->paginate(15)->withQueryString(),
+            'items' => $items->latest('id_tugas')->paginate($request->get("per_page", 15))->withQueryString(),
             'periodeAktif' => Periode::aktif(),
         ]);
     }

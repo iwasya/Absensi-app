@@ -34,4 +34,20 @@ class NotifikasiController extends Controller
 
         return back()->with('success', 'Notifikasi ditandai sudah dibaca.');
     }
+
+    public function readAll(Request $request): RedirectResponse|JsonResponse
+    {
+        Notifikasi::where('id_user', $request->user()->id_user)
+            ->where('status_baca', false)
+            ->update(['status_baca' => true]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'unread_count' => 0,
+            ]);
+        }
+
+        return back()->with('success', 'Semua notifikasi ditandai sudah dibaca.');
+    }
 }

@@ -24,7 +24,7 @@
         </form>
     </div>
 
-    <h2>Riwayat Akses Dibuka (Hari Ini)</h2>
+    <h2>Riwayat Akses Dibuka (Hari Ini)</h2>`n`n    <div class="panel" style="margin-bottom: 24px;">`n        <form action="{{ route('admin.buka-absen.index') }}" method="GET" class="filter-bar">`n            <div class="filter-control" style="max-width:120px;">`n                <label>Per Halaman</label>`n                <select name="per_page" onchange="this.form.submit()" style="width:100%;">`n                    <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10 / hal</option>`n                    <option value="15" {{ request('per_page') == 15 ? 'selected' : (request('per_page') ? '' : 'selected') }}>15 / hal</option>`n                    <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 / hal</option>`n                    <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 / hal</option>`n                    <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100 / hal</option>`n                </select>`n            </div>`n        </form>`n    </div>
     <table>
         <thead>
             <tr>
@@ -51,3 +51,4 @@
     </table>
     {{ $items->links('pagination.simple') }}
 @endsection
+

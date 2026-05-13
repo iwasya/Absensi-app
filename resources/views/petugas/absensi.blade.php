@@ -224,7 +224,7 @@
                     btnOpen.style.display = 'none';
                     btnCapture.style.display = 'block';
                     btnRetake.style.display = 'none';
-                    input.value = '';
+                    input.value = ';
                 } catch (err) {
                     alert('Akses kamera ditolak atau perangkat kamera tidak ditemukan.');
                     console.error(err);
