@@ -14,7 +14,7 @@ class ProfileController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $user->load(['tempatTugas', 'userSensitive']);
+        $user->load(['role', 'tempatTugas', 'userSensitive']);
 
         $nikAsli = null;
         if ($user->userSensitive && $user->userSensitive->nik_encrypted) {
@@ -56,6 +56,7 @@ class ProfileController extends Controller
     public function updatePassword(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'current_password' => ['required', 'current_password'],
             'password' => ['required', 'string', 'confirmed', Password::min(8)->mixedCase()->numbers()],
         ]);
 

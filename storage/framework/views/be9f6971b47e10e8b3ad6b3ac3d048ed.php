@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Profil Pengguna'); ?>
 
-@section('title', 'Profil Pengguna')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <style>
     .profile-page {
         max-width: 980px;
@@ -150,17 +148,17 @@
 
     <div class="profile-layout">
         <div class="panel profile-card">
-            @if($user->foto_profil)
-                <img src="{{ Storage::url($user->foto_profil) }}" alt="Foto Profil" class="profile-avatar">
-            @else
-                <div class="profile-initial">{{ strtoupper(substr($user->nama ?? 'U', 0, 1)) }}</div>
-            @endif
+            <?php if($user->foto_profil): ?>
+                <img src="<?php echo e(Storage::url($user->foto_profil)); ?>" alt="Foto Profil" class="profile-avatar">
+            <?php else: ?>
+                <div class="profile-initial"><?php echo e(strtoupper(substr($user->nama ?? 'U', 0, 1))); ?></div>
+            <?php endif; ?>
 
-            <div class="profile-name">{{ $user->nama }}</div>
-            <div class="profile-role">{{ $user->role->nama_role ?? '-' }}</div>
+            <div class="profile-name"><?php echo e($user->nama); ?></div>
+            <div class="profile-role"><?php echo e($user->role->nama_role ?? '-'); ?></div>
 
-            <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="profile-upload">
-                @csrf
+            <form method="POST" action="<?php echo e(route('profile.update')); ?>" enctype="multipart/form-data" class="profile-upload">
+                <?php echo csrf_field(); ?>
                 <div>
                     <label for="foto_profil">Foto Profil</label>
                     <input type="file" id="foto_profil" name="foto_profil" accept="image/*">
@@ -179,34 +177,34 @@
                 <div class="profile-fields">
                     <div class="readonly-field">
                         <label>Nama Lengkap</label>
-                        <div class="readonly-value">{{ $user->nama }}</div>
+                        <div class="readonly-value"><?php echo e($user->nama); ?></div>
                     </div>
 
                     <div class="readonly-field">
                         <label>Username</label>
-                        <div class="readonly-value">{{ $user->username }}</div>
+                        <div class="readonly-value"><?php echo e($user->username); ?></div>
                     </div>
 
                     <div class="readonly-field">
                         <label>Email</label>
-                        <div class="readonly-value">{{ $user->email }}</div>
+                        <div class="readonly-value"><?php echo e($user->email); ?></div>
                     </div>
 
                     <div class="readonly-field">
                         <label>Tempat Tugas</label>
-                        <div class="readonly-value">{{ $user->tempatTugas->nama_tempat ?? 'Belum ditetapkan' }}</div>
+                        <div class="readonly-value"><?php echo e($user->tempatTugas->nama_tempat ?? 'Belum ditetapkan'); ?></div>
                     </div>
 
                     <div class="readonly-field">
                         <label>NIK <span class="sensitive-label">Sensitif</span></label>
-                        @if($nik && $nik !== 'Gagal mendekripsi NIK')
+                        <?php if($nik && $nik !== 'Gagal mendekripsi NIK'): ?>
                             <div class="nik-row">
-                                <input type="password" id="nik_input" value="{{ $nik }}" disabled>
+                                <input type="password" id="nik_input" value="<?php echo e($nik); ?>" disabled>
                                 <button type="button" class="secondary-button" id="nikToggle">Lihat</button>
                             </div>
-                        @else
-                            <div class="readonly-value muted">{{ $nik ?? 'Data NIK tidak ditemukan' }}</div>
-                        @endif
+                        <?php else: ?>
+                            <div class="readonly-value muted"><?php echo e($nik ?? 'Data NIK tidak ditemukan'); ?></div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -216,8 +214,8 @@
                     <h2>Ubah Password</h2>
                 </div>
 
-                <form method="POST" action="{{ route('profile.password') }}" class="profile-fields">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('profile.password')); ?>" class="profile-fields">
+                    <?php echo csrf_field(); ?>
                     <div>
                         <label>Password Saat Ini</label>
                         <input type="password" name="current_password" required autocomplete="current-password">
@@ -251,4 +249,6 @@
         });
     }
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\kerjaan\Proyek_absensi\absensi-app\resources\views/profile/index.blade.php ENDPATH**/ ?>

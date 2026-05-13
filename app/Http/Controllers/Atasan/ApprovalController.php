@@ -234,6 +234,7 @@ class ApprovalController extends Controller
     
     public function kalender(Request $request): View
     {
+        $user = $request->user();
         $month = (int) $request->query('month', now()->month);
         $year = (int) $request->query('year', now()->year);
 
@@ -252,15 +253,42 @@ class ApprovalController extends Controller
             ->get()
             ->groupBy(fn ($item) => $item->tanggal->format('Y-m-d'));
 
-        // For Atasan, show all tasks to see who is working
+        $absensiByDate = Absensi::whereBetween('tanggal', [
+                $calendarStart->toDateString(),
+                $calendarEnd->toDateString(),
+            ])
+            ->whereHas('user', function ($query) use ($user) {
+                $query->whereHas('role', function ($roleQuery) {
+                    $roleQuery->where('nama_role', 'like', '%petugas%')
+                        ->orWhere('nama_role', 'like', '%karyawan%');
+                });
+
+                if ($user->id_tempat) {
+                    $query->where('id_tempat', $user->id_tempat);
+                }
+            })
+            ->get()
+            ->groupBy(fn ($item) => $item->tanggal->format('Y-m-d'))
+            ->map(fn ($items) => $items->count());
+
         $allTugas = Tugas::with('user')
+            ->whereHas('user', function ($query) use ($user) {
+                $query->whereHas('role', function ($roleQuery) {
+                    $roleQuery->where('nama_role', 'like', '%petugas%')
+                        ->orWhere('nama_role', 'like', '%karyawan%');
+                });
+
+                if ($user->id_tempat) {
+                    $query->where('id_tempat', $user->id_tempat);
+                }
+            })
             ->where(function($query) use ($calendarStart, $calendarEnd) {
-                $query->whereBetween('tanggal_mulai', [$calendarStart->startOfDay(), $calendarEnd->endOfDay()])
-                      ->orWhereBetween('tanggal_selesai', [$calendarStart->startOfDay(), $calendarEnd->endOfDay()])
+                $query->whereBetween('tanggal_mulai', [$calendarStart->copy()->startOfDay(), $calendarEnd->copy()->endOfDay()])
+                      ->orWhereBetween('tanggal_selesai', [$calendarStart->copy()->startOfDay(), $calendarEnd->copy()->endOfDay()])
                       ->orWhere(function($q) use ($calendarStart, $calendarEnd) {
-                          $q->where('tanggal_mulai', '<=', $calendarStart->startOfDay())
+                          $q->where('tanggal_mulai', '<=', $calendarStart->copy()->startOfDay())
                             ->whereNotNull('tanggal_selesai')
-                            ->where('tanggal_selesai', '>=', $calendarEnd->endOfDay());
+                            ->where('tanggal_selesai', '>=', $calendarEnd->copy()->endOfDay());
                       });
             })
             ->get();
@@ -271,8 +299,7 @@ class ApprovalController extends Controller
             $end = $tugas->tanggal_selesai ? $tugas->tanggal_selesai->copy()->startOfDay() : $start->copy();
             for ($d = $start->copy(); $d->lte($end); $d->addDay()) {
                 $dateKey = $d->format('Y-m-d');
-                if (!isset($tugasByDate[$dateKey])) $tugasByDate[$dateKey] = collect();
-                $tugasByDate[$dateKey]->push($tugas);
+                $tugasByDate[$dateKey] = ($tugasByDate[$dateKey] ?? 0) + 1;
             }
         }
 
@@ -287,7 +314,8 @@ class ApprovalController extends Controller
             'nextMonth' => $currentMonth->copy()->addMonth(),
             'days' => $days,
             'events' => $events,
-            'tugasByDate' => $tugasByDate,
+            'absensiByDate' => $absensiByDate,
+            'tugasByDate' => collect($tugasByDate),
         ]);
     }
 }

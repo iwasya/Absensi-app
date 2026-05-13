@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Pengaturan Aplikasi'); ?>
 
-@section('title', 'Pengaturan Aplikasi')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <style>
     .settings-page {
         max-width: 760px;
@@ -152,8 +150,8 @@
     <h1>Pengaturan Aplikasi</h1>
 
     <div class="panel settings-panel">
-        <form method="POST" action="{{ route('admin.pengaturan.store') }}" enctype="multipart/form-data" class="settings-panel">
-            @csrf
+        <form method="POST" action="<?php echo e(route('admin.pengaturan.store')); ?>" enctype="multipart/form-data" class="settings-panel">
+            <?php echo csrf_field(); ?>
 
             <div class="settings-section">
                 <div>
@@ -161,13 +159,13 @@
                     <p class="settings-help">Logo ini akan tampil di sidebar. Kosongkan input file jika tidak ingin mengubah logo.</p>
                 </div>
 
-                @if($app_logo)
+                <?php if($app_logo): ?>
                     <div class="asset-preview">
-                        <img src="{{ Storage::url($app_logo) }}" alt="Logo Aplikasi">
+                        <img src="<?php echo e(Storage::url($app_logo)); ?>" alt="Logo Aplikasi">
                     </div>
-                @else
+                <?php else: ?>
                     <div class="asset-preview muted">Belum ada logo</div>
-                @endif
+                <?php endif; ?>
 
                 <div>
                     <label for="app_logo">Upload Logo Baru</label>
@@ -175,9 +173,16 @@
                     <p class="settings-help">Format: JPG atau PNG. Maksimal 2MB.</p>
                 </div>
 
-                @error('app_logo')
-                    <div class="error">{{ $message }}</div>
-                @enderror
+                <?php $__errorArgs = ['app_logo'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                    <div class="error"><?php echo e($message); ?></div>
+                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
             </div>
 
             <div class="settings-section">
@@ -186,28 +191,29 @@
                     <p class="settings-help">Ikon ini akan tampil di tab browser dan shortcut perangkat. Pilih upload gambar atau buat ikon manual dari teks dan warna.</p>
                 </div>
 
-                @if($app_icon_mode === 'manual')
+                <?php if($app_icon_mode === 'manual'): ?>
                     <div class="asset-preview icon-preview">
-                        <div class="manual-icon-preview" style="background: {{ $app_icon_bg }}; color: {{ $app_icon_color }};">
-                            {{ strtoupper(substr($app_icon_text ?: 'A', 0, 2)) }}
+                        <div class="manual-icon-preview" style="background: <?php echo e($app_icon_bg); ?>; color: <?php echo e($app_icon_color); ?>;">
+                            <?php echo e(strtoupper(substr($app_icon_text ?: 'A', 0, 2))); ?>
+
                         </div>
                     </div>
-                @elseif($app_icon)
+                <?php elseif($app_icon): ?>
                     <div class="asset-preview icon-preview">
-                        <img src="{{ Storage::url($app_icon) }}" alt="Ikon Web">
+                        <img src="<?php echo e(Storage::url($app_icon)); ?>" alt="Ikon Web">
                     </div>
-                @else
+                <?php else: ?>
                     <div class="asset-preview icon-preview muted">Belum ada ikon</div>
-                @endif
+                <?php endif; ?>
 
                 <div class="theme-options">
                     <label class="theme-option">
-                        <input type="radio" name="app_icon_mode" value="upload" {{ $app_icon_mode === 'upload' ? 'checked' : '' }}>
+                        <input type="radio" name="app_icon_mode" value="upload" <?php echo e($app_icon_mode === 'upload' ? 'checked' : ''); ?>>
                         <span>Upload Gambar</span>
                     </label>
 
                     <label class="theme-option">
-                        <input type="radio" name="app_icon_mode" value="manual" {{ $app_icon_mode === 'manual' ? 'checked' : '' }}>
+                        <input type="radio" name="app_icon_mode" value="manual" <?php echo e($app_icon_mode === 'manual' ? 'checked' : ''); ?>>
                         <span>Manual</span>
                     </label>
                 </div>
@@ -221,33 +227,68 @@
                 <div class="icon-manual-grid">
                     <div>
                         <label for="app_icon_text">Teks Ikon</label>
-                        <input id="app_icon_text" type="text" name="app_icon_text" maxlength="2" value="{{ $app_icon_text }}">
+                        <input id="app_icon_text" type="text" name="app_icon_text" maxlength="2" value="<?php echo e($app_icon_text); ?>">
                     </div>
                     <div>
                         <label for="app_icon_bg">Warna Background</label>
-                        <input id="app_icon_bg" type="color" name="app_icon_bg" value="{{ $app_icon_bg }}">
+                        <input id="app_icon_bg" type="color" name="app_icon_bg" value="<?php echo e($app_icon_bg); ?>">
                     </div>
                     <div>
                         <label for="app_icon_color">Warna Teks</label>
-                        <input id="app_icon_color" type="color" name="app_icon_color" value="{{ $app_icon_color }}">
+                        <input id="app_icon_color" type="color" name="app_icon_color" value="<?php echo e($app_icon_color); ?>">
                     </div>
                 </div>
 
-                @error('app_icon')
-                    <div class="error">{{ $message }}</div>
-                @enderror
-                @error('app_icon_mode')
-                    <div class="error">{{ $message }}</div>
-                @enderror
-                @error('app_icon_text')
-                    <div class="error">{{ $message }}</div>
-                @enderror
-                @error('app_icon_bg')
-                    <div class="error">{{ $message }}</div>
-                @enderror
-                @error('app_icon_color')
-                    <div class="error">{{ $message }}</div>
-                @enderror
+                <?php $__errorArgs = ['app_icon'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                    <div class="error"><?php echo e($message); ?></div>
+                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                <?php $__errorArgs = ['app_icon_mode'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                    <div class="error"><?php echo e($message); ?></div>
+                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                <?php $__errorArgs = ['app_icon_text'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                    <div class="error"><?php echo e($message); ?></div>
+                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                <?php $__errorArgs = ['app_icon_bg'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                    <div class="error"><?php echo e($message); ?></div>
+                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                <?php $__errorArgs = ['app_icon_color'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                    <div class="error"><?php echo e($message); ?></div>
+                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
             </div>
 
             <div class="settings-section">
@@ -258,25 +299,34 @@
 
                 <div class="theme-options">
                     <label class="theme-option">
-                        <input type="radio" name="app_theme" value="light" {{ $app_theme === 'light' ? 'checked' : '' }}>
+                        <input type="radio" name="app_theme" value="light" <?php echo e($app_theme === 'light' ? 'checked' : ''); ?>>
                         <span class="theme-swatch light" aria-hidden="true"></span>
                         <span>Terang</span>
                     </label>
 
                     <label class="theme-option">
-                        <input type="radio" name="app_theme" value="dark" {{ $app_theme === 'dark' ? 'checked' : '' }}>
+                        <input type="radio" name="app_theme" value="dark" <?php echo e($app_theme === 'dark' ? 'checked' : ''); ?>>
                         <span class="theme-swatch dark" aria-hidden="true"></span>
                         <span>Gelap</span>
                     </label>
                 </div>
 
-                @error('app_theme')
-                    <div class="error">{{ $message }}</div>
-                @enderror
+                <?php $__errorArgs = ['app_theme'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                    <div class="error"><?php echo e($message); ?></div>
+                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
             </div>
 
             <button type="submit" class="settings-submit">Simpan Pengaturan</button>
         </form>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\kerjaan\Proyek_absensi\absensi-app\resources\views/admin/pengaturan.blade.php ENDPATH**/ ?>

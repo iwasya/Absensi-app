@@ -286,6 +286,11 @@ class AdminController extends Controller
     {
         return view('admin.pengaturan', [
             'app_logo' => \App\Models\Pengaturan::getNilai('app_logo'),
+            'app_icon' => \App\Models\Pengaturan::getNilai('app_icon'),
+            'app_icon_mode' => \App\Models\Pengaturan::getNilai('app_icon_mode', 'upload'),
+            'app_icon_text' => \App\Models\Pengaturan::getNilai('app_icon_text', 'A'),
+            'app_icon_bg' => \App\Models\Pengaturan::getNilai('app_icon_bg', '#2563eb'),
+            'app_icon_color' => \App\Models\Pengaturan::getNilai('app_icon_color', '#ffffff'),
             'app_theme' => \App\Models\Pengaturan::getNilai('app_theme', 'light'),
         ]);
     }
@@ -294,6 +299,11 @@ class AdminController extends Controller
     {
         $request->validate([
             'app_logo' => ['nullable', 'image', 'max:2048'],
+            'app_icon' => ['nullable', 'image', 'max:1024'],
+            'app_icon_mode' => ['required', 'in:upload,manual'],
+            'app_icon_text' => ['nullable', 'string', 'max:2'],
+            'app_icon_bg' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'app_icon_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'app_theme' => ['required', 'in:light,dark'],
         ]);
 
@@ -309,10 +319,34 @@ class AdminController extends Controller
             );
         }
 
+        if ($request->hasFile('app_icon')) {
+            $oldIcon = \App\Models\Pengaturan::getNilai('app_icon');
+            if ($oldIcon && \Illuminate\Support\Facades\Storage::disk('public')->exists($oldIcon)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($oldIcon);
+            }
+            $iconPath = $request->file('app_icon')->store('pengaturan', 'public');
+            \App\Models\Pengaturan::updateOrCreate(
+                ['kunci' => 'app_icon'],
+                ['nilai' => $iconPath]
+            );
+        }
+
         \App\Models\Pengaturan::updateOrCreate(
             ['kunci' => 'app_theme'],
             ['nilai' => $request->app_theme]
         );
+
+        foreach ([
+            'app_icon_mode' => $request->app_icon_mode,
+            'app_icon_text' => strtoupper(substr($request->app_icon_text ?: 'A', 0, 2)),
+            'app_icon_bg' => $request->app_icon_bg,
+            'app_icon_color' => $request->app_icon_color,
+        ] as $kunci => $nilai) {
+            \App\Models\Pengaturan::updateOrCreate(
+                ['kunci' => $kunci],
+                ['nilai' => $nilai]
+            );
+        }
 
         ActivityLogger::log($request, 'Memperbarui pengaturan aplikasi', 'pengaturan', null, \App\Models\Pengaturan::class);
 
