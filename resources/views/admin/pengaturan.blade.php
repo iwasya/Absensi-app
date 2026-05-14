@@ -57,6 +57,31 @@
         object-fit: contain;
     }
 
+    .brand-preview {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-align: left;
+    }
+
+    .brand-preview.logo_only,
+    .brand-preview.name_only {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .brand-preview img {
+        max-height: 58px;
+        max-width: 180px;
+        object-fit: contain;
+    }
+
+    .brand-preview strong {
+        display: block;
+        font-size: 18px;
+        line-height: 1.25;
+    }
+
     .icon-preview {
         min-width: 76px;
         min-height: 76px;
@@ -89,6 +114,10 @@
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 12px;
+    }
+
+    .brand-options {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .theme-option {
@@ -142,6 +171,10 @@
             grid-template-columns: 1fr;
         }
 
+        .brand-options {
+            grid-template-columns: 1fr;
+        }
+
         .icon-manual-grid {
             grid-template-columns: 1fr;
         }
@@ -155,19 +188,51 @@
         <form method="POST" action="{{ route('admin.pengaturan.store') }}" enctype="multipart/form-data" class="settings-panel">
             @csrf
 
+            @php
+                $brandName = old('app_name', $app_name ?: 'Absensi PPSU');
+                $brandDisplay = old('app_brand_display', $app_brand_display);
+                $brandDisplay = in_array($brandDisplay, ['logo_name', 'logo_only', 'name_only'], true) ? $brandDisplay : 'logo_name';
+            @endphp
+
             <div class="settings-section">
                 <div>
-                    <h2 class="settings-title">Logo Aplikasi</h2>
-                    <p class="settings-help">Logo ini akan tampil di sidebar. Kosongkan input file jika tidak ingin mengubah logo.</p>
+                    <h2 class="settings-title">Brand Aplikasi</h2>
+                    <p class="settings-help">Atur nama dan logo yang tampil di sidebar. Kosongkan input file jika tidak ingin mengubah logo.</p>
                 </div>
 
-                @if($app_logo)
-                    <div class="asset-preview">
-                        <img src="{{ Storage::url($app_logo) }}" alt="Logo Aplikasi">
+                <div class="asset-preview">
+                    <div class="brand-preview {{ $brandDisplay }}">
+                        @if($app_logo && $brandDisplay !== 'name_only')
+                            <img src="{{ Storage::url($app_logo) }}" alt="Logo Aplikasi">
+                        @endif
+
+                        @if($brandDisplay !== 'logo_only' || ! $app_logo)
+                            <strong>{{ $brandName }}</strong>
+                        @endif
                     </div>
-                @else
-                    <div class="asset-preview muted">Belum ada logo</div>
-                @endif
+                </div>
+
+                <div>
+                    <label for="app_name">Nama Aplikasi</label>
+                    <input id="app_name" type="text" name="app_name" maxlength="80" value="{{ old('app_name', $brandName) }}" required>
+                </div>
+
+                <div class="theme-options brand-options">
+                    <label class="theme-option">
+                        <input type="radio" name="app_brand_display" value="logo_name" {{ $brandDisplay === 'logo_name' ? 'checked' : '' }}>
+                        <span>Logo + Nama</span>
+                    </label>
+
+                    <label class="theme-option">
+                        <input type="radio" name="app_brand_display" value="logo_only" {{ $brandDisplay === 'logo_only' ? 'checked' : '' }}>
+                        <span>Logo Saja</span>
+                    </label>
+
+                    <label class="theme-option">
+                        <input type="radio" name="app_brand_display" value="name_only" {{ $brandDisplay === 'name_only' ? 'checked' : '' }}>
+                        <span>Nama Saja</span>
+                    </label>
+                </div>
 
                 <div>
                     <label for="app_logo">Upload Logo Baru</label>
@@ -175,7 +240,13 @@
                     <p class="settings-help">Format: JPG atau PNG. Maksimal 2MB.</p>
                 </div>
 
+                @error('app_name')
+                    <div class="error">{{ $message }}</div>
+                @enderror
                 @error('app_logo')
+                    <div class="error">{{ $message }}</div>
+                @enderror
+                @error('app_brand_display')
                     <div class="error">{{ $message }}</div>
                 @enderror
             </div>

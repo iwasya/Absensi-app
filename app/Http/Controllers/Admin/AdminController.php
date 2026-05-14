@@ -301,7 +301,9 @@ class AdminController extends Controller
     public function pengaturan(): View
     {
         return view('admin.pengaturan', [
+            'app_name' => \App\Models\Pengaturan::getNilai('app_name', 'Absensi PPSU'),
             'app_logo' => \App\Models\Pengaturan::getNilai('app_logo'),
+            'app_brand_display' => \App\Models\Pengaturan::getNilai('app_brand_display', 'logo_name'),
             'app_icon' => \App\Models\Pengaturan::getNilai('app_icon'),
             'app_icon_mode' => \App\Models\Pengaturan::getNilai('app_icon_mode', 'upload'),
             'app_icon_text' => \App\Models\Pengaturan::getNilai('app_icon_text', 'A'),
@@ -314,7 +316,9 @@ class AdminController extends Controller
     public function storePengaturan(Request $request): RedirectResponse
     {
         $request->validate([
+            'app_name' => ['required', 'string', 'max:80'],
             'app_logo' => ['nullable', 'image', 'max:2048'],
+            'app_brand_display' => ['required', 'in:logo_name,logo_only,name_only'],
             'app_icon' => ['nullable', 'image', 'max:1024'],
             'app_icon_mode' => ['required', 'in:upload,manual'],
             'app_icon_text' => ['nullable', 'string', 'max:2'],
@@ -353,6 +357,8 @@ class AdminController extends Controller
         );
 
         foreach ([
+            'app_name' => $request->app_name,
+            'app_brand_display' => $request->app_brand_display,
             'app_icon_mode' => $request->app_icon_mode,
             'app_icon_text' => strtoupper(substr($request->app_icon_text ?: 'A', 0, 2)),
             'app_icon_bg' => $request->app_icon_bg,

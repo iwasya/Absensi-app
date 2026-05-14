@@ -1,9 +1,15 @@
 @php
     $app_theme = \App\Models\Pengaturan::getNilai('app_theme', 'light');
+    $app_name = \App\Models\Pengaturan::getNilai('app_name', 'Absensi PPSU') ?: 'Absensi PPSU';
     $app_logo = \App\Models\Pengaturan::getNilai('app_logo');
+    $app_brand_display = \App\Models\Pengaturan::getNilai('app_brand_display', 'logo_name');
     $app_icon = \App\Models\Pengaturan::getNilai('app_icon');
     $app_icon_mode = \App\Models\Pengaturan::getNilai('app_icon_mode', 'upload');
     $app_icon_href = null;
+
+    if (! in_array($app_brand_display, ['logo_name', 'logo_only', 'name_only'], true)) {
+        $app_brand_display = 'logo_name';
+    }
 
     if ($app_icon_mode === 'manual') {
         $iconText = strtoupper(substr(\App\Models\Pengaturan::getNilai('app_icon_text', 'A') ?: 'A', 0, 2));
@@ -30,7 +36,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', config('app.name'))</title>
+    <title>@yield('title', $app_name)</title>
     @if($app_icon_href)
         <link rel="icon" href="{{ $app_icon_href }}">
         <link rel="apple-touch-icon" href="{{ $app_icon_href }}">
@@ -87,7 +93,11 @@
         .app-shell { min-height: 100vh; display: grid; grid-template-columns: 260px minmax(0, 1fr); }
         .sidebar { background: var(--sidebar-bg); color: var(--sidebar-text); padding: 18px; position: sticky; top: 0; min-height: 100vh; align-self: start; transition: background-color 0.3s; }
         .brand { padding-bottom: 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); margin-bottom: 16px; text-align: center; }
-        .brand strong { display: block; font-size: 18px; margin-bottom: 6px; }
+        .brand-mark { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; }
+        .brand-mark.logo_name { text-align: left; }
+        .brand-mark.logo_only, .brand-mark.name_only { text-align: center; }
+        .brand-logo { max-height: 50px; max-width: 110px; object-fit: contain; flex: 0 0 auto; }
+        .brand strong { display: block; font-size: 18px; line-height: 1.25; overflow-wrap: anywhere; }
         .sidebar .muted { color: #cbd5e1; }
         .content-shell { min-width: 0; }
         header { background: var(--panel-bg); border-bottom: 1px solid var(--border-color); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; transition: background-color 0.3s, border-color 0.3s; }
@@ -245,11 +255,15 @@
         @auth
         <aside class="sidebar" id="sidebar">
             <div class="brand">
-                @if($app_logo)
-                    <img src="{{ Storage::url($app_logo) }}" alt="Logo" style="max-height: 50px; max-width: 100%;">
-                @else
-                    <strong>Absensi PPSU</strong>
-                @endif
+                <div class="brand-mark {{ $app_brand_display }}">
+                    @if($app_logo && $app_brand_display !== 'name_only')
+                        <img class="brand-logo" src="{{ Storage::url($app_logo) }}" alt="Logo">
+                    @endif
+
+                    @if($app_brand_display !== 'logo_only' || ! $app_logo)
+                        <strong>{{ $app_name }}</strong>
+                    @endif
+                </div>
                 <!-- <div class="muted">{{ auth()->user()->nama }} - {{ auth()->user()->role->nama_role ?? '' }}</div> -->
             </div>
             <nav>
@@ -304,7 +318,7 @@
                     </button>
                     @endauth
                     <div>
-                        <strong>@yield('title', config('app.name'))</strong>
+                        <strong>@yield('title', $app_name)</strong>
                         @auth
                             <div class="muted" style="font-size: 13px;">{{ auth()->user()->role->nama_role ?? '' }}</div>
                         @endauth
