@@ -4,6 +4,10 @@
     <h1>Pengajuan Cuti</h1>
     <div class="panel" style="max-width: 100%;">
         <h2>Ajukan Cuti</h2>
+        <p class="muted">
+            Kuota cuti tahun ini: <?php echo e($cutiTerpakaiTahunIni); ?> dari <?php echo e($batasCutiTahunan); ?> kali terpakai.
+            Sisa <?php echo e(max($batasCutiTahunan - $cutiTerpakaiTahunIni, 0)); ?> kali.
+        </p>
         <form method="POST" action="<?php echo e(route('petugas.cuti.store')); ?>">
             <?php echo csrf_field(); ?>
             <div class="form-grid">
