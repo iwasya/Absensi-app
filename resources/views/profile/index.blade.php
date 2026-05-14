@@ -344,6 +344,7 @@
         padding-top: 2px;
     }
 
+<<<<<<< HEAD
     .profile-primary-button {
         min-height: 40px;
     }
@@ -375,6 +376,20 @@
             justify-content: flex-start;
         }
 
+=======
+    .profile-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .field-error {
+        color: var(--danger-soft-text);
+        font-size: 12px;
+        margin-top: 5px;
+    }
+
+    @media (max-width: 820px) {
+>>>>>>> eaabfa62e0750db1df8b2f1eb56ea0289afec1d5
         .profile-layout {
             grid-template-columns: 1fr;
         }
@@ -456,13 +471,23 @@
 
             <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="profile-upload">
                 @csrf
+                <input type="hidden" name="nama" value="{{ $user->nama }}">
+                <input type="hidden" name="username" value="{{ $user->username }}">
+                <input type="hidden" name="email" value="{{ $user->email }}">
                 <div>
                     <div class="profile-upload-title">
                         <strong>Foto Profil</strong>
                     </div>
                     <label for="foto_profil">Unggah foto baru</label>
                     <input type="file" id="foto_profil" name="foto_profil" accept="image/*">
+<<<<<<< HEAD
                     <p class="profile-help">Gunakan foto JPG atau PNG dengan ukuran maksimal 2MB.</p>
+=======
+                    <p class="profile-help">JPG atau PNG, maksimal 2MB.</p>
+                    @error('foto_profil')
+                        <div class="field-error">{{ $message }}</div>
+                    @enderror
+>>>>>>> eaabfa62e0750db1df8b2f1eb56ea0289afec1d5
                 </div>
                 <button type="submit" class="profile-primary-button">Simpan Foto</button>
             </form>
@@ -478,20 +503,37 @@
                     <span class="profile-section-badge">Read Only</span>
                 </div>
 
+<<<<<<< HEAD
                 <div class="profile-fields profile-info-grid">
                     <div class="readonly-field">
                         <label>Nama Lengkap</label>
                         <div class="readonly-value">{{ $user->nama }}</div>
+=======
+                <form method="POST" action="{{ route('profile.update') }}" class="profile-fields">
+                    @csrf
+                    <div>
+                        <label for="nama">Nama Lengkap</label>
+                        <input type="text" id="nama" name="nama" value="{{ old('nama', $user->nama) }}" required maxlength="150" autocomplete="name">
+                        @error('nama')
+                            <div class="field-error">{{ $message }}</div>
+                        @enderror
+>>>>>>> eaabfa62e0750db1df8b2f1eb56ea0289afec1d5
                     </div>
 
-                    <div class="readonly-field">
-                        <label>Username</label>
-                        <div class="readonly-value">{{ $user->username }}</div>
+                    <div>
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" value="{{ old('username', $user->username) }}" required maxlength="100" autocomplete="username">
+                        @error('username')
+                            <div class="field-error">{{ $message }}</div>
+                        @enderror
                     </div>
 
-                    <div class="readonly-field">
-                        <label>Email</label>
-                        <div class="readonly-value">{{ $user->email }}</div>
+                    <div>
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" value="{{ old('email', $user->email) }}" required maxlength="150" autocomplete="email">
+                        @error('email')
+                            <div class="field-error">{{ $message }}</div>
+                        @enderror
                     </div>
 
                     <div class="readonly-field">
@@ -510,8 +552,17 @@
                             <div class="readonly-value muted">{{ $nik ?? 'Data NIK tidak ditemukan' }}</div>
                         @endif
                     </div>
+<<<<<<< HEAD
                 </div>
             </section>
+=======
+
+                    <div class="profile-actions">
+                        <button type="submit">Simpan Profil</button>
+                    </div>
+                </form>
+            </div>
+>>>>>>> eaabfa62e0750db1df8b2f1eb56ea0289afec1d5
 
             <section class="profile-panel profile-section">
                 <div class="profile-section-head">

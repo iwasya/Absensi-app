@@ -321,7 +321,11 @@
                     <strong>Sudah absen masuk</strong> — pukul {{ $today->jam_masuk }}
                 </div>
             @elseif(now()->format('H:i:s') > '07:15:00' && $today?->status !== 'akses_dibuka')
+<<<<<<< HEAD
                 <div class="error" style="margin:0;">Waktu absen masuk telah habis. Anda tercatat Tidak Absen.</div>
+=======
+                <div class="error" style="margin-top:12px;">Waktu absen masuk telah habis. Jika tidak ada akses admin, hari ini akan tercatat Tidak Absen setelah hari berganti.</div>
+>>>>>>> eaabfa62e0750db1df8b2f1eb56ea0289afec1d5
             @elseif(now()->format('H:i:s') < '07:00:00' && $today?->status !== 'akses_dibuka')
                 <div class="abs-info">
                     <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -393,7 +397,11 @@
                     <strong>Sudah absen pulang</strong> — pukul {{ $today->jam_pulang }}
                 </div>
             @elseif($today?->status === 'tidak_absen' || (now()->format('H:i:s') > '07:15:00' && !$today?->jam_masuk && $today?->status !== 'akses_dibuka'))
+<<<<<<< HEAD
                 <div class="error" style="margin:0;">Anda tercatat Tidak Absen hari ini sehingga tidak bisa absen pulang.</div>
+=======
+                <div class="error" style="margin-top:12px;">Tidak ada absen masuk untuk hari ini sehingga tidak bisa absen pulang.</div>
+>>>>>>> eaabfa62e0750db1df8b2f1eb56ea0289afec1d5
             @elseif(now()->format('H:i:s') < '16:00:00')
                 <div class="abs-info">
                     <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -585,6 +593,62 @@
                         loc.style.color    = 'green';
                         loc.style.fontWeight = 'bold';
                     }
+<<<<<<< HEAD
+=======
+                    
+                    if (loc) {
+                        loc.readOnly = true;
+                        if (!inRange) {
+                            loc.value = "Di luar area kantor";
+                            loc.style.color = "red";
+                            loc.style.fontWeight = "bold";
+                        } else {
+                            loc.value = namaTempat || "Area Kantor";
+                            loc.style.color = "green";
+                            loc.style.fontWeight = "bold";
+                        }
+                    }
+                });
+
+                if (!inRange) {
+                    alert('Anda berada di luar area kantor! Jarak Anda terlalu jauh dari lokasi yang diizinkan.');
+                    document.querySelectorAll('button[type="submit"]').forEach(function(btn) {
+                        btn.disabled = true;
+                        btn.style.opacity = '0.5';
+                        btn.style.cursor = 'not-allowed';
+                    });
+                }
+            });
+        }
+
+        function setupCamera(type) {
+            var video = document.getElementById('video_' + type);
+            var canvas = document.getElementById('canvas_' + type);
+            var photo = document.getElementById('photo_' + type);
+            var input = document.getElementById('foto_' + type + '_input');
+            
+            var btnOpen = document.getElementById('btn_open_cam_' + type);
+            var btnCapture = document.getElementById('btn_capture_' + type);
+            var btnRetake = document.getElementById('btn_retake_' + type);
+            
+            var stream = null;
+
+            if (!btnOpen) return;
+
+            btnOpen.addEventListener('click', async function() {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+                    video.srcObject = stream;
+                    video.style.display = 'block';
+                    photo.style.display = 'none';
+                    btnOpen.style.display = 'none';
+                    btnCapture.style.display = 'block';
+                    btnRetake.style.display = 'none';
+                    input.value = '';
+                } catch (err) {
+                    alert('Akses kamera ditolak atau perangkat kamera tidak ditemukan.');
+                    console.error(err);
+>>>>>>> eaabfa62e0750db1df8b2f1eb56ea0289afec1d5
                 }
             });
 

@@ -7,6 +7,7 @@ use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class ProfileController extends Controller
@@ -33,11 +34,28 @@ class ProfileController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
         $validated = $request->validate([
+            'nama' => ['required', 'string', 'max:150'],
+            'username' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('users', 'username')->ignore($user->id_user, 'id_user'),
+            ],
+            'email' => [
+                'required',
+                'email',
+                'max:150',
+                Rule::unique('users', 'email')->ignore($user->id_user, 'id_user'),
+            ],
             'foto_profil' => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:2048', 'dimensions:max_width=2000,max_height=2000'],
         ]);
 
-        $user = $request->user();
+        $user->nama = $validated['nama'];
+        $user->username = $validated['username'];
+        $user->email = $validated['email'];
 
         if ($request->hasFile('foto_profil')) {
             // Hapus foto lama jika ada
@@ -47,8 +65,9 @@ class ProfileController extends Controller
 
             $path = $request->file('foto_profil')->store('profil', 'public');
             $user->foto_profil = $path;
-            $user->save();
         }
+
+        $user->save();
 
         return back()->with('success', 'Profil berhasil diperbarui.');
     }
