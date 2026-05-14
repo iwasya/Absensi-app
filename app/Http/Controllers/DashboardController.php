@@ -115,6 +115,39 @@ class DashboardController extends Controller
             ->whereYear('tanggal_mulai', now()->year)
             ->whereIn('status', ['pending', 'approve'])
             ->count();
+
+        // Rekap absensi bulan ini
+        $startOfMonth = $calendar['currentMonth']->copy()->startOfMonth();
+        $endOfMonth = $calendar['currentMonth']->copy()->endOfMonth();
+        
+        $absensiUser = Absensi::where('id_user', $user->id_user)
+            ->whereBetween('tanggal', [$startOfMonth->toDateString(), $endOfMonth->toDateString()])
+            ->get();
+        
+        $totalHadir = $absensiUser->where('status', 'hadir')->count();
+        $totalTelat = $absensiUser->where('status', 'telat')->count();
+        $totalTidakHadir = $absensiUser->whereIn('status', ['tidak_hadir', 'tidak_absen'])->count();
+        
+        // Hitung hari kerja (Senin-Jumat) dalam bulan ini
+        $hariKerja = 0;
+        for ($date = $startOfMonth->copy(); $date->lte($endOfMonth); $date->addDay()) {
+            if ($date->isWeekday()) {
+                $hariKerja++;
+            }
+        }
+        
+        $rekapBulan = [
+            'hadir' => $totalHadir,
+            'telat' => $totalTelat,
+            'tidak_hadir' => $totalTidakHadir,
+            'hari_kerja' => $hariKerja,
+        ];
+        
+        // Data untuk kalender (tanggal dalam bulan ini)
+        $kalenderHadir = $absensiUser->where('status', 'hadir')->pluck('tanggal')->map(fn($d) => (int)$d->format('d'))->toArray();
+        $kalenderTelat = $absensiUser->where('status', 'telat')->pluck('tanggal')->map(fn($d) => (int)$d->format('d'))->toArray();
+        $kalenderAbsen = $absensiUser->whereIn('status', ['tidak_hadir', 'tidak_absen'])->pluck('tanggal')->map(fn($d) => (int)$d->format('d'))->toArray();
+        
         $userTugas = Tugas::where('id_user', $user->id_user)
             ->where(function ($query) use ($calendar) {
                 $query->whereBetween('tanggal_mulai', [
@@ -136,6 +169,14 @@ class DashboardController extends Controller
         return view('petugas.dashboard', [
             'user' => $user,
             'absensiHariIni' => Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first(),
+            'tugasHariIni' => Tugas::where('id_user', $user->id_user)
+                ->where('tanggal_mulai', '<=', today()->endOfDay())
+                ->where(function ($query) {
+                    $query->whereNull('tanggal_selesai')
+                        ->orWhere('tanggal_selesai', '>=', today()->startOfDay());
+                })
+                ->latest('id_tugas')
+                ->first(),
             'cutiTerakhir' => Cuti::where('id_user', $user->id_user)->latest('id_cuti')->limit(5)->get(),
             'tugasTerakhir' => Tugas::where('id_user', $user->id_user)->latest('id_tugas')->limit(5)->get(),
             'notifikasiBelumBaca' => Notifikasi::where('id_user', $user->id_user)->where('status_baca', false)->count(),
@@ -153,6 +194,10 @@ class DashboardController extends Controller
             'days' => $calendar['days'],
             'events' => $calendar['events'],
             'tugasByDate' => $this->spreadTugasByDate($userTugas),
+            'rekapBulan' => $rekapBulan,
+            'kalenderHadir' => $kalenderHadir,
+            'kalenderTelat' => $kalenderTelat,
+            'kalenderAbsen' => $kalenderAbsen,
         ]);
     }
 

@@ -9,6 +9,7 @@ return [
     // Jam absen masuk
     'jam_masuk_buka' => '06:00:00',
     'jam_masuk_tutup' => '07:15:00',
+    'jam_masuk_batas_telat' => '07:00:00', // Batas waktu tepat waktu, setelah ini dianggap telat
 
     // Jam absen pulang
     'jam_pulang_buka' => '16:00:00',

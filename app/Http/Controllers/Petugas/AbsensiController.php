@@ -235,8 +235,20 @@ class AbsensiController extends Controller
             }
         }
 
-        $status = $isLateAccess ? 'telat' : 'hadir';
-        $keteranganOtomatis = $isLateAccess ? 'Hadir terlambat (Akses Telat Admin)' : 'Hadir tepat waktu';
+        // Tentukan status berdasarkan waktu absen masuk
+        $jamBatasTelat = config('absensi.jam_masuk_batas_telat', '07:00:00');
+        $isTelat = $now > $jamBatasTelat;
+        
+        if ($isLateAccess) {
+            $status = 'telat';
+            $keteranganOtomatis = 'Hadir terlambat (Akses Telat Admin)';
+        } elseif ($isTelat) {
+            $status = 'telat';
+            $keteranganOtomatis = 'Hadir terlambat';
+        } else {
+            $status = 'hadir';
+            $keteranganOtomatis = 'Hadir tepat waktu';
+        }
 
         if ($existing && $existing->status === 'akses_dibuka') {
             $existing->update([
