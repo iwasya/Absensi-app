@@ -31,7 +31,7 @@ class CutiController extends Controller
 
         $petugasRole = \App\Models\Role::where('nama_role', 'like', '%petugas%')->first();
         $petugasList = \App\Models\User::where('id_role', $petugasRole->id_role)
-            ->where('id_user', '!=', auth()->id())
+            ->where('id_user', '!=', $request->user()->id_user)
             ->orderBy('nama')
             ->get();
 
@@ -106,8 +106,10 @@ class CutiController extends Controller
     public function print(int $id): View
     {
         $cuti = Cuti::with(['user.tempatTugas', 'pengganti', 'approver'])->findOrFail($id);
-        
-        if ($cuti->id_user !== auth()->id() && !auth()->user()->isAtasan() && !auth()->user()->isAdmin()) {
+        $user = auth()->user();
+
+        // Authorization: only owner, atasan, or admin can view the print
+        if ($cuti->id_user !== $user->id_user && !$user->isAtasan() && !$user->isAdmin()) {
             abort(403);
         }
 

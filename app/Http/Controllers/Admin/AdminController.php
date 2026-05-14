@@ -15,7 +15,6 @@ use App\Support\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -58,8 +57,12 @@ class AdminController extends Controller
         ]);
 
         $user = User::create([
-            ...$validated,
+            'nama' => $validated['nama'],
+            'username' => $validated['username'],
+            'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
+            'id_role' => $validated['id_role'],
+            'id_tempat' => $validated['id_tempat'] ?? null,
         ]);
 
 
@@ -67,7 +70,7 @@ class AdminController extends Controller
         if (!empty($validated['nik'])) {
             $sensitive = new UserSensitive();
             $sensitive->id_user = $user->id_user;
-            $sensitive->nik_encrypted = Crypt::encryptString($validated['nik']);
+            $sensitive->setNik($validated['nik']);
             $sensitive->save();
         }
 
@@ -224,17 +227,30 @@ class AdminController extends Controller
     public function storeKalender(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'tanggal' => [
-                'required', 
-                'date', 
-                \Illuminate\Validation\Rule::unique('kalender')->where(fn ($query) => $query->where('nama_event', $request->nama_event))
-            ],
+            'tanggal' => ['required', 'date'],
             'nama_event' => ['nullable', 'string', 'max:150'],
             'jenis_event' => ['required', 'in:libur,kegiatan,cuti_bersama'],
             'keterangan' => ['nullable', 'string'],
-        ], [
-            'tanggal.unique' => 'Jadwal dengan tanggal dan nama event ini sudah ada di kalender.',
         ]);
+
+        // Validate uniqueness AFTER nama_event is validated (not using raw request)
+        $namaEvent = $validated['nama_event'];
+        $tanggal = $validated['tanggal'];
+
+        $exists = Kalender::where('tanggal', $tanggal)
+            ->where(function ($query) use ($namaEvent) {
+                // If nama_event is empty/null, only match other empty/null events
+                if (empty($namaEvent)) {
+                    $query->whereNull('nama_event')->orWhere('nama_event', '');
+                } else {
+                    $query->where('nama_event', $namaEvent);
+                }
+            })
+            ->exists();
+
+        if ($exists) {
+            return back()->with('error', 'Jadwal dengan tanggal dan nama event ini sudah ada di kalender.')->withInput();
+        }
 
         $kalender = Kalender::create($validated);
 
@@ -459,7 +475,7 @@ class AdminController extends Controller
         $userSensitive = UserSensitive::firstOrNew(['id_user' => $validated['id_user']]);
 
         if (!empty($validated['nik'])) {
-            $userSensitive->nik_encrypted = Crypt::encryptString($validated['nik']);
+            $userSensitive->setNik($validated['nik']);
             $userSensitive->save();
         } else {
             if ($userSensitive->exists) {
@@ -510,6 +526,12 @@ class AdminController extends Controller
 
         $userIds = $request->user_ids;
         $deleteNikData = $request->has('delete_nik_data');
+        $currentUserId = $request->user()->id_user;
+
+        // Prevent deleting yourself
+        if (in_array($currentUserId, $userIds)) {
+            return back()->with('error', 'Tidak bisa menghapus akun sendiri dalam bulk delete.');
+        }
 
         // Hapus data NIK sensitif jika diminta
         if ($deleteNikData) {

@@ -44,20 +44,23 @@ class AbsensiController extends Controller
             }
         }
 
-        // Lazy evaluation for 'tidak_absen'
+        // Auto-create 'tidak_absen' record ONCE PER DAY (not on every page load)
+        // Check if today's date is past the auto-create threshold and no record exists
         $now = now();
-        if ($now->format('H:i:s') > '07:15:00') {
+        $batasWaktu = config('absensi.batas_otomatis_tidak_absen', '07:15:00');
+        if ($now->format('H:i:s') > $batasWaktu) {
             $existingToday = Absensi::where('id_user', $user->id_user)
                 ->whereDate('tanggal', today())
                 ->first();
-            
+
             if (!$existingToday) {
+                // Only create if no absensi record exists at all for today
                 Absensi::create([
                     'id_user' => $user->id_user,
                     'id_periode' => optional(Periode::aktif())->id_periode,
                     'tanggal' => today()->toDateString(),
                     'status' => 'tidak_absen',
-                    'keterangan' => 'Terlambat absen masuk (otomatis sistem)'
+                    'keterangan' => 'Terlambat absen masuk (otomatis sistem)',
                 ]);
             }
         }
@@ -196,12 +199,14 @@ class AbsensiController extends Controller
 
         $user = $request->user();
         $now = now()->format('H:i:s');
+        $jamMasukBuka = config('absensi.jam_masuk_buka', '06:00:00');
+        $jamMasukTutup = config('absensi.jam_masuk_tutup', '07:15:00');
 
         $existing = Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first();
         $isLateAccess = $existing && $existing->status === 'akses_dibuka';
 
-        if (!$isLateAccess && ($now < '06:00:00' || $now > '07:15:00')) {
-            return back()->with('error', 'Absen masuk hanya dibuka dari jam 06:00 sampai 07:15.');
+        if (!$isLateAccess && ($now < $jamMasukBuka || $now > $jamMasukTutup)) {
+            return back()->with('error', "Absen masuk hanya dibuka dari jam " . substr($jamMasukBuka, 0, 5) . " sampai " . substr($jamMasukTutup, 0, 5) . ".");
         }
 
         if ($existing && $existing->jam_masuk && $existing->status !== 'akses_dibuka') {
@@ -216,7 +221,8 @@ class AbsensiController extends Controller
                 $tempat->latitude,
                 $tempat->longitude
             );
-            if ($dist === null || $dist > 100) {
+            $jarakMaks = config('absensi.jarak_maks_meter', 100);
+            if ($dist === null || $dist > $jarakMaks) {
                 return back()->with('error', 'Anda berada di luar area kantor.');
             }
         }
@@ -279,8 +285,10 @@ class AbsensiController extends Controller
         }
 
         $now = now()->format('H:i:s');
-        if ($now < '16:00:00' || $now > '23:59:59') {
-            return back()->with('error', 'Absen pulang hanya dibuka dari jam 16:00 sampai 23:59.');
+        $jamPulangBuka = config('absensi.jam_pulang_buka', '16:00:00');
+        $jamPulangTutup = config('absensi.jam_pulang_tutup', '23:59:59');
+        if ($now < $jamPulangBuka || $now > $jamPulangTutup) {
+            return back()->with('error', "Absen pulang hanya dibuka dari jam " . substr($jamPulangBuka, 0, 5) . " sampai " . substr($jamPulangTutup, 0, 5) . ".");
         }
 
         $user = $request->user();
@@ -292,7 +300,8 @@ class AbsensiController extends Controller
                 $tempat->latitude,
                 $tempat->longitude
             );
-            if ($dist === null || $dist > 100) {
+            $jarakMaks = config('absensi.jarak_maks_meter', 100);
+            if ($dist === null || $dist > $jarakMaks) {
                 return back()->with('error', 'Anda berada di luar area kantor.');
             }
         }
