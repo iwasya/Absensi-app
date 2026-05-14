@@ -138,6 +138,17 @@
         justify-content: flex-end;
     }
 
+    .profile-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .field-error {
+        color: var(--danger-soft-text);
+        font-size: 12px;
+        margin-top: 5px;
+    }
+
     @media (max-width: 820px) {
         .profile-layout {
             grid-template-columns: 1fr;
@@ -161,10 +172,16 @@
 
             <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="profile-upload">
                 @csrf
+                <input type="hidden" name="nama" value="{{ $user->nama }}">
+                <input type="hidden" name="username" value="{{ $user->username }}">
+                <input type="hidden" name="email" value="{{ $user->email }}">
                 <div>
                     <label for="foto_profil">Foto Profil</label>
                     <input type="file" id="foto_profil" name="foto_profil" accept="image/*">
                     <p class="profile-help">JPG atau PNG, maksimal 2MB.</p>
+                    @error('foto_profil')
+                        <div class="field-error">{{ $message }}</div>
+                    @enderror
                 </div>
                 <button type="submit">Simpan Foto</button>
             </form>
@@ -176,20 +193,30 @@
                     <h2>Informasi Akun</h2>
                 </div>
 
-                <div class="profile-fields">
-                    <div class="readonly-field">
-                        <label>Nama Lengkap</label>
-                        <div class="readonly-value">{{ $user->nama }}</div>
+                <form method="POST" action="{{ route('profile.update') }}" class="profile-fields">
+                    @csrf
+                    <div>
+                        <label for="nama">Nama Lengkap</label>
+                        <input type="text" id="nama" name="nama" value="{{ old('nama', $user->nama) }}" required maxlength="150" autocomplete="name">
+                        @error('nama')
+                            <div class="field-error">{{ $message }}</div>
+                        @enderror
                     </div>
 
-                    <div class="readonly-field">
-                        <label>Username</label>
-                        <div class="readonly-value">{{ $user->username }}</div>
+                    <div>
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" value="{{ old('username', $user->username) }}" required maxlength="100" autocomplete="username">
+                        @error('username')
+                            <div class="field-error">{{ $message }}</div>
+                        @enderror
                     </div>
 
-                    <div class="readonly-field">
-                        <label>Email</label>
-                        <div class="readonly-value">{{ $user->email }}</div>
+                    <div>
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" value="{{ old('email', $user->email) }}" required maxlength="150" autocomplete="email">
+                        @error('email')
+                            <div class="field-error">{{ $message }}</div>
+                        @enderror
                     </div>
 
                     <div class="readonly-field">
@@ -208,7 +235,11 @@
                             <div class="readonly-value muted">{{ $nik ?? 'Data NIK tidak ditemukan' }}</div>
                         @endif
                     </div>
-                </div>
+
+                    <div class="profile-actions">
+                        <button type="submit">Simpan Profil</button>
+                    </div>
+                </form>
             </div>
 
             <div class="panel profile-section">

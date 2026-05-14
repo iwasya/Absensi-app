@@ -136,6 +136,17 @@
         justify-content: flex-end;
     }
 
+    .profile-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .field-error {
+        color: var(--danger-soft-text);
+        font-size: 12px;
+        margin-top: 5px;
+    }
+
     @media (max-width: 820px) {
         .profile-layout {
             grid-template-columns: 1fr;
@@ -159,10 +170,23 @@
 
             <form method="POST" action="<?php echo e(route('profile.update')); ?>" enctype="multipart/form-data" class="profile-upload">
                 <?php echo csrf_field(); ?>
+                <input type="hidden" name="nama" value="<?php echo e($user->nama); ?>">
+                <input type="hidden" name="username" value="<?php echo e($user->username); ?>">
+                <input type="hidden" name="email" value="<?php echo e($user->email); ?>">
                 <div>
                     <label for="foto_profil">Foto Profil</label>
                     <input type="file" id="foto_profil" name="foto_profil" accept="image/*">
                     <p class="profile-help">JPG atau PNG, maksimal 2MB.</p>
+                    <?php $__errorArgs = ['foto_profil'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                        <div class="field-error"><?php echo e($message); ?></div>
+                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
                 <button type="submit">Simpan Foto</button>
             </form>
@@ -174,20 +198,51 @@
                     <h2>Informasi Akun</h2>
                 </div>
 
-                <div class="profile-fields">
-                    <div class="readonly-field">
-                        <label>Nama Lengkap</label>
-                        <div class="readonly-value"><?php echo e($user->nama); ?></div>
+                <form method="POST" action="<?php echo e(route('profile.update')); ?>" class="profile-fields">
+                    <?php echo csrf_field(); ?>
+                    <div>
+                        <label for="nama">Nama Lengkap</label>
+                        <input type="text" id="nama" name="nama" value="<?php echo e(old('nama', $user->nama)); ?>" required maxlength="150" autocomplete="name">
+                        <?php $__errorArgs = ['nama'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="field-error"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     </div>
 
-                    <div class="readonly-field">
-                        <label>Username</label>
-                        <div class="readonly-value"><?php echo e($user->username); ?></div>
+                    <div>
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" value="<?php echo e(old('username', $user->username)); ?>" required maxlength="100" autocomplete="username">
+                        <?php $__errorArgs = ['username'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="field-error"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     </div>
 
-                    <div class="readonly-field">
-                        <label>Email</label>
-                        <div class="readonly-value"><?php echo e($user->email); ?></div>
+                    <div>
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" value="<?php echo e(old('email', $user->email)); ?>" required maxlength="150" autocomplete="email">
+                        <?php $__errorArgs = ['email'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="field-error"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     </div>
 
                     <div class="readonly-field">
@@ -206,7 +261,11 @@
                             <div class="readonly-value muted"><?php echo e($nik ?? 'Data NIK tidak ditemukan'); ?></div>
                         <?php endif; ?>
                     </div>
-                </div>
+
+                    <div class="profile-actions">
+                        <button type="submit">Simpan Profil</button>
+                    </div>
+                </form>
             </div>
 
             <div class="panel profile-section">
