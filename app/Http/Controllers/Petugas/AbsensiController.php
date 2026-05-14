@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Petugas;
 use App\Http\Controllers\Controller;
 use App\Models\Absensi;
 use App\Models\Periode;
+use App\Services\AbsensiTidakAbsenService;
 use App\Support\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,26 +45,7 @@ class AbsensiController extends Controller
             }
         }
 
-        // Auto-create 'tidak_absen' record ONCE PER DAY (not on every page load)
-        // Check if today's date is past the auto-create threshold and no record exists
-        $now = now();
-        $batasWaktu = config('absensi.batas_otomatis_tidak_absen', '07:15:00');
-        if ($now->format('H:i:s') > $batasWaktu) {
-            $existingToday = Absensi::where('id_user', $user->id_user)
-                ->whereDate('tanggal', today())
-                ->first();
-
-            if (!$existingToday) {
-                // Only create if no absensi record exists at all for today
-                Absensi::create([
-                    'id_user' => $user->id_user,
-                    'id_periode' => optional(Periode::aktif())->id_periode,
-                    'tanggal' => today()->toDateString(),
-                    'status' => 'tidak_absen',
-                    'keterangan' => 'Terlambat absen masuk (otomatis sistem)',
-                ]);
-            }
-        }
+        app(AbsensiTidakAbsenService::class)->backfillForUserUntilYesterday($user);
 
         return view('petugas.absensi', [
             'today' => Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first(),

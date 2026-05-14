@@ -5,7 +5,8 @@
       "Bash(php -l app/Http/Controllers/Admin/AdminController.php)",
       "Bash(php -l app/Http/Controllers/Petugas/AbsensiController.php)",
       "Bash(php -l app/Http/Controllers/Petugas/CutiController.php)",
-      "Bash(php -l app/Models/UserSensitive.php)"
+      "Bash(php -l app/Models/UserSensitive.php)",
+      "Bash(php -l app/Imports/UsersImport.php)"
     ]
   }
 }

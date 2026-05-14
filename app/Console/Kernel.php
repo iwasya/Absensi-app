@@ -12,7 +12,12 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Generate tidak_absen records setiap hari jam 08:00
+        // untuk petugas yang tidak absen hari sebelumnya
+        $schedule->command('absensi:generate-tidak-absen')
+            ->dailyAt('08:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/tidak-absen.log'));
     }
 
     /**

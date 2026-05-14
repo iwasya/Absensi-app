@@ -19,7 +19,7 @@
             @if($today?->jam_masuk)
                 <div class="success" style="margin-top:12px;">Anda sudah absen masuk hari ini pada {{ $today->jam_masuk }}.</div>
             @elseif(now()->format('H:i:s') > '07:15:00' && $today?->status !== 'akses_dibuka')
-                <div class="error" style="margin-top:12px;">Waktu absen masuk telah habis. Anda tercatat Tidak Absen.</div>
+                <div class="error" style="margin-top:12px;">Waktu absen masuk telah habis. Jika tidak ada akses admin, hari ini akan tercatat Tidak Absen setelah hari berganti.</div>
             @elseif(now()->format('H:i:s') < '07:00:00' && $today?->status !== 'akses_dibuka')
                 <div class="muted" style="margin-top:12px; padding:12px; background:#f3f4f6; border-radius:6px;">Absen masuk belum dibuka. Silakan kembali jam 07:00.</div>
             @else
@@ -61,7 +61,7 @@
             @elseif($today?->jam_pulang)
                 <div class="success" style="margin-top:12px;">Anda sudah absen pulang hari ini pada {{ $today->jam_pulang }}.</div>
             @elseif($today?->status === 'tidak_absen' || (now()->format('H:i:s') > '07:15:00' && !$today?->jam_masuk && $today?->status !== 'akses_dibuka'))
-                <div class="error" style="margin-top:12px;">Anda tercatat Tidak Absen hari ini sehingga tidak bisa absen pulang.</div>
+                <div class="error" style="margin-top:12px;">Tidak ada absen masuk untuk hari ini sehingga tidak bisa absen pulang.</div>
             @elseif(now()->format('H:i:s') < '16:00:00')
                 <div class="muted" style="margin-top:12px; padding:12px; background:#f3f4f6; border-radius:6px;">Absen pulang belum dibuka. Silakan kembali jam 16:00.</div>
             @else
@@ -224,7 +224,7 @@
                     btnOpen.style.display = 'none';
                     btnCapture.style.display = 'block';
                     btnRetake.style.display = 'none';
-                    input.value = ';
+                    input.value = '';
                 } catch (err) {
                     alert('Akses kamera ditolak atau perangkat kamera tidak ditemukan.');
                     console.error(err);
