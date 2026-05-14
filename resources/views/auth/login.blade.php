@@ -1,9 +1,49 @@
+@php
+    $app_theme = \App\Models\Pengaturan::getNilai('app_theme', 'light');
+    $app_name = \App\Models\Pengaturan::getNilai('app_name', 'Absensi PPSU') ?: 'Absensi PPSU';
+    $app_logo = \App\Models\Pengaturan::getNilai('app_logo');
+    $app_brand_display = \App\Models\Pengaturan::getNilai('app_brand_display', 'logo_name');
+    $app_icon = \App\Models\Pengaturan::getNilai('app_icon');
+    $app_icon_mode = \App\Models\Pengaturan::getNilai('app_icon_mode', 'upload');
+    $app_icon_href = null;
+
+    if (! in_array($app_theme, ['light', 'dark'], true)) {
+        $app_theme = 'light';
+    }
+
+    if (! in_array($app_brand_display, ['logo_name', 'logo_only', 'name_only'], true)) {
+        $app_brand_display = 'logo_name';
+    }
+
+    if ($app_icon_mode === 'manual') {
+        $iconText = strtoupper(substr(\App\Models\Pengaturan::getNilai('app_icon_text', 'A') ?: 'A', 0, 2));
+        $iconBg = \App\Models\Pengaturan::getNilai('app_icon_bg', '#2563eb');
+        $iconColor = \App\Models\Pengaturan::getNilai('app_icon_color', '#ffffff');
+
+        if (! preg_match('/^#[0-9A-Fa-f]{6}$/', $iconBg)) {
+            $iconBg = '#2563eb';
+        }
+
+        if (! preg_match('/^#[0-9A-Fa-f]{6}$/', $iconColor)) {
+            $iconColor = '#ffffff';
+        }
+
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="' . $iconBg . '"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-size="' . (strlen($iconText) > 1 ? '24' : '32') . '" font-weight="700" fill="' . $iconColor . '">' . htmlspecialchars($iconText, ENT_QUOTES, 'UTF-8') . '</text></svg>';
+        $app_icon_href = 'data:image/svg+xml,' . rawurlencode($svg);
+    } elseif ($app_icon) {
+        $app_icon_href = Storage::url($app_icon);
+    }
+@endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="{{ $app_theme }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Login | {{ config('app.name') }}</title>
+    <title>Login | {{ $app_name }}</title>
+    @if($app_icon_href)
+        <link rel="icon" href="{{ $app_icon_href }}">
+        <link rel="apple-touch-icon" href="{{ $app_icon_href }}">
+    @endif
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -19,11 +59,32 @@
             --green-dark:   #065F46;
             --red:          #EF4444;
             --red-soft:     #FEE2E2;
+            --red-border:   #FECACA;
             --text:         #1E293B;
             --text2:        #475569;
             --text3:        #94A3B8;
             --border:       #E2E8F0;
             --border2:      #CBD5E1;
+        }
+
+        [data-theme="dark"] {
+            --bg:           #0F172A;
+            --card:         #1E293B;
+            --accent:       #38BDF8;
+            --accent2:      #0EA5C9;
+            --accent-soft:  #0C2D3F;
+            --accent-border:#164E63;
+            --sidebar:      #020617;
+            --green-soft:   #052E24;
+            --green-dark:   #86EFAC;
+            --red:          #FCA5A5;
+            --red-soft:     #450A0A;
+            --red-border:   #7F1D1D;
+            --text:         #E2E8F0;
+            --text2:        #CBD5E1;
+            --text3:        #94A3B8;
+            --border:       #334155;
+            --border2:      #475569;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -65,6 +126,16 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+        }
+        .logo-box.logo-image {
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.12);
+            padding: 7px;
+        }
+        .logo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
         .logo-box svg {
             width: 28px;
@@ -145,7 +216,7 @@
         input[type="email"]:focus,
         input[type="password"]:focus {
             border-color: var(--accent);
-            background: #fff;
+            background: var(--card);
             box-shadow: 0 0 0 3px rgba(14,165,201,.12);
         }
         input::placeholder { color: var(--text3); }
@@ -230,10 +301,10 @@
             gap: 8px;
             padding: 10px 14px;
             background: var(--red-soft);
-            border: 1px solid #FECACA;
+            border: 1px solid var(--red-border);
             border-radius: 9px;
             font-size: 13px;
-            color: #B91C1C;
+            color: var(--red);
             margin-bottom: 20px;
         }
         .alert-error svg {
@@ -290,14 +361,24 @@
 
     <!-- Header -->
     <div class="panel-header">
-        <div class="logo-box">
-            <svg fill="none" viewBox="0 0 22 22">
-                <path d="M3 11a8 8 0 1016 0A8 8 0 003 11z" stroke="#fff" stroke-width="1.5"/>
-                <path d="M11 7v4l3 2.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-        </div>
+        @if($app_brand_display !== 'name_only')
+            @if($app_logo)
+                <div class="logo-box logo-image">
+                    <img src="{{ Storage::url($app_logo) }}" alt="Logo {{ $app_name }}">
+                </div>
+            @else
+                <div class="logo-box">
+                    <svg fill="none" viewBox="0 0 22 22">
+                        <path d="M3 11a8 8 0 1016 0A8 8 0 003 11z" stroke="#fff" stroke-width="1.5"/>
+                        <path d="M11 7v4l3 2.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+            @endif
+        @endif
         <div class="header-text">
-            <h1>Petugas Penanganan Prasarana dan Sarana Umum</h1>
+            @if($app_brand_display !== 'logo_only' || ! $app_logo)
+                <h1>{{ $app_name }}</h1>
+            @endif
             <p>Kelurahan Pisangan Baru</p>
         </div>
     </div>
@@ -306,7 +387,7 @@
     <div class="panel-body">
 
         <div class="welcome-title">Selamat datang</div>
-        <div class="welcome-sub">Masuk untuk mengakses sistem absensi PPSU.</div>
+        <div class="welcome-sub">Masuk untuk mengakses {{ $app_name }}.</div>
 
         {{-- Session error --}}
         @if (session('error'))
@@ -396,7 +477,6 @@
 
         <div class="panel-foot">
             Butuh bantuan? Hubungi Admin Dinas Sosial DKI Jakarta
-            {{-- Belum punya akun? <a href="{{ route('register') }}">Daftar di sini</a> --}}
         </div>
 
     </div>
