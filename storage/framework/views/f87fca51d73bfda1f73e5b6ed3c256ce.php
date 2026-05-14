@@ -1,18 +1,48 @@
-<?php
+﻿<?php
     $app_theme = \App\Models\Pengaturan::getNilai('app_theme', 'light');
-    $app_logo  = \App\Models\Pengaturan::getNilai('app_logo');
+    $app_name = \App\Models\Pengaturan::getNilai('app_name', 'Absensi PPSU') ?: 'Absensi PPSU';
+    $app_logo = \App\Models\Pengaturan::getNilai('app_logo');
+    $app_brand_display = \App\Models\Pengaturan::getNilai('app_brand_display', 'logo_name');
+    $app_icon = \App\Models\Pengaturan::getNilai('app_icon');
+    $app_icon_mode = \App\Models\Pengaturan::getNilai('app_icon_mode', 'upload');
+    $app_icon_href = null;
+
+    if (! in_array($app_brand_display, ['logo_name', 'logo_only', 'name_only'], true)) {
+        $app_brand_display = 'logo_name';
+    }
+
+    if ($app_icon_mode === 'manual') {
+        $iconText = strtoupper(substr(\App\Models\Pengaturan::getNilai('app_icon_text', 'A') ?: 'A', 0, 2));
+        $iconBg = \App\Models\Pengaturan::getNilai('app_icon_bg', '#2563eb');
+        $iconColor = \App\Models\Pengaturan::getNilai('app_icon_color', '#ffffff');
+
+        if (! preg_match('/^#[0-9A-Fa-f]{6}$/', $iconBg)) {
+            $iconBg = '#2563eb';
+        }
+
+        if (! preg_match('/^#[0-9A-Fa-f]{6}$/', $iconColor)) {
+            $iconColor = '#ffffff';
+        }
+
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="' . $iconBg . '"/><text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-size="' . (strlen($iconText) > 1 ? '24' : '32') . '" font-weight="700" fill="' . $iconColor . '">' . htmlspecialchars($iconText, ENT_QUOTES, 'UTF-8') . '</text></svg>';
+        $app_icon_href = 'data:image/svg+xml,' . rawurlencode($svg);
+    } elseif ($app_icon) {
+        $app_icon_href = Storage::url($app_icon);
+    }
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo e(str_replace('_', '-', app()->getLocale())); ?>" data-theme="<?php echo e($app_theme); ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php echo $__env->yieldContent('title', config('app.name')); ?></title>
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
+    <title><?php echo $__env->yieldContent('title', $app_name); ?></title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+    <?php if($app_icon_href): ?>
+        <link rel="icon" href="<?php echo e($app_icon_href); ?>">
+        <link rel="apple-touch-icon" href="<?php echo e($app_icon_href); ?>">
+    <?php endif; ?>
     <style>
-        /* ══════════════════════════════════════
-           OCEAN THEME — CSS Variables
-        ══════════════════════════════════════ */
         :root {
             --bg-color:     #F0F4F8;
             --text-color:   #1E293B;
@@ -56,10 +86,14 @@
             --input-bg:     #0F172A;
         }
 
-        /* ── RESET ── */
+        /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ RESET ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+        html, body { margin: 0 !important; padding: 0 !important; }
+
         body {
+            margin: 0 !important;
+            padding: 0 !important;
             font-family: 'DM Sans', Arial, sans-serif;
             background: var(--bg-color);
             color: var(--text-color);
@@ -70,18 +104,20 @@
         a { color: var(--primary); text-decoration: none; font-weight: 500; }
         a:hover { color: var(--primary2); }
 
-        /* ══════════════════════════════════════
+        /* 
            APP SHELL
-        ══════════════════════════════════════ */
+         */
         .app-shell {
+            margin: 0;
+            padding: 0;
             min-height: 100vh;
             display: grid;
             grid-template-columns: var(--sb-w) minmax(0, 1fr);
         }
 
-        /* ══════════════════════════════════════
+        /* 
            SIDEBAR
-        ══════════════════════════════════════ */
+         */
         .sidebar {
             background: var(--sidebar-bg);
             color: var(--sidebar-text);
@@ -109,11 +145,23 @@
             align-items: center;
             gap: 10px;
         }
+        .brand.logo_only { justify-content: center; }
+        .brand.name_only { align-items: flex-start; }
         .brand-logo-box {
             width: 44px; height: 44px;
             border-radius: 12px;
             background: var(--primary);
             display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .brand-logo-img {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.10);
+            padding: 5px;
+            object-fit: contain;
             flex-shrink: 0;
         }
         .brand-logo-box svg { width: 22px; height: 22px; color: #fff; }
@@ -123,6 +171,7 @@
             font-weight: 600;
             color: #fff;
             line-height: 1.3;
+            overflow-wrap: anywhere;
         }
         .brand-text span {
             font-size: 11px;
@@ -254,15 +303,16 @@
         }
         .sb-periode-form select:hover { background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.18); }
 
-        /* ══════════════════════════════════════
+        /* 
            CONTENT SHELL
-        ══════════════════════════════════════ */
-        .content-shell { min-width: 0; display: flex; flex-direction: column; }
+         */
+        .content-shell { min-width: 0; display: flex; flex-direction: column; margin: 0; padding: 0; }
 
-        /* ══════════════════════════════════════
+        /* 
            HEADER / TOPBAR
-        ══════════════════════════════════════ */
+         */
         header {
+            margin-top: 0;
             background: var(--panel-bg);
             border-bottom: 1px solid var(--border-color);
             padding: 11px 22px;
@@ -304,8 +354,14 @@
         .hamburger.active span:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
 
         .top-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .notification-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
 
-        /* Header clock — pill style */
+        /* Header clock ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â pill style */
         .header-clock {
             background: var(--primary-soft);
             border: 1px solid var(--primary-border);
@@ -465,10 +521,11 @@
         }
         .sidebar-overlay.show { display: block; opacity: 1; }
 
-        /* ══════════════════════════════════════
+        /* 
            MAIN CONTENT
-        ══════════════════════════════════════ */
+         */
         main {
+            width: 100%;
             max-width: 1200px;
             margin: 24px auto;
             padding: 0 22px;
@@ -549,7 +606,7 @@
             letter-spacing: .04em;
         }
         tr:last-child td { border-bottom: 0; }
-        tbody tr:hover { background: #F8FBFD; }
+        tbody tr:hover { background: var(--bg-color); }
 
         /* Form inputs */
         input, select, textarea {
@@ -731,9 +788,9 @@
 
         .inline { display: inline; }
 
-        /* ══════════════════════════════════════
+        /* 
            RESPONSIVE
-        ══════════════════════════════════════ */
+         */
         @media (max-width: 760px) {
             .app-shell { display: block; }
             .sidebar {
@@ -756,6 +813,12 @@
                 border-top: 1px solid var(--border-color);
                 margin-top: 8px;
             }
+            .notification-panel {
+                position: fixed;
+                top: 72px;
+                right: 16px;
+                max-height: calc(100vh - 96px);
+            }
             table { display: block; overflow-x: auto; }
             .calendar-grid { grid-template-columns: 1fr; }
             .calendar-day-name { display: none; }
@@ -765,23 +828,27 @@
 </head>
 <body>
 <div class="app-shell">
-
     
     <?php if(auth()->guard()->check()): ?>
     <aside class="sidebar" id="sidebar">
 
         
-        <div class="brand">
-            <?php if($app_logo): ?>
-                <img src="<?php echo e(Storage::url($app_logo)); ?>" alt="Logo" style="max-height:36px;max-width:100%;border-radius:8px;">
-            <?php else: ?>
+        <div class="brand <?php echo e($app_brand_display); ?>">
+            <?php if($app_brand_display !== 'name_only'): ?>
+                <?php if($app_logo): ?>
+                <img src="<?php echo e(Storage::url($app_logo)); ?>" alt="Logo" class="brand-logo-img">
+                <?php else: ?>
                 <div class="brand-logo-box">
                     <svg fill="none" viewBox="0 0 18 18"><path d="M3 9a6 6 0 1012 0A6 6 0 003 9z" stroke="#fff" stroke-width="1.4"/><path d="M9 6v3l2 1.5" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>
                 </div>
-                <div class="brand-text">
-                    <strong>PPSU</strong>
-                    <span>Kel. Pisangan baru</span>
-                </div>
+                <?php endif; ?>
+            <?php endif; ?>
+
+            <?php if($app_brand_display !== 'logo_only' || ! $app_logo): ?>
+            <div class="brand-text">
+                <strong><?php echo e($app_name); ?></strong>
+                <span>Kel. Pisangan baru</span>
+            </div>
             <?php endif; ?>
         </div>
 
@@ -965,7 +1032,6 @@
 
     
     <div class="content-shell">
-
         
         <header>
             <div class="header-left">
@@ -975,7 +1041,7 @@
                 </button>
                 <?php endif; ?>
                 <div>
-                    <div class="header-title"><?php echo $__env->yieldContent('title', config('app.name')); ?></div>
+                    <div class="header-title"><?php echo $__env->yieldContent('title', $app_name); ?></div>
                     <?php if(auth()->guard()->check()): ?>
                         <div class="header-role"><?php echo e(auth()->user()->role->nama_role ?? ''); ?></div>
                     <?php endif; ?>
@@ -1087,7 +1153,7 @@
 
 
 <script>
-    // ── Sidebar Dropdown Toggle ──
+    // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Sidebar Dropdown Toggle ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
     function toggleDropdown(id) {
         var dd     = document.getElementById(id);
         var menu   = dd.querySelector('.dropdown-menu');
@@ -1097,7 +1163,7 @@
         if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
     }
 
-    // ── Hamburger / Sidebar ──
+    // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Hamburger / Sidebar ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
     var hamburgerMenu  = document.getElementById('hamburgerMenu');
     var sidebar        = document.querySelector('.sidebar');
     var sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -1118,14 +1184,14 @@
         sidebarOverlay.addEventListener('click', toggleSidebar);
     }
 
-    // ── Notification panel ──
+    // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Notification panel ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
     var notificationToggle    = document.getElementById('notificationToggle');
     var notificationPanel     = document.getElementById('notificationPanel');
     var notificationWrap      = document.getElementById('notificationWrap');
     var notificationBadge     = document.getElementById('notificationBadge');
     var notificationUnreadText= document.getElementById('notificationUnreadText');
 
-    // ── Profile panel ──
+    // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Profile panel ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
     var profileToggle = document.getElementById('profileToggle');
     var profilePanel  = document.getElementById('profilePanel');
     var profileWrap   = document.getElementById('profileWrap');
@@ -1163,7 +1229,7 @@
             }
         });
 
-        // ── Mark as read (AJAX — fungsi asli dipertahankan) ──
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Mark as read (AJAX ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â fungsi asli dipertahankan) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         notificationPanel.querySelectorAll('[data-notification-read-form]').forEach(function (form) {
             form.addEventListener('submit', function (event) {
                 event.preventDefault();
@@ -1210,7 +1276,7 @@
         });
     }
 
-    // ── Realtime clock di topbar ──
+    // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Realtime clock di topbar ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
     (function () {
         var days   = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
         var months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
@@ -1230,4 +1296,5 @@
     })();
 </script>
 </body>
-</html><?php /**PATH D:\Project_absensi\Absensi-app\resources\views/layouts/app.blade.php ENDPATH**/ ?>
+</html>
+<?php /**PATH D:\Project_absensi\Absensi-app\resources\views/layouts/app.blade.php ENDPATH**/ ?>

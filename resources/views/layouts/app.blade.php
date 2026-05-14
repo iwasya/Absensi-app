@@ -1,4 +1,4 @@
-@php
+﻿@php
     $app_theme = \App\Models\Pengaturan::getNilai('app_theme', 'light');
     $app_name = \App\Models\Pengaturan::getNilai('app_name', 'Absensi PPSU') ?: 'Absensi PPSU';
     $app_logo = \App\Models\Pengaturan::getNilai('app_logo');
