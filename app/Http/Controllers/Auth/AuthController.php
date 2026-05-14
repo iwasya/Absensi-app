@@ -34,25 +34,12 @@ class AuthController extends Controller
         $field = filter_var($loginInput, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
         $user = User::where($field, $loginInput)->first();
 
-        // If not found, try NIK lookup (slower, but only as fallback)
-        if (!$user) {
-            // Use a more efficient approach: find by hashed NIK if possible
-            // For now, we limit the search and add constant-time comparison
-            $userSensitives = \App\Models\UserSensitive::with('user')
-                ->whereNotNull('nik_encrypted')
-                ->get();
-            
-            foreach ($userSensitives as $sensitive) {
-                try {
-                    $decrypted = \Illuminate\Support\Facades\Crypt::decryptString($sensitive->nik_encrypted);
-                    // Use hash_equals for constant-time comparison to prevent timing attacks
-                    if (hash_equals($decrypted, $loginInput)) {
-                        $user = $sensitive->user;
-                        break;
-                    }
-                } catch (\Exception $e) {
-                    continue;
-                }
+        // If not found, try NIK lookup using indexed hash (fast & secure)
+        if (!$user && preg_match('/^\d+$/', $loginInput)) {
+            $nikHash = hash('sha256', $loginInput);
+            $userSensitive = \App\Models\UserSensitive::where('nik_hash', $nikHash)->first();
+            if ($userSensitive) {
+                $user = $userSensitive->user;
             }
         }
 
