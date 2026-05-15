@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Akses Absen Telat'); ?>
 
-@section('title', 'Akses Absen Telat')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <style>
     .late-page {
         display: flex;
@@ -309,7 +307,7 @@
             </span>
             <h1>Akses Absen Telat</h1>
         </div>
-        <div class="late-count">{{ $items->total() }} akses hari ini</div>
+        <div class="late-count"><?php echo e($items->total()); ?> akses hari ini</div>
     </div>
 
     <div class="late-top-grid">
@@ -324,16 +322,16 @@
             </div>
             <div class="late-card-body">
                 <p class="late-note">Berikan akses khusus kepada petugas agar bisa melakukan absen masuk pada hari ini meskipun sudah melewati jam batas 07:15.</p>
-                <form method="POST" action="{{ route('admin.buka-absen.store') }}">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('admin.buka-absen.store')); ?>">
+                    <?php echo csrf_field(); ?>
                     <div class="late-form-grid">
                         <div>
                             <label for="id_user">Pilih Petugas</label>
                             <select id="id_user" name="id_user" required>
                                 <option value="">Pilih petugas</option>
-                                @foreach($users as $user)
-                                    <option value="{{ $user->id_user }}">{{ $user->nama }}</option>
-                                @endforeach
+                                <?php $__currentLoopData = $users; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $user): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="<?php echo e($user->id_user); ?>"><?php echo e($user->nama); ?></option>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </select>
                         </div>
                         <button type="submit" class="late-submit">Buka Akses Hari Ini</button>
@@ -351,15 +349,15 @@
                     Tampilan
                 </h2>
             </div>
-            <form action="{{ route('admin.buka-absen.index') }}" method="GET" class="filter-bar">
+            <form action="<?php echo e(route('admin.buka-absen.index')); ?>" method="GET" class="filter-bar">
                 <div class="filter-control" style="width:100%;">
                     <label for="per_page">Per Halaman</label>
                     <select id="per_page" name="per_page" onchange="this.form.submit()" style="width:100%;">
-                        <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10 / hal</option>
-                        <option value="15" {{ request('per_page') == 15 ? 'selected' : (request('per_page') ? '' : 'selected') }}>15 / hal</option>
-                        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 / hal</option>
-                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 / hal</option>
-                        <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100 / hal</option>
+                        <option value="10" <?php echo e(request('per_page') == 10 ? 'selected' : ''); ?>>10 / hal</option>
+                        <option value="15" <?php echo e(request('per_page') == 15 ? 'selected' : (request('per_page') ? '' : 'selected')); ?>>15 / hal</option>
+                        <option value="25" <?php echo e(request('per_page') == 25 ? 'selected' : ''); ?>>25 / hal</option>
+                        <option value="50" <?php echo e(request('per_page') == 50 ? 'selected' : ''); ?>>50 / hal</option>
+                        <option value="100" <?php echo e(request('per_page') == 100 ? 'selected' : ''); ?>>100 / hal</option>
                     </select>
                 </div>
             </form>
@@ -387,7 +385,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($items as $item)
+                    <?php $__empty_1 = true; $__currentLoopData = $items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <tr>
                             <td>
                                 <div class="late-date">
@@ -397,20 +395,20 @@
                                             <path d="M5 2v3M11 2v3M2.5 7h11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
                                         </svg>
                                     </span>
-                                    <span class="late-date-value">{{ $item->tanggal->format('d/m/Y') }}</span>
+                                    <span class="late-date-value"><?php echo e($item->tanggal->format('d/m/Y')); ?></span>
                                 </div>
                             </td>
                             <td>
-                                <span class="late-user-name">{{ $item->user->nama ?? '-' }}</span>
+                                <span class="late-user-name"><?php echo e($item->user->nama ?? '-'); ?></span>
                             </td>
                             <td>
-                                <span class="late-status">{{ $item->status }}</span>
+                                <span class="late-status"><?php echo e($item->status); ?></span>
                             </td>
                             <td>
-                                <div class="late-description">{{ $item->keterangan ?: '-' }}</div>
+                                <div class="late-description"><?php echo e($item->keterangan ?: '-'); ?></div>
                             </td>
                         </tr>
-                    @empty
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
                             <td colspan="4">
                                 <div class="late-empty">
@@ -425,15 +423,18 @@
                                 </div>
                             </td>
                         </tr>
-                    @endforelse
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
 
         <div class="late-footer">
-            <div class="late-result">Menampilkan {{ $items->count() }} dari {{ $items->total() }} data</div>
-            {{ $items->links('pagination.simple') }}
+            <div class="late-result">Menampilkan <?php echo e($items->count()); ?> dari <?php echo e($items->total()); ?> data</div>
+            <?php echo e($items->links('pagination.simple')); ?>
+
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\Project_absensi\Absensi-app\resources\views/admin/buka_absen.blade.php ENDPATH**/ ?>

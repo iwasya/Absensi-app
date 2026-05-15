@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Kalender'); ?>
 
-@section('title', 'Kalender')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <style>
     .calendar-page {
         display: flex;
@@ -338,7 +336,7 @@
             </span>
             <h1>Kalender</h1>
         </div>
-        <div class="calendar-count">{{ $items->total() }} total event</div>
+        <div class="calendar-count"><?php echo e($items->total()); ?> total event</div>
     </div>
 
     <div class="calendar-top-grid">
@@ -353,8 +351,8 @@
             </div>
             <div class="calendar-card-body">
                 <p class="calendar-note">Tanggal libur, cuti bersama, atau kegiatan yang diisi di sini otomatis tampil di menu Kalender petugas.</p>
-                <form method="POST" action="{{ route('admin.kalender.store') }}">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('admin.kalender.store')); ?>">
+                    <?php echo csrf_field(); ?>
                     <div class="calendar-form-grid">
                         <div>
                             <label for="tanggal">Tanggal</label>
@@ -391,15 +389,15 @@
                     Tampilan
                 </h2>
             </div>
-            <form action="{{ route('admin.kalender.index') }}" method="GET" class="filter-bar">
+            <form action="<?php echo e(route('admin.kalender.index')); ?>" method="GET" class="filter-bar">
                 <div class="filter-control" style="width:100%;">
                     <label for="per_page">Per Halaman</label>
                     <select id="per_page" name="per_page" onchange="this.form.submit()" style="width:100%;">
-                        <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10 / hal</option>
-                        <option value="15" {{ request('per_page') == 15 ? 'selected' : (request('per_page') ? '' : 'selected') }}>15 / hal</option>
-                        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 / hal</option>
-                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 / hal</option>
-                        <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100 / hal</option>
+                        <option value="10" <?php echo e(request('per_page') == 10 ? 'selected' : ''); ?>>10 / hal</option>
+                        <option value="15" <?php echo e(request('per_page') == 15 ? 'selected' : (request('per_page') ? '' : 'selected')); ?>>15 / hal</option>
+                        <option value="25" <?php echo e(request('per_page') == 25 ? 'selected' : ''); ?>>25 / hal</option>
+                        <option value="50" <?php echo e(request('per_page') == 50 ? 'selected' : ''); ?>>50 / hal</option>
+                        <option value="100" <?php echo e(request('per_page') == 100 ? 'selected' : ''); ?>>100 / hal</option>
                     </select>
                 </div>
             </form>
@@ -419,10 +417,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($items as $item)
-                        @php
+                    <?php $__empty_1 = true; $__currentLoopData = $items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <?php
                             $jenisLabel = ucwords(str_replace('_', ' ', $item->jenis_event));
-                        @endphp
+                        ?>
                         <tr>
                             <td>
                                 <div class="date-stack">
@@ -432,52 +430,53 @@
                                             <path d="M5 2v3M11 2v3M2.5 7h11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
                                         </svg>
                                     </span>
-                                    <span class="date-value">{{ $item->tanggal->format('d/m/Y') }}</span>
+                                    <span class="date-value"><?php echo e($item->tanggal->format('d/m/Y')); ?></span>
                                 </div>
                             </td>
                             <td>
-                                @if($item->nama_event)
-                                    <div class="event-name">{{ $item->nama_event }}</div>
-                                @else
+                                <?php if($item->nama_event): ?>
+                                    <div class="event-name"><?php echo e($item->nama_event); ?></div>
+                                <?php else: ?>
                                     <span class="event-empty-text">-</span>
-                                @endif
+                                <?php endif; ?>
                             </td>
                             <td>
-                                <span class="event-type is-{{ $item->jenis_event }}">
-                                    @if($item->jenis_event === 'kegiatan')
+                                <span class="event-type is-<?php echo e($item->jenis_event); ?>">
+                                    <?php if($item->jenis_event === 'kegiatan'): ?>
                                         <svg fill="none" viewBox="0 0 16 16">
                                             <path d="M3 8l3 3 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                                         </svg>
-                                    @elseif($item->jenis_event === 'cuti_bersama')
+                                    <?php elseif($item->jenis_event === 'cuti_bersama'): ?>
                                         <svg fill="none" viewBox="0 0 16 16">
                                             <path d="M3 4h10M4 8h8M5 12h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                                         </svg>
-                                    @else
+                                    <?php else: ?>
                                         <svg fill="none" viewBox="0 0 16 16">
                                             <path d="M8 2.5v11M3 6h10M4 10h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                                         </svg>
-                                    @endif
-                                    {{ $jenisLabel }}
+                                    <?php endif; ?>
+                                    <?php echo e($jenisLabel); ?>
+
                                 </span>
                             </td>
                             <td>
-                                @if($item->keterangan)
-                                    <div class="event-description">{{ $item->keterangan }}</div>
-                                @else
+                                <?php if($item->keterangan): ?>
+                                    <div class="event-description"><?php echo e($item->keterangan); ?></div>
+                                <?php else: ?>
                                     <span class="event-empty-text">-</span>
-                                @endif
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <div class="calendar-actions">
-                                    <form method="POST" action="{{ route('admin.kalender.delete', $item->id_kalender) }}" style="margin:0;" onsubmit="return confirm('Hapus event kalender ini?');">
-                                        @csrf
-                                        @method('DELETE')
+                                    <form method="POST" action="<?php echo e(route('admin.kalender.delete', $item->id_kalender)); ?>" style="margin:0;" onsubmit="return confirm('Hapus event kalender ini?');">
+                                        <?php echo csrf_field(); ?>
+                                        <?php echo method_field('DELETE'); ?>
                                         <button type="submit" class="calendar-btn-danger">Hapus</button>
                                     </form>
                                 </div>
                             </td>
                         </tr>
-                    @empty
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
                             <td colspan="5">
                                 <div class="calendar-empty">
@@ -492,15 +491,18 @@
                                 </div>
                             </td>
                         </tr>
-                    @endforelse
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
 
         <div class="calendar-footer">
-            <div class="calendar-result">Menampilkan {{ $items->count() }} dari {{ $items->total() }} data</div>
-            {{ $items->links('pagination.simple') }}
+            <div class="calendar-result">Menampilkan <?php echo e($items->count()); ?> dari <?php echo e($items->total()); ?> data</div>
+            <?php echo e($items->links('pagination.simple')); ?>
+
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\Project_absensi\Absensi-app\resources\views/admin/kalender.blade.php ENDPATH**/ ?>

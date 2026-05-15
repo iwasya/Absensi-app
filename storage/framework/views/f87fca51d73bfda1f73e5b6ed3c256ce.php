@@ -1,4 +1,4 @@
-@php
+<?php
     $app_theme = \App\Models\Pengaturan::getNilai('app_theme', 'light');
     $app_name = \App\Models\Pengaturan::getNilai('app_name', 'Absensi PPSU') ?: 'Absensi PPSU';
     $app_logo = \App\Models\Pengaturan::getNilai('app_logo');
@@ -29,18 +29,18 @@
     } elseif ($app_icon) {
         $app_icon_href = Storage::url($app_icon);
     }
-@endphp<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="{{ $app_theme }}">
+?><!DOCTYPE html>
+<html lang="<?php echo e(str_replace('_', '-', app()->getLocale())); ?>" data-theme="<?php echo e($app_theme); ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', $app_name)</title>
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
+    <title><?php echo $__env->yieldContent('title', $app_name); ?></title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
-    @if($app_icon_href)
-        <link rel="icon" href="{{ $app_icon_href }}">
-        <link rel="apple-touch-icon" href="{{ $app_icon_href }}">
-    @endif
+    <?php if($app_icon_href): ?>
+        <link rel="icon" href="<?php echo e($app_icon_href); ?>">
+        <link rel="apple-touch-icon" href="<?php echo e($app_icon_href); ?>">
+    <?php endif; ?>
     <style>
         :root {
             --bg-color:     #F0F4F8;
@@ -827,191 +827,195 @@
 </head>
 <body>
 <div class="app-shell">
-    {{-- ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ SIDEBAR ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ --}}
-    @auth
+    
+    <?php if(auth()->guard()->check()): ?>
     <aside class="sidebar" id="sidebar">
 
-        {{-- Brand --}}
-        <div class="brand {{ $app_brand_display }}">
-            @if($app_brand_display !== 'name_only')
-                @if($app_logo)
-                <img src="{{ Storage::url($app_logo) }}" alt="Logo" class="brand-logo-img">
-                @else
+        
+        <div class="brand <?php echo e($app_brand_display); ?>">
+            <?php if($app_brand_display !== 'name_only'): ?>
+                <?php if($app_logo): ?>
+                <img src="<?php echo e(Storage::url($app_logo)); ?>" alt="Logo" class="brand-logo-img">
+                <?php else: ?>
                 <div class="brand-logo-box">
                     <svg fill="none" viewBox="0 0 18 18"><path d="M3 9a6 6 0 1012 0A6 6 0 003 9z" stroke="#fff" stroke-width="1.4"/><path d="M9 6v3l2 1.5" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>
                 </div>
-                @endif
-            @endif
+                <?php endif; ?>
+            <?php endif; ?>
 
-            @if($app_brand_display !== 'logo_only' || ! $app_logo)
+            <?php if($app_brand_display !== 'logo_only' || ! $app_logo): ?>
             <div class="brand-text">
-                <strong>{{ $app_name }}</strong>
+                <strong><?php echo e($app_name); ?></strong>
                 <span>Kel. Pisangan baru</span>
             </div>
-            @endif
+            <?php endif; ?>
         </div>
 
-        {{-- User card --}}
+        
         <div class="sb-user">
             <div class="sb-ava">
-                @if(auth()->user()->foto_profil)
-                    <img src="{{ Storage::url(auth()->user()->foto_profil) }}" alt="Foto">
-                @else
-                    @php
+                <?php if(auth()->user()->foto_profil): ?>
+                    <img src="<?php echo e(Storage::url(auth()->user()->foto_profil)); ?>" alt="Foto">
+                <?php else: ?>
+                    <?php
                         $namaParts = explode(' ', trim(auth()->user()->nama ?? 'U'));
                         $inisial = strtoupper(substr($namaParts[0], 0, 1));
                         if (count($namaParts) > 1) $inisial .= strtoupper(substr($namaParts[1], 0, 1));
-                    @endphp
-                    {{ $inisial }}
-                @endif
+                    ?>
+                    <?php echo e($inisial); ?>
+
+                <?php endif; ?>
             </div>
             <div class="sb-user-info">
-                <div class="sb-user-name">{{ auth()->user()->nama ?? 'Pengguna' }}</div>
-                <div class="sb-user-role">{{ auth()->user()->role->nama_role ?? '' }}</div>
-                @if(auth()->user()->tempat_tugas)
+                <div class="sb-user-name"><?php echo e(auth()->user()->nama ?? 'Pengguna'); ?></div>
+                <div class="sb-user-role"><?php echo e(auth()->user()->role->nama_role ?? ''); ?></div>
+                <?php if(auth()->user()->tempat_tugas): ?>
                     <div class="sb-user-tempat">
                         <span class="sb-dot"></span>
-                        {{ auth()->user()->tempat_tugas->nama_tempat }}
+                        <?php echo e(auth()->user()->tempat_tugas->nama_tempat); ?>
+
                     </div>
-                @endif
+                <?php endif; ?>
             </div>
         </div>
 
-        {{-- Navigation (semua route asli dipertahankan) --}}
+        
         <nav>
             <div class="nav-section">Menu</div>
-            <a href="{{ route('dashboard') }}"
-               class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
+            <a href="<?php echo e(route('dashboard')); ?>"
+               class="<?php echo e(request()->routeIs('dashboard') ? 'active' : ''); ?>">
                 <svg fill="none" viewBox="0 0 16 16"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor"/></svg>
                 Beranda
             </a>
 
-            @if(auth()->user()->isPetugas())
-                <a href="{{ route('petugas.absensi.index') }}"
-                   class="{{ request()->routeIs('petugas.absensi.*') ? 'active' : '' }}">
+            <?php if(auth()->user()->isPetugas()): ?>
+                <a href="<?php echo e(route('petugas.absensi.index')); ?>"
+                   class="<?php echo e(request()->routeIs('petugas.absensi.*') ? 'active' : ''); ?>">
                     <svg fill="none" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     Absensi
                 </a>
                 <div class="dropdown" id="dd-tugas">
                     <button type="button" onclick="toggleDropdown('dd-tugas')"
-                        style="{{ request()->routeIs('petugas.tugas.*') ? 'background:var(--primary);color:#fff;' : '' }}">
+                        style="<?php echo e(request()->routeIs('petugas.tugas.*') ? 'background:var(--primary);color:#fff;' : ''); ?>">
                         <span style="display:flex;align-items:center;gap:9px;">
                             <svg fill="none" viewBox="0 0 16 16" style="width:16px;height:16px;flex-shrink:0;opacity:.85;"><path d="M2 4h12M2 8h9M2 12h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                             Tugas Harian
                         </span>
-                        <svg class="dd-chevron" fill="none" viewBox="0 0 16 16" style="width:12px;height:12px;flex-shrink:0;transition:transform .2s;{{ request()->routeIs('petugas.tugas.*') ? 'transform:rotate(180deg);' : '' }}">
+                        <svg class="dd-chevron" fill="none" viewBox="0 0 16 16" style="width:12px;height:12px;flex-shrink:0;transition:transform .2s;<?php echo e(request()->routeIs('petugas.tugas.*') ? 'transform:rotate(180deg);' : ''); ?>">
                             <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </button>
-                    <div class="dropdown-menu" style="{{ request()->routeIs('petugas.tugas.*') ? '' : 'display:none' }}">
-                        <a href="{{ route('petugas.tugas.input') }}"
-                           class="{{ request()->routeIs('petugas.tugas.input') ? 'active' : '' }}">
+                    <div class="dropdown-menu" style="<?php echo e(request()->routeIs('petugas.tugas.*') ? '' : 'display:none'); ?>">
+                        <a href="<?php echo e(route('petugas.tugas.input')); ?>"
+                           class="<?php echo e(request()->routeIs('petugas.tugas.input') ? 'active' : ''); ?>">
                             <svg fill="none" viewBox="0 0 16 16" style="width:13px;height:13px;"><path d="M3 8h10M8 3v10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                             Input Tugas Harian
                         </a>
-                        <a href="{{ route('petugas.tugas.laporan') }}"
-                           class="{{ request()->routeIs('petugas.tugas.laporan*') ? 'active' : '' }}">
+                        <a href="<?php echo e(route('petugas.tugas.laporan')); ?>"
+                           class="<?php echo e(request()->routeIs('petugas.tugas.laporan*') ? 'active' : ''); ?>">
                             <svg fill="none" viewBox="0 0 16 16" style="width:13px;height:13px;"><path d="M2 4h12M2 8h9M2 12h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                             Lap. Tugas Harian
                         </a>
-                        <a href="{{ route('petugas.tugas.kalender') }}"
-                           class="{{ request()->routeIs('petugas.tugas.kalender') ? 'active' : '' }}">
+                        <a href="<?php echo e(route('petugas.tugas.kalender')); ?>"
+                           class="<?php echo e(request()->routeIs('petugas.tugas.kalender') ? 'active' : ''); ?>">
                             <svg fill="none" viewBox="0 0 16 16" style="width:13px;height:13px;"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                             Kalender
                         </a>
                     </div>
                 </div>
-                <a href="{{ route('petugas.cuti.index') }}"
-                   class="{{ request()->routeIs('petugas.cuti.*') ? 'active' : '' }}">
+                <a href="<?php echo e(route('petugas.cuti.index')); ?>"
+                   class="<?php echo e(request()->routeIs('petugas.cuti.*') ? 'active' : ''); ?>">
                     <svg fill="none" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 8.3l2 2L11.5 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     Cuti
                 </a>
-                <a href="{{ route('petugas.sanksi.index') }}"
-                   class="{{ request()->routeIs('petugas.sanksi.*') ? 'active' : '' }}">
+                <a href="<?php echo e(route('petugas.sanksi.index')); ?>"
+                   class="<?php echo e(request()->routeIs('petugas.sanksi.*') ? 'active' : ''); ?>">
                     <svg fill="none" viewBox="0 0 16 16"><path d="M2 12L6 8l3 3 5-6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     Sanksi
                 </a>
-            @endif
+            <?php endif; ?>
 
-            @if(auth()->user()->isAtasan())
+            <?php if(auth()->user()->isAtasan()): ?>
                 <div class="nav-section">Atasan</div>
-                <a href="{{ route('atasan.absensi.index') }}" class="{{ request()->routeIs('atasan.absensi.*') ? 'active' : '' }}">
+                <a href="<?php echo e(route('atasan.absensi.index')); ?>" class="<?php echo e(request()->routeIs('atasan.absensi.*') ? 'active' : ''); ?>">
                     <svg fill="none" viewBox="0 0 16 16"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     Pantau Absensi
                 </a>
-                <a href="{{ route('atasan.cuti.index') }}" class="{{ request()->routeIs('atasan.cuti.*') ? 'active' : '' }}">
+                <a href="<?php echo e(route('atasan.cuti.index')); ?>" class="<?php echo e(request()->routeIs('atasan.cuti.*') ? 'active' : ''); ?>">
                     <svg fill="none" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 8.3l2 2L11.5 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     Approve Cuti
                 </a>
-                <a href="{{ route('atasan.tugas.index') }}" class="{{ request()->routeIs('atasan.tugas.*') ? 'active' :'' }}">
+                <a href="<?php echo e(route('atasan.tugas.index')); ?>" class="<?php echo e(request()->routeIs('atasan.tugas.*') ? 'active' :''); ?>">
                     <svg fill="none" viewBox="0 0 16 16"><path d="M2 4h12M2 8h9M2 12h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     Approve Tugas
                 </a>
-                <a href="{{ route('atasan.kalender.index') }}">
+                <a href="<?php echo e(route('atasan.kalender.index')); ?>">
                     <svg fill="none" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     Kalender
                 </a>
-                <a href="{{ route('atasan.sanksi.index') }}">
+                <a href="<?php echo e(route('atasan.sanksi.index')); ?>">
                     <svg fill="none" viewBox="0 0 16 16"><path d="M2 12L6 8l3 3 5-6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     Sanksi
                 </a>
-            @endif
+            <?php endif; ?>
 
-            @if(auth()->user()->isAdmin())
+            <?php if(auth()->user()->isAdmin()): ?>
                 <div class="nav-section">Admin</div>
-                @if(auth()->user()->role->nama_role === 'Admin Absensi')
-                    <a href="{{ route('admin.pengaturan.index') }}">
+                <?php if(auth()->user()->role->nama_role === 'Admin Absensi'): ?>
+                    <a href="<?php echo e(route('admin.pengaturan.index')); ?>">
                         <svg fill="none" viewBox="0 0 16 16"><path d="M8 10a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="1.3"/><path d="M13.7 9.5l.8-.5v-2l-.8-.5a6 6 0 00-.6-1.4l.3-.9-1.4-1.4-.9.3a6 6 0 00-1.4-.6L9.5 2h-3l-.2.5a6 6 0 00-1.4.6l-.9-.3L2.6 4.2l.3.9a6 6 0 00-.6 1.4L2 7v2l.3.5a6 6 0 00.6 1.4l-.3.9 1.4 1.4.9-.3a6 6 0 001.4.6l.2.5h3l.5-.5a6 6 0 001.4-.6l.9.3 1.4-1.4-.3-.9a6 6 0 00.6-1.4z" stroke="currentColor" stroke-width="1.3"/></svg>
                         Pengaturan
                     </a>
-                @endif
-                <a href="{{ route('admin.users.index') }}">
+                <?php endif; ?>
+                <a href="<?php echo e(route('admin.users.index')); ?>">
                     <svg fill="none" viewBox="0 0 16 16"><circle cx="6" cy="5" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M1 14c0-3 2.2-5 5-5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M11 9l1.5 1.5L15 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.3"/></svg>
                     Users
                 </a>
-                <a href="{{ route('admin.tempat.index') }}">
+                <a href="<?php echo e(route('admin.tempat.index')); ?>">
                     <svg fill="none" viewBox="0 0 16 16"><path d="M8 2a4 4 0 00-4 4c0 3 4 8 4 8s4-5 4-8a4 4 0 00-4-4z" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="6" r="1.5" stroke="currentColor" stroke-width="1.3"/></svg>
                     Tempat
                 </a>
-                <a href="{{ route('admin.periode.index') }}">
+                <a href="<?php echo e(route('admin.periode.index')); ?>">
                     <svg fill="none" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     Periode
                 </a>
-                <a href="{{ route('admin.kalender.index') }}">
+                <a href="<?php echo e(route('admin.kalender.index')); ?>">
                     <svg fill="none" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1.5v3M11 1.5v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M5 10h.01M8 10h.01M11 10h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
                     Kalender
                 </a>
-                <a href="{{ route('admin.buka-absen.index') }}">
+                <a href="<?php echo e(route('admin.buka-absen.index')); ?>">
                     <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     Akses Telat
                 </a>
-                <a href="{{ route('admin.sanksi.index') }}">
+                <a href="<?php echo e(route('admin.sanksi.index')); ?>">
                     <svg fill="none" viewBox="0 0 16 16"><path d="M2 12L6 8l3 3 5-6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     Sanksi
                 </a>
-                <a href="{{ route('admin.data-sensitif.index') }}">
+                <a href="<?php echo e(route('admin.data-sensitif.index')); ?>">
                     <svg fill="none" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     Data Sensitif
                 </a>
-                <a href="{{ route('admin.logs.index') }}">
+                <a href="<?php echo e(route('admin.logs.index')); ?>">
                     <svg fill="none" viewBox="0 0 16 16"><path d="M2 4h12M2 7h9M2 10h6M2 13h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     Log
                 </a>
-            @endif
+            <?php endif; ?>
         </nav>
 
         <div class="sb-foot">
             <div class="sb-periode-wrap">
-                <form method="POST" action="{{ route('set.periode') }}" class="sb-periode-form">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('set.periode')); ?>" class="sb-periode-form">
+                    <?php echo csrf_field(); ?>
                     <select name="global_periode_id" onchange="this.form.submit()">
-                        @foreach($globalPeriodes ?? [] as $p)
-                            <option value="{{ $p->id_periode }}"
-                                {{ (isset($globalSelectedPeriode) && $globalSelectedPeriode->id_periode == $p->id_periode) ? 'selected' : '' }}>
-                                Periode {{ \Carbon\Carbon::parse($p->tanggal_mulai)->format('Y') }}
-                                {{ $p->status === 'aktif' ? '(Aktif)' : '' }}
+                        <?php $__currentLoopData = $globalPeriodes ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($p->id_periode); ?>"
+                                <?php echo e((isset($globalSelectedPeriode) && $globalSelectedPeriode->id_periode == $p->id_periode) ? 'selected' : ''); ?>>
+                                Periode <?php echo e(\Carbon\Carbon::parse($p->tanggal_mulai)->format('Y')); ?>
+
+                                <?php echo e($p->status === 'aktif' ? '(Aktif)' : ''); ?>
+
                             </option>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                 </form>
                 <svg fill="none" viewBox="0 0 16 16" pointer-events="none">
@@ -1021,42 +1025,42 @@
         </div>
 
     </aside>
-    @endauth
+    <?php endif; ?>
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    {{-- ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ CONTENT SHELL ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ --}}
+    
     <div class="content-shell">
-        {{-- Topbar --}}
+        
         <header>
             <div class="header-left">
-                @auth
+                <?php if(auth()->guard()->check()): ?>
                 <button class="hamburger" id="hamburgerMenu" aria-label="Toggle Sidebar">
                     <span></span><span></span><span></span>
                 </button>
-                @endauth
+                <?php endif; ?>
                 <div>
-                    <div class="header-title">@yield('title', $app_name)</div>
-                    @auth
-                        <div class="header-role">{{ auth()->user()->role->nama_role ?? '' }}</div>
-                    @endauth
+                    <div class="header-title"><?php echo $__env->yieldContent('title', $app_name); ?></div>
+                    <?php if(auth()->guard()->check()): ?>
+                        <div class="header-role"><?php echo e(auth()->user()->role->nama_role ?? ''); ?></div>
+                    <?php endif; ?>
                 </div>
             </div>
 
-            @auth
+            <?php if(auth()->guard()->check()): ?>
             <div class="top-actions">
 
-                {{-- Jam realtime di topbar --}}
+                
                 <div class="header-clock">
                     <div class="header-clock-time" id="header-clock-time">--:--:--</div>
                     <div class="header-clock-date" id="header-clock-date">Memuat...</div>
                 </div>
 
-                {{-- Notifikasi (fungsi asli dipertahankan) --}}
-                @php
+                
+                <?php
                     $unreadNotifications = \App\Models\Notifikasi::where('id_user', auth()->id())->where('status_baca', false)->count();
                     $headerNotifications = \App\Models\Notifikasi::where('id_user', auth()->id())->latest('id_notifikasi')->limit(5)->get();
-                @endphp
+                ?>
                 <div class="notification-wrap" id="notificationWrap">
                     <button type="button" class="notification-button" id="notificationToggle"
                             aria-label="Buka notifikasi" aria-expanded="false">
@@ -1064,89 +1068,89 @@
     <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"
           fill="currentColor"/>
 </svg>
-                        @if($unreadNotifications > 0)
+                        <?php if($unreadNotifications > 0): ?>
                             <span class="notification-badge" id="notificationBadge"></span>
-                        @endif
+                        <?php endif; ?>
                     </button>
                     <div class="notification-panel" id="notificationPanel">
                         <div class="notification-head">
                             <strong>Notifikasi</strong>
-                            <span class="muted" id="notificationUnreadText">{{ $unreadNotifications }} belum dibaca</span>
+                            <span class="muted" id="notificationUnreadText"><?php echo e($unreadNotifications); ?> belum dibaca</span>
                         </div>
                         <div class="notification-list">
-                            @forelse($headerNotifications as $notification)
-                                <div class="notification-item" data-notification-id="{{ $notification->id_notifikasi }}">
-                                    <div class="notification-title">{{ $notification->judul ?? 'Notifikasi' }}</div>
-                                    <div class="notification-message">{{ $notification->pesan ?? '-' }}</div>
+                            <?php $__empty_1 = true; $__currentLoopData = $headerNotifications; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $notification): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                <div class="notification-item" data-notification-id="<?php echo e($notification->id_notifikasi); ?>">
+                                    <div class="notification-title"><?php echo e($notification->judul ?? 'Notifikasi'); ?></div>
+                                    <div class="notification-message"><?php echo e($notification->pesan ?? '-'); ?></div>
                                     <div class="actions">
-                                        <span class="badge {{ $notification->status_baca ? 'approve' : 'pending' }}" data-status-badge>
-                                            {{ $notification->status_baca ? 'Dibaca' : 'Baru' }}
+                                        <span class="badge <?php echo e($notification->status_baca ? 'approve' : 'pending'); ?>" data-status-badge>
+                                            <?php echo e($notification->status_baca ? 'Dibaca' : 'Baru'); ?>
+
                                         </span>
-                                        @if(!$notification->status_baca)
+                                        <?php if(!$notification->status_baca): ?>
                                             <form method="POST"
-                                                  action="{{ route('notifikasi.read', $notification->id_notifikasi) }}"
+                                                  action="<?php echo e(route('notifikasi.read', $notification->id_notifikasi)); ?>"
                                                   data-notification-read-form>
-                                                @csrf
+                                                <?php echo csrf_field(); ?>
                                                 <button type="submit" class="notification-read-button">Tandai dibaca</button>
                                             </form>
-                                        @endif
+                                        <?php endif; ?>
                                     </div>
                                 </div>
-                            @empty
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                 <div class="notification-empty">Belum ada notifikasi.</div>
-                            @endforelse
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
 
-                {{-- Profile dropdown (fungsi asli dipertahankan) --}}
+                
                 <div class="notification-wrap" id="profileWrap">
                     <button type="button" id="profileToggle" aria-expanded="false"
-                            title="{{ auth()->user()->nama ?? 'Profil' }}"
+                            title="<?php echo e(auth()->user()->nama ?? 'Profil'); ?>"
                             style="background:none;border:none;cursor:pointer;padding:0;display:flex;border-radius:50%;">
-                        @if(auth()->user()->foto_profil)
-                            <img src="{{ Storage::url(auth()->user()->foto_profil) }}" alt="Foto"
+                        <?php if(auth()->user()->foto_profil): ?>
+                            <img src="<?php echo e(Storage::url(auth()->user()->foto_profil)); ?>" alt="Foto"
                                  style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2.5px solid var(--primary-border);transition:border-color .15s;">
-                        @else
+                        <?php else: ?>
                             <div style="width:42px;height:42px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px;border:2.5px solid var(--primary-border);letter-spacing:.5px;">
-                                {{ strtoupper(substr(auth()->user()->nama ?? 'U', 0, 1)) }}
+                                <?php echo e(strtoupper(substr(auth()->user()->nama ?? 'U', 0, 1))); ?>
+
                             </div>
-                        @endif
+                        <?php endif; ?>
                     </button>
                     <div class="notification-panel" id="profilePanel">
-                        <a href="{{ route('profile.index') }}">Lihat Profil</a>
-                        <form method="POST" action="{{ route('logout') }}" style="margin:0">
-                            @csrf
+                        <a href="<?php echo e(route('profile.index')); ?>">Lihat Profil</a>
+                        <form method="POST" action="<?php echo e(route('logout')); ?>" style="margin:0">
+                            <?php echo csrf_field(); ?>
                             <button type="submit">Logout</button>
                         </form>
                     </div>
                 </div>
 
             </div>
-            @endauth
+            <?php endif; ?>
         </header>
 
-        {{-- Main content --}}
+        
         <main>
-            @if(session('success'))
-                <div class="success">{{ session('success') }}</div>
-            @endif
-            @if(session('error'))
-                <div class="error">{{ session('error') }}</div>
-            @endif
-            @if($errors->any())
-                <div class="error">{{ $errors->first() }}</div>
-            @endif
+            <?php if(session('success')): ?>
+                <div class="success"><?php echo e(session('success')); ?></div>
+            <?php endif; ?>
+            <?php if(session('error')): ?>
+                <div class="error"><?php echo e(session('error')); ?></div>
+            <?php endif; ?>
+            <?php if($errors->any()): ?>
+                <div class="error"><?php echo e($errors->first()); ?></div>
+            <?php endif; ?>
 
-            @yield('content')
+            <?php echo $__env->yieldContent('content'); ?>
         </main>
 
-    </div>{{-- end content-shell --}}
-</div>{{-- end app-shell --}}
+    </div>
+</div>
 
-{{-- 
-     SCRIPTS (semua fungsi JS asli dipertahankan)
- --}}
+
 <script>
     // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Sidebar Dropdown Toggle ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
     function toggleDropdown(id) {
@@ -1292,3 +1296,4 @@
 </script>
 </body>
 </html>
+<?php /**PATH D:\Project_absensi\Absensi-app\resources\views/layouts/app.blade.php ENDPATH**/ ?>

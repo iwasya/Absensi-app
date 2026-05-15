@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Dashboard Atasan'); ?>
 
-@section('title', 'Dashboard Atasan')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <style>
     main {
         max-width: 100% !important;
@@ -486,7 +484,8 @@
                 <rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
                 <path d="M5 1.5v3M11 1.5v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
             </svg>
-            {{ now()->translatedFormat('l, d F Y') }}
+            <?php echo e(now()->translatedFormat('l, d F Y')); ?>
+
         </div>
     </div>
 
@@ -502,7 +501,7 @@
                 <span class="lead-stat-badge bg-red-soft">Cuti</span>
             </div>
             <div class="lead-stat-label">Cuti pending</div>
-            <div class="lead-stat-value">{{ $cutiPending->count() }}</div>
+            <div class="lead-stat-value"><?php echo e($cutiPending->count()); ?></div>
             <div class="lead-stat-hint">Menunggu keputusan atasan</div>
         </div>
 
@@ -516,7 +515,7 @@
                 <span class="lead-stat-badge bg-amber-soft">Tugas</span>
             </div>
             <div class="lead-stat-label">Tugas pending</div>
-            <div class="lead-stat-value">{{ $tugasPending->count() }}</div>
+            <div class="lead-stat-value"><?php echo e($tugasPending->count()); ?></div>
             <div class="lead-stat-hint">Laporan perlu ditinjau</div>
         </div>
 
@@ -530,7 +529,7 @@
                 <span class="lead-stat-badge bg-green-soft">Hari ini</span>
             </div>
             <div class="lead-stat-label">Absensi hari ini</div>
-            <div class="lead-stat-value">{{ $absensiHariIni->count() }}</div>
+            <div class="lead-stat-value"><?php echo e($absensiHariIni->count()); ?></div>
             <div class="lead-stat-hint">Petugas sudah tercatat</div>
         </div>
 
@@ -545,7 +544,7 @@
                 <span class="lead-stat-badge bg-primary-soft">Bulan ini</span>
             </div>
             <div class="lead-stat-label">Absensi bulan ini</div>
-            <div class="lead-stat-value">{{ $absensiBulanIni }}</div>
+            <div class="lead-stat-value"><?php echo e($absensiBulanIni); ?></div>
             <div class="lead-stat-hint">Total catatan absensi</div>
         </div>
     </div>
@@ -562,24 +561,25 @@
             </div>
             <div class="lead-card-body">
                 <div class="activity-list">
-                    @forelse($aktivitasTerbaru as $activity)
+                    <?php $__empty_1 = true; $__currentLoopData = $aktivitasTerbaru; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $activity): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <div class="activity-item">
-                            <div class="activity-avatar">{{ strtoupper(substr($activity->user->nama ?? 'U', 0, 1)) }}</div>
+                            <div class="activity-avatar"><?php echo e(strtoupper(substr($activity->user->nama ?? 'U', 0, 1))); ?></div>
                             <div class="activity-main">
                                 <div class="activity-line">
-                                    <strong>{{ $activity->user->nama ?? '-' }}</strong>
-                                    {{ $activity->aktivitas }}
+                                    <strong><?php echo e($activity->user->nama ?? '-'); ?></strong>
+                                    <?php echo e($activity->aktivitas); ?>
+
                                 </div>
                                 <div class="activity-meta">
-                                    <span>{{ $activity->created_at?->format('d/m/Y H:i') ?? '-' }}</span>
-                                    @if($activity->user?->tempatTugas)
-                                        <span>{{ $activity->user->tempatTugas->nama_tempat }}</span>
-                                    @endif
+                                    <span><?php echo e($activity->created_at?->format('d/m/Y H:i') ?? '-'); ?></span>
+                                    <?php if($activity->user?->tempatTugas): ?>
+                                        <span><?php echo e($activity->user->tempatTugas->nama_tempat); ?></span>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                            <span class="badge activity-module">{{ ucfirst(str_replace('_', ' ', $activity->modul)) }}</span>
+                            <span class="badge activity-module"><?php echo e(ucfirst(str_replace('_', ' ', $activity->modul))); ?></span>
                         </div>
-                    @empty
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <div class="lead-empty">
                             <div class="lead-empty-icon">
                                 <svg fill="none" viewBox="0 0 20 20">
@@ -588,7 +588,7 @@
                             </div>
                             Belum ada aktivitas terbaru dari petugas.
                         </div>
-                    @endforelse
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -602,20 +602,20 @@
                     </svg>
                     Absensi Hari Ini
                 </h2>
-                <span class="lead-date-pill">{{ $absensiHariIni->count() }} data</span>
+                <span class="lead-date-pill"><?php echo e($absensiHariIni->count()); ?> data</span>
             </div>
             <div class="lead-card-body">
                 <div class="today-list">
-                    @forelse($absensiHariIni as $item)
+                    <?php $__empty_1 = true; $__currentLoopData = $absensiHariIni; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <div class="today-item">
-                            <div class="activity-avatar">{{ strtoupper(substr($item->user->nama ?? 'U', 0, 1)) }}</div>
+                            <div class="activity-avatar"><?php echo e(strtoupper(substr($item->user->nama ?? 'U', 0, 1))); ?></div>
                             <div class="today-user">
-                                <div class="today-name">{{ $item->user->nama ?? '-' }}</div>
-                                <div class="today-time">{{ $item->jam_masuk ?? '--:--' }}</div>
+                                <div class="today-name"><?php echo e($item->user->nama ?? '-'); ?></div>
+                                <div class="today-time"><?php echo e($item->jam_masuk ?? '--:--'); ?></div>
                             </div>
-                            <span class="badge {{ $item->status }}">{{ ucfirst(str_replace('_', ' ', $item->status)) }}</span>
+                            <span class="badge <?php echo e($item->status); ?>"><?php echo e(ucfirst(str_replace('_', ' ', $item->status))); ?></span>
                         </div>
-                    @empty
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <div class="lead-empty">
                             <div class="lead-empty-icon">
                                 <svg fill="none" viewBox="0 0 20 20">
@@ -625,7 +625,7 @@
                             </div>
                             Belum ada absensi hari ini.
                         </div>
-                    @endforelse
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -638,46 +638,50 @@
                     <rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
                     <path d="M5 1.5v3M11 1.5v3M2 7h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
                 </svg>
-                Kalender {{ $currentMonth->translatedFormat('F Y') }}
+                Kalender <?php echo e($currentMonth->translatedFormat('F Y')); ?>
+
             </h2>
             <div class="lead-calendar-nav">
-                <a href="{{ route('dashboard', ['month' => $previousMonth->month, 'year' => $previousMonth->year]) }}">Sebelumnya</a>
-                <a href="{{ route('dashboard', ['month' => $nextMonth->month, 'year' => $nextMonth->year]) }}">Berikutnya</a>
+                <a href="<?php echo e(route('dashboard', ['month' => $previousMonth->month, 'year' => $previousMonth->year])); ?>">Sebelumnya</a>
+                <a href="<?php echo e(route('dashboard', ['month' => $nextMonth->month, 'year' => $nextMonth->year])); ?>">Berikutnya</a>
             </div>
         </div>
 
         <div class="lead-calendar-grid">
-            @foreach(['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'] as $dayName)
-                <div class="lead-day-name">{{ $dayName }}</div>
-            @endforeach
+            <?php $__currentLoopData = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dayName): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="lead-day-name"><?php echo e($dayName); ?></div>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
-            @foreach($days as $day)
-                @php
+            <?php $__currentLoopData = $days; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $day): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <?php
                     $dateKey = $day->format('Y-m-d');
                     $dayEvents = $events->get($dateKey, collect());
                     $absensiCount = $absensiByDate->get($dateKey, 0);
                     $tugasCount = $tugasByDate->get($dateKey, 0);
-                @endphp
+                ?>
 
-                <div class="lead-day {{ $day->month !== $currentMonth->month ? 'outside-month' : '' }} {{ $day->isToday() ? 'today' : '' }}">
-                    <div class="lead-date">{{ $day->day }}</div>
+                <div class="lead-day <?php echo e($day->month !== $currentMonth->month ? 'outside-month' : ''); ?> <?php echo e($day->isToday() ? 'today' : ''); ?>">
+                    <div class="lead-date"><?php echo e($day->day); ?></div>
 
-                    @if($absensiCount > 0)
-                        <span class="lead-event absen">{{ $absensiCount }} absen</span>
-                    @endif
+                    <?php if($absensiCount > 0): ?>
+                        <span class="lead-event absen"><?php echo e($absensiCount); ?> absen</span>
+                    <?php endif; ?>
 
-                    @if($tugasCount > 0)
-                        <span class="lead-event tugas">{{ $tugasCount }} tugas</span>
-                    @endif
+                    <?php if($tugasCount > 0): ?>
+                        <span class="lead-event tugas"><?php echo e($tugasCount); ?> tugas</span>
+                    <?php endif; ?>
 
-                    @foreach($dayEvents as $event)
-                        <span class="lead-event {{ $event->jenis_event }}">
-                            {{ $event->nama_event ?: ucfirst(str_replace('_', ' ', $event->jenis_event)) }}
+                    <?php $__currentLoopData = $dayEvents; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $event): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <span class="lead-event <?php echo e($event->jenis_event); ?>">
+                            <?php echo e($event->nama_event ?: ucfirst(str_replace('_', ' ', $event->jenis_event))); ?>
+
                         </span>
-                    @endforeach
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </div>
-            @endforeach
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\Project_absensi\Absensi-app\resources\views/atasan/dashboard.blade.php ENDPATH**/ ?>

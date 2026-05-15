@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Periode'); ?>
 
-@section('title', 'Periode')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <style>
     .period-page {
         display: flex;
@@ -274,7 +272,7 @@
 <div class="period-page">
     <div class="period-header">
         <h1>Periode</h1>
-        <div class="period-count">{{ $items->total() }} total periode</div>
+        <div class="period-count"><?php echo e($items->total()); ?> total periode</div>
     </div>
 
     <div class="period-top-grid">
@@ -284,12 +282,12 @@
             </div>
             <div class="period-card-body">
                 <p class="period-note">Periode dibuat per tahun. Contoh tahun 2025 otomatis menjadi 01/01/2025 - 31/12/2025.</p>
-                <form method="POST" action="{{ route('admin.periode.store') }}">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('admin.periode.store')); ?>">
+                    <?php echo csrf_field(); ?>
                     <div class="period-form-grid">
                         <div>
                             <label for="tahun">Tahun</label>
-                            <input id="tahun" type="number" name="tahun" min="2000" max="2100" value="{{ date('Y') }}" required>
+                            <input id="tahun" type="number" name="tahun" min="2000" max="2100" value="<?php echo e(date('Y')); ?>" required>
                         </div>
                         <div>
                             <label for="status">Status</label>
@@ -308,15 +306,15 @@
             <div class="period-card-head">
                 <h2 class="period-card-title">Tampilan</h2>
             </div>
-            <form action="{{ route('admin.periode.index') }}" method="GET" class="filter-bar">
+            <form action="<?php echo e(route('admin.periode.index')); ?>" method="GET" class="filter-bar">
                 <div class="filter-control" style="width:100%;">
                     <label for="per_page">Per Halaman</label>
                     <select id="per_page" name="per_page" onchange="this.form.submit()" style="width:100%;">
-                        <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10 / hal</option>
-                        <option value="15" {{ request('per_page') == 15 ? 'selected' : (request('per_page') ? '' : 'selected') }}>15 / hal</option>
-                        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 / hal</option>
-                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 / hal</option>
-                        <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100 / hal</option>
+                        <option value="10" <?php echo e(request('per_page') == 10 ? 'selected' : ''); ?>>10 / hal</option>
+                        <option value="15" <?php echo e(request('per_page') == 15 ? 'selected' : (request('per_page') ? '' : 'selected')); ?>>15 / hal</option>
+                        <option value="25" <?php echo e(request('per_page') == 25 ? 'selected' : ''); ?>>25 / hal</option>
+                        <option value="50" <?php echo e(request('per_page') == 50 ? 'selected' : ''); ?>>50 / hal</option>
+                        <option value="100" <?php echo e(request('per_page') == 100 ? 'selected' : ''); ?>>100 / hal</option>
                     </select>
                 </div>
             </form>
@@ -335,42 +333,43 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($items as $item)
+                    <?php $__empty_1 = true; $__currentLoopData = $items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <tr>
                             <td>
-                                <input class="period-year-input" type="number" name="tahun" min="2000" max="2100" value="{{ $item->tanggal_mulai->format('Y') }}" required form="periodUpdate{{ $item->id_periode }}">
+                                <input class="period-year-input" type="number" name="tahun" min="2000" max="2100" value="<?php echo e($item->tanggal_mulai->format('Y')); ?>" required form="periodUpdate<?php echo e($item->id_periode); ?>">
                             </td>
                             <td>
                                 <div class="period-range">
-                                    {{ $item->tanggal_mulai->format('d/m/Y') }} - {{ $item->tanggal_selesai->format('d/m/Y') }}
+                                    <?php echo e($item->tanggal_mulai->format('d/m/Y')); ?> - <?php echo e($item->tanggal_selesai->format('d/m/Y')); ?>
+
                                 </div>
                             </td>
                             <td>
                                 <div class="period-status-toggle">
-                                    <input id="status_aktif_{{ $item->id_periode }}" type="radio" name="status" value="aktif" form="periodUpdate{{ $item->id_periode }}" @checked($item->status === 'aktif')>
-                                    <label for="status_aktif_{{ $item->id_periode }}">Aktif</label>
+                                    <input id="status_aktif_<?php echo e($item->id_periode); ?>" type="radio" name="status" value="aktif" form="periodUpdate<?php echo e($item->id_periode); ?>" <?php if($item->status === 'aktif'): echo 'checked'; endif; ?>>
+                                    <label for="status_aktif_<?php echo e($item->id_periode); ?>">Aktif</label>
 
-                                    <input id="status_nonaktif_{{ $item->id_periode }}" type="radio" name="status" value="nonaktif" form="periodUpdate{{ $item->id_periode }}" @checked($item->status === 'nonaktif')>
-                                    <label for="status_nonaktif_{{ $item->id_periode }}">Nonaktif</label>
+                                    <input id="status_nonaktif_<?php echo e($item->id_periode); ?>" type="radio" name="status" value="nonaktif" form="periodUpdate<?php echo e($item->id_periode); ?>" <?php if($item->status === 'nonaktif'): echo 'checked'; endif; ?>>
+                                    <label for="status_nonaktif_<?php echo e($item->id_periode); ?>">Nonaktif</label>
                                 </div>
                             </td>
                             <td>
                                 <div class="period-actions">
-                                    <form id="periodUpdate{{ $item->id_periode }}" method="POST" action="{{ route('admin.periode.update', $item->id_periode) }}" style="margin:0;">
-                                        @csrf
-                                        @method('PUT')
+                                    <form id="periodUpdate<?php echo e($item->id_periode); ?>" method="POST" action="<?php echo e(route('admin.periode.update', $item->id_periode)); ?>" style="margin:0;">
+                                        <?php echo csrf_field(); ?>
+                                        <?php echo method_field('PUT'); ?>
                                         <button type="submit" class="period-btn period-btn-light">Simpan</button>
                                     </form>
 
-                                    <form method="POST" action="{{ route('admin.periode.delete', $item->id_periode) }}" style="margin:0;" onsubmit="return confirm('Hapus periode ini?');">
-                                        @csrf
-                                        @method('DELETE')
+                                    <form method="POST" action="<?php echo e(route('admin.periode.delete', $item->id_periode)); ?>" style="margin:0;" onsubmit="return confirm('Hapus periode ini?');">
+                                        <?php echo csrf_field(); ?>
+                                        <?php echo method_field('DELETE'); ?>
                                         <button type="submit" class="period-btn period-btn-danger">Hapus</button>
                                     </form>
                                 </div>
                             </td>
                         </tr>
-                    @empty
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
                             <td colspan="4">
                                 <div class="period-empty">
@@ -379,15 +378,18 @@
                                 </div>
                             </td>
                         </tr>
-                    @endforelse
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
 
         <div class="period-footer">
-            <div class="period-result">Menampilkan {{ $items->count() }} dari {{ $items->total() }} data</div>
-            {{ $items->links('pagination.simple') }}
+            <div class="period-result">Menampilkan <?php echo e($items->count()); ?> dari <?php echo e($items->total()); ?> data</div>
+            <?php echo e($items->links('pagination.simple')); ?>
+
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\Project_absensi\Absensi-app\resources\views/admin/periode.blade.php ENDPATH**/ ?>

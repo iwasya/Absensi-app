@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Pengajuan Cuti'); ?>
 
-@section('title', 'Pengajuan Cuti')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <style>
     .cuti-page {
         max-width: 1120px;
@@ -264,9 +262,9 @@
     }
 </style>
 
-@php
+<?php
     $sisaCuti = max($batasCutiTahunan - $cutiTerpakaiTahunIni, 0);
-@endphp
+?>
 
 <div class="cuti-page">
     <section class="cuti-hero">
@@ -274,7 +272,7 @@
             <h1>Pengajuan Cuti</h1>
             <p>Ajukan cuti dengan data yang lengkap agar proses persetujuan oleh atasan lebih cepat.</p>
         </div>
-        <div class="cuti-quota-pill">Sisa {{ $sisaCuti }} dari {{ $batasCutiTahunan }} kali</div>
+        <div class="cuti-quota-pill">Sisa <?php echo e($sisaCuti); ?> dari <?php echo e($batasCutiTahunan); ?> kali</div>
     </section>
 
     <div class="cuti-grid">
@@ -287,81 +285,130 @@
                 <span class="cuti-panel-badge">Form Baru</span>
             </div>
 
-            <form method="POST" action="{{ route('petugas.cuti.store') }}" class="cuti-form">
-                @csrf
+            <form method="POST" action="<?php echo e(route('petugas.cuti.store')); ?>" class="cuti-form">
+                <?php echo csrf_field(); ?>
                 <div class="cuti-form-grid">
                     <div>
                         <label for="tanggal_mulai">Tanggal Mulai</label>
-                        <input id="tanggal_mulai" type="date" name="tanggal_mulai" value="{{ old('tanggal_mulai') }}" required>
-                        @error('tanggal_mulai')
-                            <div class="field-error">{{ $message }}</div>
-                        @enderror
+                        <input id="tanggal_mulai" type="date" name="tanggal_mulai" value="<?php echo e(old('tanggal_mulai')); ?>" required>
+                        <?php $__errorArgs = ['tanggal_mulai'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="field-error"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     </div>
 
                     <div>
                         <label for="tanggal_selesai">Tanggal Selesai</label>
-                        <input id="tanggal_selesai" type="date" name="tanggal_selesai" value="{{ old('tanggal_selesai') }}" required>
-                        @error('tanggal_selesai')
-                            <div class="field-error">{{ $message }}</div>
-                        @enderror
+                        <input id="tanggal_selesai" type="date" name="tanggal_selesai" value="<?php echo e(old('tanggal_selesai')); ?>" required>
+                        <?php $__errorArgs = ['tanggal_selesai'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="field-error"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     </div>
 
                     <div>
                         <label for="jenis_cuti">Jenis Cuti</label>
                         <select id="jenis_cuti" name="jenis_cuti" required>
-                            <option value="Tahunan" @selected(old('jenis_cuti') === 'Tahunan')>Tahunan</option>
-                            <option value="Besar" @selected(old('jenis_cuti') === 'Besar')>Besar</option>
+                            <option value="Tahunan" <?php if(old('jenis_cuti') === 'Tahunan'): echo 'selected'; endif; ?>>Tahunan</option>
+                            <option value="Besar" <?php if(old('jenis_cuti') === 'Besar'): echo 'selected'; endif; ?>>Besar</option>
                         </select>
-                        @error('jenis_cuti')
-                            <div class="field-error">{{ $message }}</div>
-                        @enderror
+                        <?php $__errorArgs = ['jenis_cuti'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="field-error"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     </div>
 
                     <div>
                         <label for="alasan_select">Alasan</label>
                         <select name="alasan" id="alasan_select" required>
-                            <option value="Sakit" @selected(old('alasan') === 'Sakit')>Sakit</option>
-                            <option value="Urusan Keluarga" @selected(old('alasan') === 'Urusan Keluarga')>Urusan Keluarga</option>
-                            <option value="Lamaran/Menikah" @selected(old('alasan') === 'Lamaran/Menikah')>Lamaran/Menikah</option>
-                            <option value="Anggota Keluarga Meninggal" @selected(old('alasan') === 'Anggota Keluarga Meninggal')>Anggota Keluarga Meninggal</option>
-                            <option value="Anggota Keluarga Sakit" @selected(old('alasan') === 'Anggota Keluarga Sakit')>Anggota Keluarga Sakit</option>
-                            <option value="Anggota Keluarga Menikah" @selected(old('alasan') === 'Anggota Keluarga Menikah')>Anggota Keluarga Menikah</option>
-                            <option value="Kegiatan Agama atau Budaya" @selected(old('alasan') === 'Kegiatan Agama atau Budaya')>Kegiatan Agama atau Budaya</option>
-                            <option value="Musibah/Bencana" @selected(old('alasan') === 'Musibah/Bencana')>Musibah/Bencana</option>
-                            <option value="Alasan Lainnya" @selected(old('alasan') === 'Alasan Lainnya')>Alasan Lainnya</option>
+                            <option value="Sakit" <?php if(old('alasan') === 'Sakit'): echo 'selected'; endif; ?>>Sakit</option>
+                            <option value="Urusan Keluarga" <?php if(old('alasan') === 'Urusan Keluarga'): echo 'selected'; endif; ?>>Urusan Keluarga</option>
+                            <option value="Lamaran/Menikah" <?php if(old('alasan') === 'Lamaran/Menikah'): echo 'selected'; endif; ?>>Lamaran/Menikah</option>
+                            <option value="Anggota Keluarga Meninggal" <?php if(old('alasan') === 'Anggota Keluarga Meninggal'): echo 'selected'; endif; ?>>Anggota Keluarga Meninggal</option>
+                            <option value="Anggota Keluarga Sakit" <?php if(old('alasan') === 'Anggota Keluarga Sakit'): echo 'selected'; endif; ?>>Anggota Keluarga Sakit</option>
+                            <option value="Anggota Keluarga Menikah" <?php if(old('alasan') === 'Anggota Keluarga Menikah'): echo 'selected'; endif; ?>>Anggota Keluarga Menikah</option>
+                            <option value="Kegiatan Agama atau Budaya" <?php if(old('alasan') === 'Kegiatan Agama atau Budaya'): echo 'selected'; endif; ?>>Kegiatan Agama atau Budaya</option>
+                            <option value="Musibah/Bencana" <?php if(old('alasan') === 'Musibah/Bencana'): echo 'selected'; endif; ?>>Musibah/Bencana</option>
+                            <option value="Alasan Lainnya" <?php if(old('alasan') === 'Alasan Lainnya'): echo 'selected'; endif; ?>>Alasan Lainnya</option>
                         </select>
-                        @error('alasan')
-                            <div class="field-error">{{ $message }}</div>
-                        @enderror
+                        <?php $__errorArgs = ['alasan'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="field-error"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     </div>
 
                     <div id="alasan_lainnya_wrapper" style="display: none;">
                         <label for="alasan_lainnya">Sebutkan Alasan Lainnya</label>
-                        <input id="alasan_lainnya" type="text" name="alasan_lainnya" value="{{ old('alasan_lainnya') }}" placeholder="Tuliskan alasan cuti">
-                        @error('alasan_lainnya')
-                            <div class="field-error">{{ $message }}</div>
-                        @enderror
+                        <input id="alasan_lainnya" type="text" name="alasan_lainnya" value="<?php echo e(old('alasan_lainnya')); ?>" placeholder="Tuliskan alasan cuti">
+                        <?php $__errorArgs = ['alasan_lainnya'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="field-error"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     </div>
 
                     <div>
                         <label for="id_pengganti">Pendamping Pengganti</label>
                         <select id="id_pengganti" name="id_pengganti" required>
                             <option value="">-- Pilih Petugas Pengganti --</option>
-                            @foreach($petugasList as $p)
-                                <option value="{{ $p->id_user }}" @selected(old('id_pengganti') == $p->id_user)>{{ $p->nama }}</option>
-                            @endforeach
+                            <?php $__currentLoopData = $petugasList; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($p->id_user); ?>" <?php if(old('id_pengganti') == $p->id_user): echo 'selected'; endif; ?>><?php echo e($p->nama); ?></option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
-                        @error('id_pengganti')
-                            <div class="field-error">{{ $message }}</div>
-                        @enderror
+                        <?php $__errorArgs = ['id_pengganti'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="field-error"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     </div>
 
                     <div class="cuti-full">
                         <label for="alamat_cuti">Alamat Selama Cuti</label>
-                        <textarea id="alamat_cuti" name="alamat_cuti" class="cuti-textarea" required placeholder="Tuliskan alamat lengkap selama masa cuti...">{{ old('alamat_cuti') }}</textarea>
-                        @error('alamat_cuti')
-                            <div class="field-error">{{ $message }}</div>
-                        @enderror
+                        <textarea id="alamat_cuti" name="alamat_cuti" class="cuti-textarea" required placeholder="Tuliskan alamat lengkap selama masa cuti..."><?php echo e(old('alamat_cuti')); ?></textarea>
+                        <?php $__errorArgs = ['alamat_cuti'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="field-error"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     </div>
                 </div>
 
@@ -384,12 +431,12 @@
                 <div class="cuti-summary">
                     <div class="cuti-summary-item">
                         <div class="cuti-summary-label">Terpakai</div>
-                        <div class="cuti-summary-value">{{ $cutiTerpakaiTahunIni }}</div>
-                        <div class="cuti-summary-note">Dari batas {{ $batasCutiTahunan }} kali cuti.</div>
+                        <div class="cuti-summary-value"><?php echo e($cutiTerpakaiTahunIni); ?></div>
+                        <div class="cuti-summary-note">Dari batas <?php echo e($batasCutiTahunan); ?> kali cuti.</div>
                     </div>
                     <div class="cuti-summary-item">
                         <div class="cuti-summary-label">Sisa</div>
-                        <div class="cuti-summary-value">{{ $sisaCuti }}</div>
+                        <div class="cuti-summary-value"><?php echo e($sisaCuti); ?></div>
                         <div class="cuti-summary-note">Sisa kesempatan cuti tahun ini.</div>
                     </div>
                 </div>
@@ -403,7 +450,7 @@
                 <h2>Riwayat Pengajuan</h2>
                 <p>Pantau status pengajuan cuti dan cetak surat jika sudah disetujui.</p>
             </div>
-            <span class="cuti-panel-badge">{{ $items->total() ?? $items->count() }} Data</span>
+            <span class="cuti-panel-badge"><?php echo e($items->total() ?? $items->count()); ?> Data</span>
         </div>
 
         <div class="cuti-table-wrap">
@@ -420,37 +467,39 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($items as $item)
+                    <?php $__empty_1 = true; $__currentLoopData = $items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <tr>
-                            <td class="cuti-date">{{ $item->tanggal_mulai->format('d/m/Y') }}</td>
-                            <td class="cuti-date">{{ $item->tanggal_selesai->format('d/m/Y') }}</td>
-                            <td>{{ $item->jenis_cuti }}</td>
+                            <td class="cuti-date"><?php echo e($item->tanggal_mulai->format('d/m/Y')); ?></td>
+                            <td class="cuti-date"><?php echo e($item->tanggal_selesai->format('d/m/Y')); ?></td>
+                            <td><?php echo e($item->jenis_cuti); ?></td>
                             <td class="cuti-reason">
-                                {{ $item->alasan }}
-                                @if($item->alasan == 'Alasan Lainnya')
-                                    <br><small class="muted">({{ $item->alasan_lainnya }})</small>
-                                @endif
+                                <?php echo e($item->alasan); ?>
+
+                                <?php if($item->alasan == 'Alasan Lainnya'): ?>
+                                    <br><small class="muted">(<?php echo e($item->alasan_lainnya); ?>)</small>
+                                <?php endif; ?>
                             </td>
-                            <td>{{ $item->pengganti->nama ?? '-' }}</td>
-                            <td><span class="badge {{ $item->status }}">{{ $item->status }}</span></td>
+                            <td><?php echo e($item->pengganti->nama ?? '-'); ?></td>
+                            <td><span class="badge <?php echo e($item->status); ?>"><?php echo e($item->status); ?></span></td>
                             <td>
-                                @if($item->status === 'approve')
-                                    <a href="{{ route('petugas.cuti.print', $item->id_cuti) }}" target="_blank" class="cuti-action-link">Cetak Surat</a>
-                                @else
+                                <?php if($item->status === 'approve'): ?>
+                                    <a href="<?php echo e(route('petugas.cuti.print', $item->id_cuti)); ?>" target="_blank" class="cuti-action-link">Cetak Surat</a>
+                                <?php else: ?>
                                     <span class="muted" style="font-size: 11px;">Menunggu Approval</span>
-                                @endif
+                                <?php endif; ?>
                             </td>
                         </tr>
-                    @empty
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
                             <td colspan="7" class="muted cuti-empty">Belum ada pengajuan cuti.</td>
                         </tr>
-                    @endforelse
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
 
-        {{ $items->links('pagination.simple') }}
+        <?php echo e($items->links('pagination.simple')); ?>
+
     </section>
 </div>
 
@@ -472,4 +521,6 @@
         syncAlasanLainnya();
     }
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\Project_absensi\Absensi-app\resources\views/petugas/cuti.blade.php ENDPATH**/ ?>

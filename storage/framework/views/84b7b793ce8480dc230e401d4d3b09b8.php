@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Pantau Absensi'); ?>
 
-@section('title', 'Pantau Absensi')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <style>
     main {
         max-width: 100% !important;
@@ -345,7 +343,7 @@
             </span>
             <h1>Pantau Absensi</h1>
         </div>
-        <div class="monitor-count">{{ $items->total() }} data absensi</div>
+        <div class="monitor-count"><?php echo e($items->total()); ?> data absensi</div>
     </div>
 
     <div class="monitor-card">
@@ -358,16 +356,17 @@
             </h2>
         </div>
 
-        <form action="{{ route('atasan.absensi.index') }}" method="GET" class="monitor-filter">
+        <form action="<?php echo e(route('atasan.absensi.index')); ?>" method="GET" class="monitor-filter">
             <div>
                 <label for="month">Bulan</label>
                 <select id="month" name="month">
                     <option value="">Semua Bulan</option>
-                    @for($m=1; $m<=12; $m++)
-                        <option value="{{ $m }}" {{ request('month') == $m ? 'selected' : '' }}>
-                            {{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}
+                    <?php for($m=1; $m<=12; $m++): ?>
+                        <option value="<?php echo e($m); ?>" <?php echo e(request('month') == $m ? 'selected' : ''); ?>>
+                            <?php echo e(\Carbon\Carbon::create()->month($m)->translatedFormat('F')); ?>
+
                         </option>
-                    @endfor
+                    <?php endfor; ?>
                 </select>
             </div>
 
@@ -375,9 +374,9 @@
                 <label for="id_user">Petugas</label>
                 <select id="id_user" name="id_user">
                     <option value="">Semua Petugas</option>
-                    @foreach($users as $user)
-                        <option value="{{ $user->id_user }}" {{ request('id_user') == $user->id_user ? 'selected' : '' }}>{{ $user->nama }}</option>
-                    @endforeach
+                    <?php $__currentLoopData = $users; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $user): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <option value="<?php echo e($user->id_user); ?>" <?php echo e(request('id_user') == $user->id_user ? 'selected' : ''); ?>><?php echo e($user->nama); ?></option>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </select>
             </div>
 
@@ -385,21 +384,21 @@
                 <label for="status">Status</label>
                 <select id="status" name="status">
                     <option value="">Semua Status</option>
-                    <option value="hadir" {{ request('status') == 'hadir' ? 'selected' : '' }}>Hadir</option>
-                    <option value="terlambat" {{ request('status') == 'terlambat' ? 'selected' : '' }}>Terlambat</option>
-                    <option value="tidak_absen" {{ request('status') == 'tidak_absen' ? 'selected' : '' }}>Tidak Absen</option>
+                    <option value="hadir" <?php echo e(request('status') == 'hadir' ? 'selected' : ''); ?>>Hadir</option>
+                    <option value="terlambat" <?php echo e(request('status') == 'terlambat' ? 'selected' : ''); ?>>Terlambat</option>
+                    <option value="tidak_absen" <?php echo e(request('status') == 'tidak_absen' ? 'selected' : ''); ?>>Tidak Absen</option>
                 </select>
             </div>
 
             <div>
                 <label for="search">Cari</label>
-                <input id="search" type="text" name="search" value="{{ request('search') }}" placeholder="Nama, lokasi, atau keterangan...">
+                <input id="search" type="text" name="search" value="<?php echo e(request('search')); ?>" placeholder="Nama, lokasi, atau keterangan...">
             </div>
 
             <div class="monitor-actions">
                 <button type="submit" class="monitor-btn">Tampilkan</button>
-                <a href="{{ route('atasan.absensi.index') }}" class="monitor-link monitor-link-secondary">Reset</a>
-                <a href="{{ route('atasan.absensi.print', request()->all()) }}" target="_blank" class="monitor-link monitor-link-print">Cetak</a>
+                <a href="<?php echo e(route('atasan.absensi.index')); ?>" class="monitor-link monitor-link-secondary">Reset</a>
+                <a href="<?php echo e(route('atasan.absensi.print', request()->all())); ?>" target="_blank" class="monitor-link monitor-link-print">Cetak</a>
             </div>
         </form>
     </div>
@@ -428,16 +427,16 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($items as $item)
+                    <?php $__empty_1 = true; $__currentLoopData = $items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <tr>
                             <td>
                                 <div class="person-cell">
-                                    <div class="person-avatar">{{ strtoupper(substr($item->user->nama ?? 'U', 0, 1)) }}</div>
-                                    <div class="person-name">{{ $item->user->nama ?? '-' }}</div>
+                                    <div class="person-avatar"><?php echo e(strtoupper(substr($item->user->nama ?? 'U', 0, 1))); ?></div>
+                                    <div class="person-name"><?php echo e($item->user->nama ?? '-'); ?></div>
                                 </div>
                             </td>
                             <td>
-                                <div class="place-text">{{ $item->user->tempatTugas->nama_tempat ?? '-' }}</div>
+                                <div class="place-text"><?php echo e($item->user->tempatTugas->nama_tempat ?? '-'); ?></div>
                             </td>
                             <td>
                                 <div class="date-cell">
@@ -447,23 +446,23 @@
                                             <path d="M5 2v3M11 2v3M2.5 7h11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
                                         </svg>
                                     </span>
-                                    <span class="date-value">{{ $item->tanggal->format('d/m/Y') }}</span>
+                                    <span class="date-value"><?php echo e($item->tanggal->format('d/m/Y')); ?></span>
                                 </div>
                             </td>
                             <td>
-                                <span class="{{ $item->jam_masuk ? 'time-value' : 'time-empty' }}">{{ $item->jam_masuk ?? '-' }}</span>
+                                <span class="<?php echo e($item->jam_masuk ? 'time-value' : 'time-empty'); ?>"><?php echo e($item->jam_masuk ?? '-'); ?></span>
                             </td>
                             <td>
-                                <span class="{{ $item->jam_pulang ? 'time-value' : 'time-empty' }}">{{ $item->jam_pulang ?? '-' }}</span>
+                                <span class="<?php echo e($item->jam_pulang ? 'time-value' : 'time-empty'); ?>"><?php echo e($item->jam_pulang ?? '-'); ?></span>
                             </td>
                             <td>
-                                <span class="badge status-badge {{ $item->status }}">{{ ucfirst(str_replace('_', ' ', $item->status)) }}</span>
+                                <span class="badge status-badge <?php echo e($item->status); ?>"><?php echo e(ucfirst(str_replace('_', ' ', $item->status))); ?></span>
                             </td>
                             <td>
-                                <a href="{{ route('absensi.detail', $item->id_absensi) }}" class="monitor-link monitor-link-detail">Detail</a>
+                                <a href="<?php echo e(route('absensi.detail', $item->id_absensi)); ?>" class="monitor-link monitor-link-detail">Detail</a>
                             </td>
                         </tr>
-                    @empty
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
                             <td colspan="7">
                                 <div class="monitor-empty">
@@ -478,15 +477,18 @@
                                 </div>
                             </td>
                         </tr>
-                    @endforelse
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
 
         <div class="monitor-footer">
-            <div class="monitor-result">Menampilkan {{ $items->count() }} dari {{ $items->total() }} data</div>
-            {{ $items->links('pagination.simple') }}
+            <div class="monitor-result">Menampilkan <?php echo e($items->count()); ?> dari <?php echo e($items->total()); ?> data</div>
+            <?php echo e($items->links('pagination.simple')); ?>
+
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\Project_absensi\Absensi-app\resources\views/atasan/absensi.blade.php ENDPATH**/ ?>

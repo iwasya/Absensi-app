@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Approve Cuti'); ?>
 
-@section('title', 'Approve Cuti')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <style>
     main {
         max-width: 100% !important;
@@ -373,7 +371,7 @@
             </span>
             <h1>Approve Cuti</h1>
         </div>
-        <div class="leave-count">{{ $items->total() }} pengajuan</div>
+        <div class="leave-count"><?php echo e($items->total()); ?> pengajuan</div>
     </div>
 
     <div class="leave-card">
@@ -385,29 +383,30 @@
                 Filter Periode
             </h2>
         </div>
-        <form method="GET" action="{{ url()->current() }}" class="leave-filter">
+        <form method="GET" action="<?php echo e(url()->current()); ?>" class="leave-filter">
             <div class="leave-filter-control">
                 <label for="id_periode">Periode Data</label>
                 <select id="id_periode" name="id_periode">
                     <option value="">Semua tahun</option>
-                    @foreach($periodes ?? [] as $periode)
-                        <option value="{{ $periode->id_periode }}" @selected(optional($selectedPeriode ?? null)->id_periode === $periode->id_periode)>
-                            {{ \Carbon\Carbon::parse($periode->tanggal_mulai)->format('Y') }}
+                    <?php $__currentLoopData = $periodes ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $periode): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <option value="<?php echo e($periode->id_periode); ?>" <?php if(optional($selectedPeriode ?? null)->id_periode === $periode->id_periode): echo 'selected'; endif; ?>>
+                            <?php echo e(\Carbon\Carbon::parse($periode->tanggal_mulai)->format('Y')); ?>
+
                         </option>
-                    @endforeach
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </select>
             </div>
             <button type="submit">Tampilkan</button>
-            @if(isset($selectedPeriode) && $selectedPeriode)
-                <a href="{{ url()->current() }}" class="leave-link">Reset</a>
-            @endif
+            <?php if(isset($selectedPeriode) && $selectedPeriode): ?>
+                <a href="<?php echo e(url()->current()); ?>" class="leave-link">Reset</a>
+            <?php endif; ?>
         </form>
         <p class="leave-filter-note">
-            @if(isset($selectedPeriode) && $selectedPeriode)
-                Menampilkan arsip tahun {{ \Carbon\Carbon::parse($selectedPeriode->tanggal_mulai)->format('Y') }}.
-            @else
+            <?php if(isset($selectedPeriode) && $selectedPeriode): ?>
+                Menampilkan arsip tahun <?php echo e(\Carbon\Carbon::parse($selectedPeriode->tanggal_mulai)->format('Y')); ?>.
+            <?php else: ?>
                 Menampilkan semua data. Pilih tahun untuk melihat arsip tahun sebelumnya.
-            @endif
+            <?php endif; ?>
         </p>
     </div>
 
@@ -436,12 +435,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($items as $item)
+                    <?php $__empty_1 = true; $__currentLoopData = $items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <tr>
                             <td>
                                 <div class="person-cell">
-                                    <div class="person-avatar">{{ strtoupper(substr($item->user->nama ?? 'U', 0, 1)) }}</div>
-                                    <div class="person-name">{{ $item->user->nama ?? '-' }}</div>
+                                    <div class="person-avatar"><?php echo e(strtoupper(substr($item->user->nama ?? 'U', 0, 1))); ?></div>
+                                    <div class="person-name"><?php echo e($item->user->nama ?? '-'); ?></div>
                                 </div>
                             </td>
                             <td>
@@ -455,54 +454,54 @@
                                     <span class="leave-date-value">
                                         <span>
                                             <span class="leave-date-label">Mulai</span>
-                                            <span class="leave-date-line">{{ $item->tanggal_mulai->format('d/m/y') }}</span>
+                                            <span class="leave-date-line"><?php echo e($item->tanggal_mulai->format('d/m/y')); ?></span>
                                         </span>
                                         <span>
                                             <span class="leave-date-label">Selesai</span>
-                                            <span class="leave-date-line">{{ $item->tanggal_selesai->format('d/m/y') }}</span>
+                                            <span class="leave-date-line"><?php echo e($item->tanggal_selesai->format('d/m/y')); ?></span>
                                         </span>
                                     </span>
                                 </div>
                             </td>
                             <td>
-                                <span class="leave-kind">{{ str_replace('_', ' ', $item->jenis_cuti) }}</span>
+                                <span class="leave-kind"><?php echo e(str_replace('_', ' ', $item->jenis_cuti)); ?></span>
                             </td>
                             <td>
                                 <div class="leave-detail">
-                                    <div class="leave-reason">{{ $item->alasan }}</div>
-                                    @if($item->alasan == 'Alasan Lainnya')
-                                        <small>{{ $item->alasan_lainnya }}</small>
-                                    @endif
-                                    <small>Alamat: {{ $item->alamat_cuti ?: '-' }}</small>
+                                    <div class="leave-reason"><?php echo e($item->alasan); ?></div>
+                                    <?php if($item->alasan == 'Alasan Lainnya'): ?>
+                                        <small><?php echo e($item->alasan_lainnya); ?></small>
+                                    <?php endif; ?>
+                                    <small>Alamat: <?php echo e($item->alamat_cuti ?: '-'); ?></small>
                                 </div>
                             </td>
                             <td>
-                                <span class="leave-muted">{{ $item->pengganti->nama ?? '-' }}</span>
+                                <span class="leave-muted"><?php echo e($item->pengganti->nama ?? '-'); ?></span>
                             </td>
                             <td>
-                                <span class="badge {{ $item->status }}">{{ ucfirst(str_replace('_', ' ', $item->status)) }}</span>
+                                <span class="badge <?php echo e($item->status); ?>"><?php echo e(ucfirst(str_replace('_', ' ', $item->status))); ?></span>
                             </td>
                             <td>
-                                <span class="leave-muted">{{ $item->approver->nama ?? '-' }}</span>
+                                <span class="leave-muted"><?php echo e($item->approver->nama ?? '-'); ?></span>
                             </td>
                             <td>
                                 <div class="leave-actions">
-                                    @if($item->status === 'pending')
-                                        <form method="POST" action="{{ route('atasan.cuti.approve', $item->id_cuti) }}" style="margin:0;">
-                                            @csrf
+                                    <?php if($item->status === 'pending'): ?>
+                                        <form method="POST" action="<?php echo e(route('atasan.cuti.approve', $item->id_cuti)); ?>" style="margin:0;">
+                                            <?php echo csrf_field(); ?>
                                             <button type="submit" class="leave-btn leave-btn-approve">Approve</button>
                                         </form>
-                                        <form method="POST" action="{{ route('atasan.cuti.reject', $item->id_cuti) }}" style="margin:0;">
-                                            @csrf
+                                        <form method="POST" action="<?php echo e(route('atasan.cuti.reject', $item->id_cuti)); ?>" style="margin:0;">
+                                            <?php echo csrf_field(); ?>
                                             <button type="submit" class="leave-btn leave-btn-reject">Reject</button>
                                         </form>
-                                    @else
+                                    <?php else: ?>
                                         <span class="leave-muted">Selesai</span>
-                                    @endif
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>
-                    @empty
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
                             <td colspan="8">
                                 <div class="leave-empty">
@@ -517,15 +516,18 @@
                                 </div>
                             </td>
                         </tr>
-                    @endforelse
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
 
         <div class="leave-footer">
-            <div class="leave-result">Menampilkan {{ $items->count() }} dari {{ $items->total() }} data</div>
-            {{ $items->links('pagination.simple') }}
+            <div class="leave-result">Menampilkan <?php echo e($items->count()); ?> dari <?php echo e($items->total()); ?> data</div>
+            <?php echo e($items->links('pagination.simple')); ?>
+
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\Project_absensi\Absensi-app\resources\views/atasan/cuti.blade.php ENDPATH**/ ?>

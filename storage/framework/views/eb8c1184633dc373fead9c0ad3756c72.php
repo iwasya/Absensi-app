@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Kelola Users'); ?>
 
-@section('title', 'Kelola Users')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <style>
     main {
         max-width: 100% !important;
@@ -384,7 +382,7 @@
             <h1>Kelola Users</h1>
         </div>
         <div class="users-count-pill">
-            {{ $items->total() }} total user
+            <?php echo e($items->total()); ?> total user
         </div>
     </div>
 
@@ -392,8 +390,8 @@
         <details class="users-panel">
             <summary>Tambah User</summary>
             <div class="users-panel-body">
-                <form method="POST" action="{{ route('admin.users.store') }}">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('admin.users.store')); ?>">
+                    <?php echo csrf_field(); ?>
                     <div class="form-grid">
                         <div><label>Nama</label><input name="nama" required></div>
                         <div><label>Username / NIK</label><input name="username" required placeholder="NIK sebagai username"></div>
@@ -403,18 +401,18 @@
                         <div>
                             <label>Role</label>
                             <select name="id_role" required>
-                                @foreach($roles as $role)
-                                    <option value="{{ $role->id_role }}">{{ $role->nama_role }}</option>
-                                @endforeach
+                                <?php $__currentLoopData = $roles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $role): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="<?php echo e($role->id_role); ?>"><?php echo e($role->nama_role); ?></option>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </select>
                         </div>
                         <div>
                             <label>Tempat Tugas</label>
                             <select name="id_tempat">
                                 <option value="">-</option>
-                                @foreach($tempatTugas as $tempat)
-                                    <option value="{{ $tempat->id_tempat }}">{{ $tempat->nama_tempat }}</option>
-                                @endforeach
+                                <?php $__currentLoopData = $tempatTugas; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tempat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="<?php echo e($tempat->id_tempat); ?>"><?php echo e($tempat->nama_tempat); ?></option>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </select>
                         </div>
                         <button type="submit">Tambah User</button>
@@ -428,10 +426,10 @@
             <div class="users-panel-body">
                 <p class="users-panel-note">Import data user secara massal menggunakan file Excel. NIK akan di-encrypt otomatis.</p>
                 <div class="import-actions">
-                    <a href="{{ route('admin.users.template') }}" class="users-button-success">Download Template Excel</a>
+                    <a href="<?php echo e(route('admin.users.template')); ?>" class="users-button-success">Download Template Excel</a>
                 </div>
-                <form method="POST" action="{{ route('admin.users.import') }}" enctype="multipart/form-data">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('admin.users.import')); ?>" enctype="multipart/form-data">
+                    <?php echo csrf_field(); ?>
                     <div class="import-form-row">
                         <div><label>File Excel</label><input type="file" name="file" accept=".xlsx,.xls" required></div>
                         <button type="submit">Upload dan Import</button>
@@ -440,45 +438,45 @@
             </div>
         </details>
 
-        <details class="users-panel" {{ request()->filled('search') || request()->filled('role') ? 'open' : '' }}>
+        <details class="users-panel" <?php echo e(request()->filled('search') || request()->filled('role') ? 'open' : ''); ?>>
             <summary>Filter Users</summary>
             <div class="users-panel-body">
-                <form method="GET" action="{{ route('admin.users.index') }}" class="filter-bar">
+                <form method="GET" action="<?php echo e(route('admin.users.index')); ?>" class="filter-bar">
                     <div class="filter-control" style="flex:1; min-width:200px;">
                         <label>Cari User</label>
-                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Nama, username, email..." style="width:100%;">
+                        <input type="text" name="search" value="<?php echo e(request('search')); ?>" placeholder="Nama, username, email..." style="width:100%;">
                     </div>
                     <div class="filter-control">
                         <label>Role</label>
                         <select name="role" style="width:100%;">
                             <option value="">Semua Role</option>
-                            @foreach($roles as $role)
-                                <option value="{{ $role->id_role }}" {{ request('role') == $role->id_role ? 'selected' : '' }}>{{ $role->nama_role }}</option>
-                            @endforeach
+                            <?php $__currentLoopData = $roles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $role): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($role->id_role); ?>" <?php echo e(request('role') == $role->id_role ? 'selected' : ''); ?>><?php echo e($role->nama_role); ?></option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
                     <div class="filter-control" style="max-width:120px;">
                         <label>Per Halaman</label>
                         <select name="per_page" onchange="this.form.submit()" style="width:100%;">
-                            <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10 / hal</option>
-                            <option value="25" {{ request('per_page') == 25 ? 'selected' : (request('per_page') ? '' : 'selected') }}>25 / hal</option>
-                            <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 / hal</option>
-                            <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100 / hal</option>
+                            <option value="10" <?php echo e(request('per_page') == 10 ? 'selected' : ''); ?>>10 / hal</option>
+                            <option value="25" <?php echo e(request('per_page') == 25 ? 'selected' : (request('per_page') ? '' : 'selected')); ?>>25 / hal</option>
+                            <option value="50" <?php echo e(request('per_page') == 50 ? 'selected' : ''); ?>>50 / hal</option>
+                            <option value="100" <?php echo e(request('per_page') == 100 ? 'selected' : ''); ?>>100 / hal</option>
                         </select>
                     </div>
                     <button type="submit">Filter</button>
-                    @if(request()->hasAny(['search', 'role']) && (request('search') != '' || request('role') != ''))
-                        <a href="{{ route('admin.users.index') }}" class="users-button-secondary">Reset</a>
-                    @endif
+                    <?php if(request()->hasAny(['search', 'role']) && (request('search') != '' || request('role') != '')): ?>
+                        <a href="<?php echo e(route('admin.users.index')); ?>" class="users-button-secondary">Reset</a>
+                    <?php endif; ?>
                 </form>
             </div>
         </details>
     </div>
 
     <div class="users-bulkbar">
-        <form method="POST" action="{{ route('admin.users.bulk-delete') }}" id="bulkDeleteForm" class="users-bulk-form">
-            @csrf
-            @method('DELETE')
+        <form method="POST" action="<?php echo e(route('admin.users.bulk-delete')); ?>" id="bulkDeleteForm" class="users-bulk-form">
+            <?php echo csrf_field(); ?>
+            <?php echo method_field('DELETE'); ?>
 
             <button type="submit" class="users-danger" onclick="return confirmBulkDelete()">
                 Hapus Terpilih (<span id="selectedCount">0</span>)
@@ -491,7 +489,7 @@
         </form>
 
         <div class="users-result-text">
-            Menampilkan {{ $items->count() }} dari {{ $items->total() }} data
+            Menampilkan <?php echo e($items->count()); ?> dari <?php echo e($items->total()); ?> data
         </div>
     </div>
 
@@ -511,69 +509,71 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($items as $item)
-                        @php
+                    <?php $__empty_1 = true; $__currentLoopData = $items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <?php
                             $currentRole = $roles->firstWhere('id_role', $item->id_role);
-                        @endphp
+                        ?>
                         <tr>
                             <td class="users-check-cell">
-                                <input type="checkbox" name="user_ids[]" value="{{ $item->id_user }}" class="user-checkbox users-check" form="bulkDeleteForm" aria-label="Pilih {{ $item->nama }}">
+                                <input type="checkbox" name="user_ids[]" value="<?php echo e($item->id_user); ?>" class="user-checkbox users-check" form="bulkDeleteForm" aria-label="Pilih <?php echo e($item->nama); ?>">
                             </td>
 
                             <td>
-                                <label for="nama_{{ $item->id_user }}" class="sr-only">Nama</label>
-                                <input id="nama_{{ $item->id_user }}" class="users-name-field" type="text" name="nama_{{ $item->id_user }}" value="{{ $item->nama }}">
+                                <label for="nama_<?php echo e($item->id_user); ?>" class="sr-only">Nama</label>
+                                <input id="nama_<?php echo e($item->id_user); ?>" class="users-name-field" type="text" name="nama_<?php echo e($item->id_user); ?>" value="<?php echo e($item->nama); ?>">
                             </td>
 
                             <td>
                                 <div class="users-info-grid">
-                                    <label for="username_{{ $item->id_user }}" class="sr-only">Username</label>
-                                    <input id="username_{{ $item->id_user }}" type="text" name="username_{{ $item->id_user }}" value="{{ $item->username }}" placeholder="Username">
+                                    <label for="username_<?php echo e($item->id_user); ?>" class="sr-only">Username</label>
+                                    <input id="username_<?php echo e($item->id_user); ?>" type="text" name="username_<?php echo e($item->id_user); ?>" value="<?php echo e($item->username); ?>" placeholder="Username">
 
-                                    <label for="email_{{ $item->id_user }}" class="sr-only">Email</label>
-                                    <input id="email_{{ $item->id_user }}" type="email" name="email_{{ $item->id_user }}" value="{{ $item->email }}" placeholder="Email">
+                                    <label for="email_<?php echo e($item->id_user); ?>" class="sr-only">Email</label>
+                                    <input id="email_<?php echo e($item->id_user); ?>" type="email" name="email_<?php echo e($item->id_user); ?>" value="<?php echo e($item->email); ?>" placeholder="Email">
 
-                                    <label for="password_{{ $item->id_user }}" class="sr-only">Password baru</label>
-                                    <input id="password_{{ $item->id_user }}" type="password" name="password_{{ $item->id_user }}" placeholder="Password baru opsional">
+                                    <label for="password_<?php echo e($item->id_user); ?>" class="sr-only">Password baru</label>
+                                    <input id="password_<?php echo e($item->id_user); ?>" type="password" name="password_<?php echo e($item->id_user); ?>" placeholder="Password baru opsional">
                                 </div>
                             </td>
 
                             <td>
-                                <label for="id_role_{{ $item->id_user }}" class="sr-only">Role</label>
-                                <select id="id_role_{{ $item->id_user }}" class="users-select" name="id_role_{{ $item->id_user }}">
-                                    @foreach($roles as $role)
-                                        <option value="{{ $role->id_role }}" @selected($item->id_role == $role->id_role)>
-                                            {{ $role->nama_role }}
+                                <label for="id_role_<?php echo e($item->id_user); ?>" class="sr-only">Role</label>
+                                <select id="id_role_<?php echo e($item->id_user); ?>" class="users-select" name="id_role_<?php echo e($item->id_user); ?>">
+                                    <?php $__currentLoopData = $roles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $role): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($role->id_role); ?>" <?php if($item->id_role == $role->id_role): echo 'selected'; endif; ?>>
+                                            <?php echo e($role->nama_role); ?>
+
                                         </option>
-                                    @endforeach
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </select>
-                                <span class="users-role-badge">{{ $currentRole->nama_role ?? 'Role' }}</span>
+                                <span class="users-role-badge"><?php echo e($currentRole->nama_role ?? 'Role'); ?></span>
                             </td>
 
                             <td>
-                                <label for="id_tempat_{{ $item->id_user }}" class="sr-only">Tempat tugas</label>
-                                <select id="id_tempat_{{ $item->id_user }}" class="users-select" name="id_tempat_{{ $item->id_user }}">
+                                <label for="id_tempat_<?php echo e($item->id_user); ?>" class="sr-only">Tempat tugas</label>
+                                <select id="id_tempat_<?php echo e($item->id_user); ?>" class="users-select" name="id_tempat_<?php echo e($item->id_user); ?>">
                                     <option value="">-</option>
-                                    @foreach($tempatTugas as $tempat)
-                                        <option value="{{ $tempat->id_tempat }}" @selected($item->id_tempat == $tempat->id_tempat)>
-                                            {{ $tempat->nama_tempat }}
+                                    <?php $__currentLoopData = $tempatTugas; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tempat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($tempat->id_tempat); ?>" <?php if($item->id_tempat == $tempat->id_tempat): echo 'selected'; endif; ?>>
+                                            <?php echo e($tempat->nama_tempat); ?>
+
                                         </option>
-                                    @endforeach
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </select>
                             </td>
 
                             <td>
                                 <div class="users-actions">
-                                    <button type="button" onclick="updateUser({{ $item->id_user }})" class="users-btn users-btn-save">
+                                    <button type="button" onclick="updateUser(<?php echo e($item->id_user); ?>)" class="users-btn users-btn-save">
                                         Simpan
                                     </button>
-                                    <button type="button" onclick="deleteUser({{ $item->id_user }})" class="users-btn users-btn-delete">
+                                    <button type="button" onclick="deleteUser(<?php echo e($item->id_user); ?>)" class="users-btn users-btn-delete">
                                         Hapus
                                     </button>
                                 </div>
                             </td>
                         </tr>
-                    @empty
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
                             <td colspan="6">
                                 <div class="users-empty">
@@ -582,16 +582,17 @@
                                 </div>
                             </td>
                         </tr>
-                    @endforelse
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
 
         <div class="users-footer">
             <div class="users-result-text">
-                Menampilkan {{ $items->count() }} dari {{ $items->total() }} data
+                Menampilkan <?php echo e($items->count()); ?> dari <?php echo e($items->total()); ?> data
             </div>
-            {{ $items->links('pagination.simple') }}
+            <?php echo e($items->links('pagination.simple')); ?>
+
         </div>
     </div>
 </div>
@@ -642,4 +643,6 @@
             .catch(() => alert('Error'));
     }
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\Project_absensi\Absensi-app\resources\views/admin/users.blade.php ENDPATH**/ ?>

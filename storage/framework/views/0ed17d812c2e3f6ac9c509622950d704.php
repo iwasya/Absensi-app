@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Profil Pengguna'); ?>
 
-@section('title', 'Profil Pengguna')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <style>
     .profile-page {
         max-width: 1080px;
@@ -402,38 +400,46 @@
         <div class="profile-hero-meta">
             <div class="profile-pill">
                 <span class="profile-dot"></span>
-                {{ $user->role->nama_role ?? 'Role belum diatur' }}
+                <?php echo e($user->role->nama_role ?? 'Role belum diatur'); ?>
+
             </div>
-            <div class="profile-pill">{{ $user->tempatTugas->nama_tempat ?? 'Tempat tugas belum diatur' }}</div>
+            <div class="profile-pill"><?php echo e($user->tempatTugas->nama_tempat ?? 'Tempat tugas belum diatur'); ?></div>
         </div>
     </section>
 
     <div class="profile-layout">
         <aside class="profile-panel profile-card">
             <div class="profile-avatar-wrap">
-                @if($user->foto_profil)
-                    <img src="{{ Storage::url($user->foto_profil) }}" alt="Foto Profil" class="profile-avatar">
-                @else
-                    <div class="profile-initial">{{ strtoupper(substr($user->nama ?? 'U', 0, 1)) }}</div>
-                @endif
+                <?php if($user->foto_profil): ?>
+                    <img src="<?php echo e(Storage::url($user->foto_profil)); ?>" alt="Foto Profil" class="profile-avatar">
+                <?php else: ?>
+                    <div class="profile-initial"><?php echo e(strtoupper(substr($user->nama ?? 'U', 0, 1))); ?></div>
+                <?php endif; ?>
             </div>
 
-            <h2 class="profile-name">{{ $user->nama }}</h2>
-            <div class="profile-role">{{ $user->role->nama_role ?? '-' }}</div>
+            <h2 class="profile-name"><?php echo e($user->nama); ?></h2>
+            <div class="profile-role"><?php echo e($user->role->nama_role ?? '-'); ?></div>
 
-            <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="profile-upload">
-                @csrf
-                <input type="hidden" name="nama" value="{{ old('nama', $user->nama) }}">
-                <input type="hidden" name="username" value="{{ old('username', $user->username) }}">
-                <input type="hidden" name="email" value="{{ old('email', $user->email) }}">
+            <form method="POST" action="<?php echo e(route('profile.update')); ?>" enctype="multipart/form-data" class="profile-upload">
+                <?php echo csrf_field(); ?>
+                <input type="hidden" name="nama" value="<?php echo e(old('nama', $user->nama)); ?>">
+                <input type="hidden" name="username" value="<?php echo e(old('username', $user->username)); ?>">
+                <input type="hidden" name="email" value="<?php echo e(old('email', $user->email)); ?>">
 
                 <div>
                     <label for="foto_profil">Foto Profil</label>
                     <input type="file" id="foto_profil" name="foto_profil" accept="image/*">
                     <p class="profile-help">Gunakan foto JPG atau PNG dengan ukuran maksimal 2MB.</p>
-                    @error('foto_profil')
-                        <div class="field-error">{{ $message }}</div>
-                    @enderror
+                    <?php $__errorArgs = ['foto_profil'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                        <div class="field-error"><?php echo e($message); ?></div>
+                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
 
                 <button type="submit" class="profile-primary-button">Simpan Foto</button>
@@ -450,47 +456,68 @@
                     <span class="profile-section-badge">Profil</span>
                 </div>
 
-                <form method="POST" action="{{ route('profile.update') }}" class="profile-fields profile-grid">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('profile.update')); ?>" class="profile-fields profile-grid">
+                    <?php echo csrf_field(); ?>
                     <div>
                         <label for="nama">Nama Lengkap</label>
-                        <input type="text" id="nama" name="nama" value="{{ old('nama', $user->nama) }}" required maxlength="150" autocomplete="name">
-                        @error('nama')
-                            <div class="field-error">{{ $message }}</div>
-                        @enderror
+                        <input type="text" id="nama" name="nama" value="<?php echo e(old('nama', $user->nama)); ?>" required maxlength="150" autocomplete="name">
+                        <?php $__errorArgs = ['nama'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="field-error"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     </div>
 
                     <div>
                         <label for="username">Username</label>
-                        <input type="text" id="username" name="username" value="{{ old('username', $user->username) }}" required maxlength="100" autocomplete="username">
-                        @error('username')
-                            <div class="field-error">{{ $message }}</div>
-                        @enderror
+                        <input type="text" id="username" name="username" value="<?php echo e(old('username', $user->username)); ?>" required maxlength="100" autocomplete="username">
+                        <?php $__errorArgs = ['username'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="field-error"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     </div>
 
                     <div>
                         <label for="email">Email</label>
-                        <input type="email" id="email" name="email" value="{{ old('email', $user->email) }}" required maxlength="150" autocomplete="email">
-                        @error('email')
-                            <div class="field-error">{{ $message }}</div>
-                        @enderror
+                        <input type="email" id="email" name="email" value="<?php echo e(old('email', $user->email)); ?>" required maxlength="150" autocomplete="email">
+                        <?php $__errorArgs = ['email'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="field-error"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     </div>
 
                     <div class="readonly-field">
                         <label>Tempat Tugas</label>
-                        <div class="readonly-value">{{ $user->tempatTugas->nama_tempat ?? 'Belum ditetapkan' }}</div>
+                        <div class="readonly-value"><?php echo e($user->tempatTugas->nama_tempat ?? 'Belum ditetapkan'); ?></div>
                     </div>
 
                     <div class="readonly-field full-row">
                         <label>NIK <span class="sensitive-label">Sensitif</span></label>
-                        @if($nik && $nik !== 'Gagal mendekripsi NIK')
+                        <?php if($nik && $nik !== 'Gagal mendekripsi NIK'): ?>
                             <div class="nik-row">
-                                <input type="password" id="nik_input" value="{{ $nik }}" disabled>
+                                <input type="password" id="nik_input" value="<?php echo e($nik); ?>" disabled>
                                 <button type="button" class="secondary-button" id="nikToggle">Lihat</button>
                             </div>
-                        @else
-                            <div class="readonly-value muted">{{ $nik ?? 'Data NIK tidak ditemukan' }}</div>
-                        @endif
+                        <?php else: ?>
+                            <div class="readonly-value muted"><?php echo e($nik ?? 'Data NIK tidak ditemukan'); ?></div>
+                        <?php endif; ?>
                     </div>
 
                     <div class="profile-actions full-row">
@@ -508,8 +535,8 @@
                     <span class="profile-section-badge">Keamanan</span>
                 </div>
 
-                <form method="POST" action="{{ route('profile.password') }}" class="profile-fields profile-grid">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('profile.password')); ?>" class="profile-fields profile-grid">
+                    <?php echo csrf_field(); ?>
                     <div class="full-row">
                         <label for="current_password">Password Saat Ini</label>
                         <input type="password" id="current_password" name="current_password" required autocomplete="current-password">
@@ -546,4 +573,6 @@
         });
     }
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\Project_absensi\Absensi-app\resources\views/profile/index.blade.php ENDPATH**/ ?>
