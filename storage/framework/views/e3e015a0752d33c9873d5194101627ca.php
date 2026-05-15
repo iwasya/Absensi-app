@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Dashboard Atasan'); ?>
 
-@section('title', 'Dashboard Atasan')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <style>
     main { max-width: 100% !important; margin: 0 !important; padding: 24px 28px !important; }
 
@@ -107,17 +105,20 @@
 <div class="dash-wrap">
     <div class="dash-header">
         <div>
-            <h1>Halo, {{ auth()->user()->nama ?? 'Atasan' }}</h1>
+            <h1>Halo, <?php echo e(auth()->user()->nama ?? 'Atasan'); ?></h1>
             <div class="dash-header-sub">
-                {{ now()->translatedFormat('l, d F Y') }}
-                @if(auth()->user()->tempatTugas)
-                    - {{ auth()->user()->tempatTugas->nama_tempat ?? '' }}
-                @endif
+                <?php echo e(now()->translatedFormat('l, d F Y')); ?>
+
+                <?php if(auth()->user()->tempatTugas): ?>
+                    - <?php echo e(auth()->user()->tempatTugas->nama_tempat ?? ''); ?>
+
+                <?php endif; ?>
             </div>
         </div>
         <div class="dash-date-pill">
             <svg fill="none" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-            {{ now()->translatedFormat('F Y') }}
+            <?php echo e(now()->translatedFormat('F Y')); ?>
+
         </div>
     </div>
 
@@ -128,7 +129,7 @@
                 <span class="stat-badge" style="background:var(--red-soft);color:var(--red-dark)">Cuti</span>
             </div>
             <div class="stat-lbl">Cuti pending</div>
-            <div class="stat-val" style="color:var(--red)">{{ $cutiPending->count() }}</div>
+            <div class="stat-val" style="color:var(--red)"><?php echo e($cutiPending->count()); ?></div>
             <div class="stat-hint" style="color:var(--red-dark)">menunggu keputusan</div>
         </div>
 
@@ -138,7 +139,7 @@
                 <span class="stat-badge" style="background:var(--amber-soft);color:var(--amber-dark)">Tugas</span>
             </div>
             <div class="stat-lbl">Tugas pending</div>
-            <div class="stat-val" style="color:var(--amber)">{{ $tugasPending->count() }}</div>
+            <div class="stat-val" style="color:var(--amber)"><?php echo e($tugasPending->count()); ?></div>
             <div class="stat-hint" style="color:var(--amber-dark)">laporan perlu ditinjau</div>
         </div>
 
@@ -148,7 +149,7 @@
                 <span class="stat-badge" style="background:var(--green-soft);color:var(--green-dark)">Hari ini</span>
             </div>
             <div class="stat-lbl">Absensi hari ini</div>
-            <div class="stat-val" style="color:var(--green)">{{ $absensiHariIni->count() }}</div>
+            <div class="stat-val" style="color:var(--green)"><?php echo e($absensiHariIni->count()); ?></div>
             <div class="stat-hint" style="color:var(--green-dark)">data terbaru</div>
         </div>
 
@@ -158,7 +159,7 @@
                 <span class="stat-badge" style="background:var(--primary-soft);color:var(--primary2)">Bulan ini</span>
             </div>
             <div class="stat-lbl">Absensi bulan ini</div>
-            <div class="stat-val" style="color:var(--primary)">{{ $absensiBulanIni }}</div>
+            <div class="stat-val" style="color:var(--primary)"><?php echo e($absensiBulanIni); ?></div>
             <div class="stat-hint" style="color:var(--primary2)">total catatan absensi</div>
         </div>
     </div>
@@ -167,33 +168,36 @@
         <div class="card-box">
             <div class="card-head">
                 <span class="card-title"><svg fill="none" viewBox="0 0 16 16"><path d="M2 4h12M2 8h9M2 12h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Aktivitas terbaru</span>
-                <a href="{{ route('atasan.absensi.index') }}" class="card-link">Semua</a>
+                <a href="<?php echo e(route('atasan.absensi.index')); ?>" class="card-link">Semua</a>
             </div>
             <div class="card-body">
                 <div class="feed-list">
-                    @forelse(($aktivitasTerbaru ?? collect()) as $act)
+                    <?php $__empty_1 = true; $__currentLoopData = ($aktivitasTerbaru ?? collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $act): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <div class="feed-item">
-                            <div class="feed-ava">{{ strtoupper(substr($act->user->nama ?? 'U', 0, 2)) }}</div>
+                            <div class="feed-ava"><?php echo e(strtoupper(substr($act->user->nama ?? 'U', 0, 2))); ?></div>
                             <div class="feed-info">
-                                <div class="feed-name">{{ $act->user->nama ?? '-' }} - {{ $act->aktivitas ?? ucfirst($act->modul ?? 'Aktivitas') }}</div>
+                                <div class="feed-name"><?php echo e($act->user->nama ?? '-'); ?> - <?php echo e($act->aktivitas ?? ucfirst($act->modul ?? 'Aktivitas')); ?></div>
                                 <div class="feed-desc">
-                                    {{ $act->created_at?->format('H:i') ?? '--:--' }}
+                                    <?php echo e($act->created_at?->format('H:i') ?? '--:--'); ?>
+
                                     -
-                                    {{ $act->created_at?->translatedFormat('l, d M') ?? '-' }}
-                                    @if($act->user?->tempatTugas)
-                                        - {{ $act->user->tempatTugas->nama_tempat }}
-                                    @endif
+                                    <?php echo e($act->created_at?->translatedFormat('l, d M') ?? '-'); ?>
+
+                                    <?php if($act->user?->tempatTugas): ?>
+                                        - <?php echo e($act->user->tempatTugas->nama_tempat); ?>
+
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                            <span class="feed-badge fb-info">{{ ucfirst(str_replace('_', ' ', $act->modul ?? '-')) }}</span>
+                            <span class="feed-badge fb-info"><?php echo e(ucfirst(str_replace('_', ' ', $act->modul ?? '-'))); ?></span>
                         </div>
-                    @empty
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <div class="empty-state">
                             <div class="empty-ico"><svg fill="none" viewBox="0 0 16 16"><path d="M2 4h12M2 8h9M2 12h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></div>
                             <div class="empty-title">Belum ada aktivitas</div>
                             <div class="empty-sub">Aktivitas petugas akan muncul di sini</div>
                         </div>
-                    @endforelse
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -201,40 +205,40 @@
         <div class="card-box">
             <div class="card-head">
                 <span class="card-title"><svg fill="none" viewBox="0 0 16 16"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Persetujuan pending</span>
-                <a href="{{ route('atasan.cuti.index') }}" class="card-link">Cek cuti</a>
+                <a href="<?php echo e(route('atasan.cuti.index')); ?>" class="card-link">Cek cuti</a>
             </div>
             <div class="card-body">
                 <div class="approval-grid">
                     <div class="approval-panel">
                         <div class="approval-title">
                             <span>Cuti</span>
-                            <span class="feed-badge fb-late">{{ $cutiPending->count() }}</span>
+                            <span class="feed-badge fb-late"><?php echo e($cutiPending->count()); ?></span>
                         </div>
                         <div class="approval-list">
-                            @forelse($cutiPending as $cuti)
+                            <?php $__empty_1 = true; $__currentLoopData = $cutiPending; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cuti): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                 <div class="approval-row">
-                                    <div class="approval-name">{{ $cuti->user->nama ?? '-' }}</div>
-                                    <div class="approval-meta">{{ $cuti->tanggal_mulai?->format('d/m/Y') ?? '-' }} - {{ $cuti->tanggal_selesai?->format('d/m/Y') ?? '-' }}</div>
+                                    <div class="approval-name"><?php echo e($cuti->user->nama ?? '-'); ?></div>
+                                    <div class="approval-meta"><?php echo e($cuti->tanggal_mulai?->format('d/m/Y') ?? '-'); ?> - <?php echo e($cuti->tanggal_selesai?->format('d/m/Y') ?? '-'); ?></div>
                                 </div>
-                            @empty
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                 <div class="approval-meta">Tidak ada cuti pending</div>
-                            @endforelse
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="approval-panel">
                         <div class="approval-title">
                             <span>Tugas</span>
-                            <span class="feed-badge fb-warn">{{ $tugasPending->count() }}</span>
+                            <span class="feed-badge fb-warn"><?php echo e($tugasPending->count()); ?></span>
                         </div>
                         <div class="approval-list">
-                            @forelse($tugasPending as $tugas)
+                            <?php $__empty_1 = true; $__currentLoopData = $tugasPending; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tugas): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                 <div class="approval-row">
-                                    <div class="approval-name">{{ $tugas->user->nama ?? '-' }}</div>
-                                    <div class="approval-meta">{{ $tugas->tanggal_mulai?->format('d/m/Y H:i') ?? '-' }}</div>
+                                    <div class="approval-name"><?php echo e($tugas->user->nama ?? '-'); ?></div>
+                                    <div class="approval-meta"><?php echo e($tugas->tanggal_mulai?->format('d/m/Y H:i') ?? '-'); ?></div>
                                 </div>
-                            @empty
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                 <div class="approval-meta">Tidak ada tugas pending</div>
-                            @endforelse
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -245,38 +249,39 @@
     <div class="bot-grid">
         <div class="card-box">
             <div class="cal-head">
-                <div class="cal-month">{{ $currentMonth->translatedFormat('F Y') }}</div>
+                <div class="cal-month"><?php echo e($currentMonth->translatedFormat('F Y')); ?></div>
                 <div class="cal-nav">
-                    <a class="cal-arrow" href="{{ route('dashboard', ['month' => $previousMonth->month, 'year' => $previousMonth->year]) }}">&#8249;</a>
-                    <a class="cal-arrow" href="{{ route('dashboard', ['month' => $nextMonth->month, 'year' => $nextMonth->year]) }}">&#8250;</a>
+                    <a class="cal-arrow" href="<?php echo e(route('dashboard', ['month' => $previousMonth->month, 'year' => $previousMonth->year])); ?>">&#8249;</a>
+                    <a class="cal-arrow" href="<?php echo e(route('dashboard', ['month' => $nextMonth->month, 'year' => $nextMonth->year])); ?>">&#8250;</a>
                 </div>
             </div>
             <div class="cal-body">
                 <div class="cal-day-labels">
-                    @foreach(['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'] as $dayName)
-                        <div class="cal-day-lbl">{{ $dayName }}</div>
-                    @endforeach
+                    <?php $__currentLoopData = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dayName): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <div class="cal-day-lbl"><?php echo e($dayName); ?></div>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </div>
                 <div class="cal-grid">
-                    @foreach($days as $day)
-                        @php
+                    <?php $__currentLoopData = $days; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $day): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <?php
                             $dateKey = $day->format('Y-m-d');
                             $dayEvents = $events->get($dateKey, collect());
                             $absensiCount = $absensiByDate->get($dateKey, 0);
                             $tugasCount = $tugasByDate->get($dateKey, 0);
                             $hasHoliday = $dayEvents->isNotEmpty();
-                        @endphp
-                        <button type="button" class="cal-cell {{ $day->month !== $currentMonth->month ? 'other' : '' }} {{ $day->isToday() ? 'today' : '' }}" data-date="{{ $dateKey }}" title="{{ $absensiCount }} absensi, {{ $tugasCount }} tugas">
-                            {{ $day->day }}
-                            @if($absensiCount > 0)
+                        ?>
+                        <button type="button" class="cal-cell <?php echo e($day->month !== $currentMonth->month ? 'other' : ''); ?> <?php echo e($day->isToday() ? 'today' : ''); ?>" data-date="<?php echo e($dateKey); ?>" title="<?php echo e($absensiCount); ?> absensi, <?php echo e($tugasCount); ?> tugas">
+                            <?php echo e($day->day); ?>
+
+                            <?php if($absensiCount > 0): ?>
                                 <span class="cal-dot" style="background:var(--green)"></span>
-                            @elseif($tugasCount > 0)
+                            <?php elseif($tugasCount > 0): ?>
                                 <span class="cal-dot" style="background:var(--amber)"></span>
-                            @elseif($hasHoliday)
+                            <?php elseif($hasHoliday): ?>
                                 <span class="cal-dot" style="background:var(--red)"></span>
-                            @endif
+                            <?php endif; ?>
                         </button>
-                    @endforeach
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </div>
             </div>
             <div class="cal-detail" id="atasan-cal-detail"></div>
@@ -291,29 +296,29 @@
         <div class="card-box">
             <div class="card-head">
                 <span class="card-title"><svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Absensi hari ini</span>
-                <a href="{{ route('atasan.absensi.index') }}" class="card-link">{{ $absensiHariIni->count() }} data</a>
+                <a href="<?php echo e(route('atasan.absensi.index')); ?>" class="card-link"><?php echo e($absensiHariIni->count()); ?> data</a>
             </div>
             <div class="card-body">
                 <div class="feed-list">
-                    @forelse($absensiHariIni as $item)
-                        @php
+                    <?php $__empty_1 = true; $__currentLoopData = $absensiHariIni; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <?php
                             $badgeClass = in_array($item->status, ['hadir']) ? 'fb-ok' : (in_array($item->status, ['telat', 'terlambat']) ? 'fb-warn' : 'fb-late');
-                        @endphp
+                        ?>
                         <div class="feed-item">
-                            <div class="feed-ava">{{ strtoupper(substr($item->user->nama ?? 'U', 0, 2)) }}</div>
+                            <div class="feed-ava"><?php echo e(strtoupper(substr($item->user->nama ?? 'U', 0, 2))); ?></div>
                             <div class="feed-info">
-                                <div class="feed-name">{{ $item->user->nama ?? '-' }}</div>
-                                <div class="feed-desc">Masuk {{ $item->jam_masuk ?? '--:--' }} - Pulang {{ $item->jam_pulang ?? '--:--' }}</div>
+                                <div class="feed-name"><?php echo e($item->user->nama ?? '-'); ?></div>
+                                <div class="feed-desc">Masuk <?php echo e($item->jam_masuk ?? '--:--'); ?> - Pulang <?php echo e($item->jam_pulang ?? '--:--'); ?></div>
                             </div>
-                            <span class="feed-badge {{ $badgeClass }}">{{ ucfirst(str_replace('_', ' ', $item->status)) }}</span>
+                            <span class="feed-badge <?php echo e($badgeClass); ?>"><?php echo e(ucfirst(str_replace('_', ' ', $item->status))); ?></span>
                         </div>
-                    @empty
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <div class="empty-state">
                             <div class="empty-ico"><svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></div>
                             <div class="empty-title">Belum ada absensi</div>
                             <div class="empty-sub">Data absensi hari ini akan tampil di sini</div>
                         </div>
-                    @endforelse
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -322,28 +327,28 @@
     <div class="card-box">
         <div class="card-head">
             <span class="card-title"><svg fill="none" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Kalender terdekat</span>
-            <a href="{{ route('atasan.kalender.index') }}" class="card-link">{{ $kalender->count() }} event</a>
+            <a href="<?php echo e(route('atasan.kalender.index')); ?>" class="card-link"><?php echo e($kalender->count()); ?> event</a>
         </div>
         <div class="card-body">
             <div class="feed-list">
-                @forelse($kalender as $item)
+                <?php $__empty_1 = true; $__currentLoopData = $kalender; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                     <div class="feed-item">
                         <div class="feed-ava" style="background:var(--primary-soft);color:var(--primary);">
                             <svg fill="none" viewBox="0 0 16 16" width="14" height="14"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                         </div>
                         <div class="feed-info">
-                            <div class="feed-name">{{ $item->nama_event }}</div>
-                            <div class="feed-desc">{{ $item->tanggal->format('d/m/Y') }}</div>
+                            <div class="feed-name"><?php echo e($item->nama_event); ?></div>
+                            <div class="feed-desc"><?php echo e($item->tanggal->format('d/m/Y')); ?></div>
                         </div>
-                        <span class="feed-badge fb-info">{{ ucfirst(str_replace('_', ' ', $item->jenis_event)) }}</span>
+                        <span class="feed-badge fb-info"><?php echo e(ucfirst(str_replace('_', ' ', $item->jenis_event))); ?></span>
                     </div>
-                @empty
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                     <div class="empty-state">
                         <div class="empty-ico"><svg fill="none" viewBox="0 0 20 20"><rect x="2" y="3" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M6 1v3M14 1v3M2 8h16" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
                         <div class="empty-title">Belum ada event kalender</div>
                         <div class="empty-sub">Event dan jadwal akan muncul di sini</div>
                     </div>
-                @endforelse
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -352,10 +357,10 @@
 <script>
 (function() {
     var months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    var absensiDetails = @json($absensiCalendarDetails ?? []);
-    var tugasDetails = @json($tugasCalendarDetails ?? []);
-    var eventDetails = @json($eventCalendarDetails ?? []);
-    var selectedKey = '{{ today()->toDateString() }}';
+    var absensiDetails = <?php echo json_encode($absensiCalendarDetails ?? [], 15, 512) ?>;
+    var tugasDetails = <?php echo json_encode($tugasCalendarDetails ?? [], 15, 512) ?>;
+    var eventDetails = <?php echo json_encode($eventCalendarDetails ?? [], 15, 512) ?>;
+    var selectedKey = '<?php echo e(today()->toDateString()); ?>';
 
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>"']/g, function (char) {
@@ -425,4 +430,6 @@
     markSelected();
 })();
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\kerjaan\Proyek_absensi\absensi-app\resources\views/atasan/dashboard.blade.php ENDPATH**/ ?>

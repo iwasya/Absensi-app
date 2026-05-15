@@ -1,4 +1,4 @@
-﻿<?php
+<?php
     $app_theme = \App\Models\Pengaturan::getNilai('app_theme', 'light');
     $app_name = \App\Models\Pengaturan::getNilai('app_name', 'Absensi PPSU') ?: 'Absensi PPSU';
     $app_logo = \App\Models\Pengaturan::getNilai('app_logo');
@@ -29,8 +29,7 @@
     } elseif ($app_icon) {
         $app_icon_href = Storage::url($app_icon);
     }
-?>
-<!DOCTYPE html>
+?><!DOCTYPE html>
 <html lang="<?php echo e(str_replace('_', '-', app()->getLocale())); ?>" data-theme="<?php echo e($app_theme); ?>">
 <head>
     <meta charset="utf-8">
@@ -926,7 +925,7 @@
                 </div>
                 <a href="<?php echo e(route('petugas.cuti.index')); ?>"
                    class="<?php echo e(request()->routeIs('petugas.cuti.*') ? 'active' : ''); ?>">
-                    <svg fill="none" viewBox="0 0 16 16"><path d="M8 2v4l2.5 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/></svg>
+                    <svg fill="none" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 8.3l2 2L11.5 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     Cuti
                 </a>
                 <a href="<?php echo e(route('petugas.sanksi.index')); ?>"
@@ -943,7 +942,7 @@
                     Pantau Absensi
                 </a>
                 <a href="<?php echo e(route('atasan.cuti.index')); ?>" class="<?php echo e(request()->routeIs('atasan.cuti.*') ? 'active' : ''); ?>">
-                    <svg fill="none" viewBox="0 0 16 16"><path d="M8 2v4l2.5 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/></svg>
+                    <svg fill="none" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 8.3l2 2L11.5 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     Approve Cuti
                 </a>
                 <a href="<?php echo e(route('atasan.tugas.index')); ?>" class="<?php echo e(request()->routeIs('atasan.tugas.*') ? 'active' :''); ?>">
@@ -981,7 +980,7 @@
                     Periode
                 </a>
                 <a href="<?php echo e(route('admin.kalender.index')); ?>">
-                    <svg fill="none" viewBox="0 0 16 16"><path d="M8 2L2 5v4c0 3.5 2.5 6.5 6 7 3.5-.5 6-3.5 6-7V5L8 2z" stroke="currentColor" stroke-width="1.3"/></svg>
+                    <svg fill="none" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1.5v3M11 1.5v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M5 10h.01M8 10h.01M11 10h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
                     Kalender
                 </a>
                 <a href="<?php echo e(route('admin.buka-absen.index')); ?>">

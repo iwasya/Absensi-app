@@ -119,6 +119,26 @@ class AbsensiTidakAbsenService
         return $total;
     }
 
+    public function generateTodayForUserAfterCutoff(User $user): array
+    {
+        if (! $user->isPetugas()) {
+            return ['date' => today()->toDateString(), 'created' => 0, 'skipped' => 0, 'reason' => 'Bukan petugas.'];
+        }
+
+        $now = now();
+        $cutoff = config(
+            'absensi.batas_otomatis_tidak_absen',
+            config('absensi.jam_masuk_tutup', '07:15:00')
+        );
+        $cutoffTime = $now->copy()->setTimeFromTimeString($cutoff);
+
+        if ($now->lte($cutoffTime)) {
+            return ['date' => $now->toDateString(), 'created' => 0, 'skipped' => 1, 'reason' => 'Belum melewati batas absen masuk.'];
+        }
+
+        return $this->generateForDate($now->copy()->startOfDay(), $user);
+    }
+
     private function periodeForDate(string $tanggal): ?Periode
     {
         return Periode::where('tanggal_mulai', '<=', $tanggal)

@@ -45,14 +45,16 @@ class AbsensiController extends Controller
             }
         }
 
-        app(AbsensiTidakAbsenService::class)->backfillForUserUntilYesterday($user);
+        $absensiTidakAbsen = app(AbsensiTidakAbsenService::class);
+        $absensiTidakAbsen->backfillForUserUntilYesterday($user);
+        $absensiTidakAbsen->generateTodayForUserAfterCutoff($user);
 
         return view('petugas.absensi', [
             'today' => Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first(),
             'items' => $items
                 ->latest('tanggal')
                 ->latest('id_absensi')
-                ->paginate($request->get("per_page", 15))
+                ->paginate(5)
                 ->withQueryString(),
             'periodeAktif' => Periode::aktif(),
             'tempatTugas' => $user->tempatTugas,
@@ -187,7 +189,13 @@ class AbsensiController extends Controller
         $existing = Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first();
         $isLateAccess = $existing && $existing->status === 'akses_dibuka';
 
-        if (!$isLateAccess && ($now < $jamMasukBuka || $now > $jamMasukTutup)) {
+        if (! $isLateAccess && $now < $jamMasukBuka) {
+            return back()->with('error', "Absen masuk hanya dibuka dari jam " . substr($jamMasukBuka, 0, 5) . " sampai " . substr($jamMasukTutup, 0, 5) . ".");
+        }
+
+        if (! $isLateAccess && $now > $jamMasukTutup) {
+            app(AbsensiTidakAbsenService::class)->generateTodayForUserAfterCutoff($user);
+
             return back()->with('error', "Absen masuk hanya dibuka dari jam " . substr($jamMasukBuka, 0, 5) . " sampai " . substr($jamMasukTutup, 0, 5) . ".");
         }
 
