@@ -682,7 +682,7 @@
             white-space: nowrap;
         }
         .badge.pending           { background: var(--amber-soft); color: var(--amber-dark); border-color: #FDE68A; }
-        .badge.approve, .badge.hadir, .badge.kegiatan { background: var(--green-soft); color: var(--green-dark); border-color: #A7F3D0; }
+        .badge.approve, .badge.hadir, .badge.kegiatan, .badge.cuti { background: var(--green-soft); color: var(--green-dark); border-color: #A7F3D0; }
         .badge.reject, .badge.telat { background: var(--red-soft); color: var(--red-dark); border-color: #FCA5A5; }
         .badge.libur, .badge.cuti_bersama { background: var(--red-soft); color: var(--red-dark); border-color: #FCA5A5; }
 

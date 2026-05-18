@@ -48,8 +48,13 @@ class AbsensiController extends Controller
         $absensiTidakAbsen = app(AbsensiTidakAbsenService::class);
         $absensiTidakAbsen->backfillForUserUntilYesterday($user);
         $holidayInfo = $absensiTidakAbsen->holidayInfo(today());
+        $leaveInfo = $absensiTidakAbsen->leaveInfo($user, today());
         if (! $holidayInfo['is_holiday']) {
-            $absensiTidakAbsen->generateTodayForUserAfterCutoff($user);
+            if ($leaveInfo['is_leave']) {
+                $absensiTidakAbsen->generateForDate(today(), $user);
+            } else {
+                $absensiTidakAbsen->generateTodayForUserAfterCutoff($user);
+            }
         }
 
         return view('petugas.absensi', [
@@ -67,6 +72,7 @@ class AbsensiController extends Controller
             'jamPulangTutup' => config('absensi.jam_pulang_tutup', '23:59:59'),
             'jarakMaksMeter' => config('absensi.jarak_maks_meter', 100),
             'holidayInfo' => $holidayInfo,
+            'leaveInfo' => $leaveInfo,
         ]);
     }
 
@@ -211,9 +217,16 @@ class AbsensiController extends Controller
         ]);
 
         $user = $request->user();
-        $holidayInfo = app(AbsensiTidakAbsenService::class)->holidayInfo(today());
+        $absensiTidakAbsen = app(AbsensiTidakAbsenService::class);
+        $holidayInfo = $absensiTidakAbsen->holidayInfo(today());
         if ($holidayInfo['is_holiday']) {
             return back()->with('error', 'Hari ini libur (' . $holidayInfo['reason'] . '), absensi tidak dibuka.');
+        }
+        $leaveInfo = $absensiTidakAbsen->leaveInfo($user, today());
+        if ($leaveInfo['is_leave']) {
+            $absensiTidakAbsen->generateForDate(today(), $user);
+
+            return back()->with('error', 'Hari ini kamu sedang cuti (' . $leaveInfo['reason'] . '), absensi tidak dibuka.');
         }
 
         $now = now()->format('H:i:s');
@@ -312,12 +325,20 @@ class AbsensiController extends Controller
             'lokasi_pulang' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $holidayInfo = app(AbsensiTidakAbsenService::class)->holidayInfo(today());
+        $user = $request->user();
+        $absensiTidakAbsen = app(AbsensiTidakAbsenService::class);
+        $holidayInfo = $absensiTidakAbsen->holidayInfo(today());
         if ($holidayInfo['is_holiday']) {
             return back()->with('error', 'Hari ini libur (' . $holidayInfo['reason'] . '), absensi pulang tidak dibuka.');
         }
+        $leaveInfo = $absensiTidakAbsen->leaveInfo($user, today());
+        if ($leaveInfo['is_leave']) {
+            $absensiTidakAbsen->generateForDate(today(), $user);
 
-        $absensi = Absensi::where('id_user', $request->user()->id_user)->whereDate('tanggal', today())->first();
+            return back()->with('error', 'Hari ini kamu sedang cuti (' . $leaveInfo['reason'] . '), absensi pulang tidak dibuka.');
+        }
+
+        $absensi = Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first();
 
         if (! $absensi) {
             return back()->with('error', 'Absen masuk dulu sebelum absen pulang.');
@@ -330,7 +351,6 @@ class AbsensiController extends Controller
             return back()->with('error', "Absen pulang hanya dibuka dari jam " . substr($jamPulangBuka, 0, 5) . " sampai " . substr($jamPulangTutup, 0, 5) . ".");
         }
 
-        $user = $request->user();
         $areaError = $this->validateAssignedArea(
             $user,
             isset($validated['latitude_pulang']) ? (float) $validated['latitude_pulang'] : null,

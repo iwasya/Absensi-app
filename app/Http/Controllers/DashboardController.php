@@ -136,7 +136,15 @@ class DashboardController extends Controller
 
         $absensiTidakAbsen = app(AbsensiTidakAbsenService::class);
         $absensiTidakAbsen->backfillForUserUntilYesterday($user);
-        $absensiTidakAbsen->generateTodayForUserAfterCutoff($user);
+        $holidayInfo = $absensiTidakAbsen->holidayInfo(today());
+        $leaveInfo = $absensiTidakAbsen->leaveInfo($user, today());
+        if (! $holidayInfo['is_holiday']) {
+            if ($leaveInfo['is_leave']) {
+                $absensiTidakAbsen->generateForDate(today(), $user);
+            } else {
+                $absensiTidakAbsen->generateTodayForUserAfterCutoff($user);
+            }
+        }
 
         $calendar = $this->dashboardCalendar($request);
         $cutiTerpakaiTahunIni = Cuti::where('id_user', $user->id_user)

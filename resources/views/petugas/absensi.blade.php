@@ -11,6 +11,8 @@
     $jarakMaksMeter = $jarakMaksMeter ?? config('absensi.jarak_maks_meter', 100);
     $isHoliday = $holidayInfo['is_holiday'] ?? false;
     $holidayReason = $holidayInfo['reason'] ?? 'Hari libur';
+    $isLeave = $leaveInfo['is_leave'] ?? false;
+    $leaveReason = $leaveInfo['reason'] ?? 'Cuti disetujui';
 @endphp
 <style>
     main { max-width: 100% !important; margin: 0 !important; padding: 20px !important; }
@@ -317,6 +319,11 @@
         <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         Hari ini libur: <strong>{{ $holidayReason }}</strong>. Absensi tidak dibuka dan tidak akan dicatat tidak absen.
     </div>
+@elseif($isLeave)
+    <div class="abs-info" style="margin-bottom:20px;background:var(--primary-soft);border-color:var(--primary-border);color:var(--primary2);">
+        <svg fill="none" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7h5M5.5 10h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Hari ini kamu sedang cuti: <strong>{{ $leaveReason }}</strong>. Absensi tidak dibuka dan tidak akan dicatat tidak absen.
+    </div>
 @endif
 
 {{-- ── Form Absensi ── --}}
@@ -340,6 +347,11 @@
                 <div class="abs-info" style="margin:0;">
                     <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     Absen masuk tidak dibuka karena hari libur.
+                </div>
+            @elseif($isLeave || $today?->status === 'cuti')
+                <div class="abs-info" style="margin:0;">
+                    <svg fill="none" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7h5M5.5 10h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    Absen masuk tidak dibuka karena kamu sedang cuti.
                 </div>
             @elseif(now()->format('H:i:s') > $jamMasukTutup && $today?->status !== 'akses_dibuka')
                 <div class="error" style="margin:0;">Waktu absen masuk telah habis. Jika tidak ada akses admin, hari ini akan tercatat Tidak Absen setelah hari berganti.</div>
@@ -404,7 +416,12 @@
             <span class="abs-card-time">{{ substr($jamPulangBuka, 0, 5) }} – {{ substr($jamPulangTutup, 0, 5) }}</span>
         </div>
         <div class="abs-card-body">
-            @if(!$today?->jam_masuk && $today?->status !== 'tidak_absen')
+            @if($today?->status === 'cuti' || $isLeave)
+                <div class="abs-info">
+                    <svg fill="none" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7h5M5.5 10h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    Absen pulang tidak dibuka karena kamu sedang cuti.
+                </div>
+            @elseif(!$today?->jam_masuk && $today?->status !== 'tidak_absen')
                 <div class="abs-info">
                     <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     {{ $isHoliday ? 'Absen pulang tidak dibuka karena hari libur.' : 'Silakan absen masuk terlebih dahulu.' }}

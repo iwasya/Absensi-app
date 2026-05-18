@@ -8,6 +8,7 @@ use App\Models\Cuti;
 use App\Models\Notifikasi;
 use App\Models\Periode;
 use App\Models\Tugas;
+use App\Services\AbsensiTidakAbsenService;
 use App\Support\ActivityLogger;
 use App\Support\QueryFilters;
 use Illuminate\Http\RedirectResponse;
@@ -188,6 +189,11 @@ class ApprovalController extends Controller
             'status' => $status,
             'approver_id' => $request->user()->id_user,
         ]);
+
+        if ($status === 'approve') {
+            $cuti->refresh()->load('user');
+            app(AbsensiTidakAbsenService::class)->syncApprovedLeave($cuti);
+        }
 
         Notifikasi::create([
             'id_user' => $cuti->id_user,

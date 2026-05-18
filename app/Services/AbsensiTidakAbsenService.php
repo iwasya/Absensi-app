@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Absensi;
 use App\Models\Kalender;
+use App\Models\Cuti;
 use App\Models\Periode;
 use App\Models\User;
 use App\Support\QueryFilters;
@@ -50,6 +51,18 @@ class AbsensiTidakAbsenService
                 continue;
             }
 
+            $leave = $this->leaveInfo($petugas, $targetDate);
+            if ($leave['is_leave']) {
+                $leaveResult = $this->storeLeaveAbsensi($petugas, $targetDate, $activePeriode, $leave['cuti']);
+                if ($leaveResult === 'created') {
+                    $result['created']++;
+                } else {
+                    $result['skipped']++;
+                }
+
+                continue;
+            }
+
             $exists = Absensi::where('id_user', $petugas->id_user)
                 ->whereDate('tanggal', $tanggalString)
                 ->exists();
@@ -71,6 +84,46 @@ class AbsensiTidakAbsenService
         }
 
         return $result;
+    }
+
+    public function syncApprovedLeave(Cuti $cuti): array
+    {
+        if (! in_array($cuti->status, ['approve', 'approved'], true)) {
+            return ['created' => 0, 'updated' => 0, 'skipped' => 0];
+        }
+
+        $user = $cuti->user;
+        if (! $user || ! $user->isPetugas()) {
+            return ['created' => 0, 'updated' => 0, 'skipped' => 0];
+        }
+
+        $total = ['created' => 0, 'updated' => 0, 'skipped' => 0];
+        $startDate = $cuti->tanggal_mulai->copy()->startOfDay();
+        $endDate = $cuti->tanggal_selesai->copy()->startOfDay();
+
+        for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
+            if ($this->holidayInfo($date)['is_holiday']) {
+                $total['skipped']++;
+                continue;
+            }
+
+            $periode = $this->periodeForDate($date->toDateString());
+            if (! $periode || $this->createdAfterDate($user, $date)) {
+                $total['skipped']++;
+                continue;
+            }
+
+            $result = $this->storeLeaveAbsensi($user, $date, $periode, $cuti);
+            if ($result === 'created') {
+                $total['created']++;
+            } elseif ($result === 'updated') {
+                $total['updated']++;
+            } else {
+                $total['skipped']++;
+            }
+        }
+
+        return $total;
     }
 
     public function backfillForUserUntilYesterday(User $user): array
@@ -193,9 +246,70 @@ class AbsensiTidakAbsenService
         ];
     }
 
+    public function leaveInfo(User|int $user, Carbon|string $date): array
+    {
+        $userId = $user instanceof User ? $user->id_user : $user;
+        $targetDate = $date instanceof Carbon
+            ? $date->copy()->startOfDay()
+            : Carbon::parse($date)->startOfDay();
+
+        $cuti = Cuti::where('id_user', $userId)
+            ->whereIn('status', ['approve', 'approved'])
+            ->whereDate('tanggal_mulai', '<=', $targetDate->toDateString())
+            ->whereDate('tanggal_selesai', '>=', $targetDate->toDateString())
+            ->orderByDesc('id_cuti')
+            ->first();
+
+        return [
+            'is_leave' => (bool) $cuti,
+            'reason' => $cuti ? $this->leaveReason($cuti) : null,
+            'cuti' => $cuti,
+        ];
+    }
+
     private function createdAfterDate(User $user, Carbon $date): bool
     {
         return $user->created_at
             && $user->created_at->copy()->startOfDay()->gt($date);
+    }
+
+    private function storeLeaveAbsensi(User $user, Carbon $date, Periode $periode, Cuti $cuti): string|false
+    {
+        $tanggal = $date->toDateString();
+        $keterangan = $this->leaveReason($cuti);
+        $existing = Absensi::where('id_user', $user->id_user)
+            ->whereDate('tanggal', $tanggal)
+            ->first();
+
+        if ($existing) {
+            if (in_array($existing->status, ['tidak_absen', 'tidak_hadir', 'cuti'], true)
+                && ! $existing->jam_masuk
+                && ! $existing->jam_pulang) {
+                $existing->update([
+                    'id_periode' => $periode->id_periode,
+                    'status' => 'cuti',
+                    'keterangan' => $keterangan,
+                ]);
+
+                return $existing->wasChanged() ? 'updated' : false;
+            }
+
+            return false;
+        }
+
+        Absensi::create([
+            'id_user' => $user->id_user,
+            'id_periode' => $periode->id_periode,
+            'tanggal' => $tanggal,
+            'status' => 'cuti',
+            'keterangan' => $keterangan,
+        ]);
+
+        return 'created';
+    }
+
+    private function leaveReason(Cuti $cuti): string
+    {
+        return 'Cuti ' . $cuti->jenis_cuti . ' disetujui';
     }
 }
