@@ -1,10 +1,10 @@
 @php
-    $app_theme = \App\Models\Pengaturan::getNilai('app_theme', 'light');
-    $app_name = \App\Models\Pengaturan::getNilai('app_name', 'Absensi PPSU') ?: 'Absensi PPSU';
-    $app_logo = \App\Models\Pengaturan::getNilai('app_logo');
-    $app_brand_display = \App\Models\Pengaturan::getNilai('app_brand_display', 'logo_name');
-    $app_icon = \App\Models\Pengaturan::getNilai('app_icon');
-    $app_icon_mode = \App\Models\Pengaturan::getNilai('app_icon_mode', 'upload');
+    $app_theme = $app_theme ?? 'light';
+    $app_name = ($app_name ?? 'Absensi PPSU') ?: 'Absensi PPSU';
+    $app_logo = $app_logo ?? null;
+    $app_brand_display = $app_brand_display ?? 'logo_name';
+    $app_icon = $app_icon ?? null;
+    $app_icon_mode = $app_icon_mode ?? 'upload';
     $app_icon_href = null;
 
     if (! in_array($app_theme, ['light', 'dark'], true)) {
@@ -16,9 +16,9 @@
     }
 
     if ($app_icon_mode === 'manual') {
-        $iconText = strtoupper(substr(\App\Models\Pengaturan::getNilai('app_icon_text', 'A') ?: 'A', 0, 2));
-        $iconBg = \App\Models\Pengaturan::getNilai('app_icon_bg', '#2563eb');
-        $iconColor = \App\Models\Pengaturan::getNilai('app_icon_color', '#ffffff');
+        $iconText = strtoupper(substr(($app_icon_text ?? 'A') ?: 'A', 0, 2));
+        $iconBg = $app_icon_bg ?? '#2563eb';
+        $iconColor = $app_icon_color ?? '#ffffff';
 
         if (! preg_match('/^#[0-9A-Fa-f]{6}$/', $iconBg)) {
             $iconBg = '#2563eb';

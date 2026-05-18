@@ -10,6 +10,10 @@ class Pengaturan extends Model
 {
     use HasFactory;
 
+    private const CACHE_KEY = 'pengaturan:all';
+
+    private static ?array $cachedValues = null;
+
     protected $table = 'pengaturan';
     protected $primaryKey = 'kunci';
     public $incrementing = false;
@@ -19,13 +23,37 @@ class Pengaturan extends Model
 
     public static function getNilai($kunci, $default = null)
     {
-        $pengaturan = self::find($kunci);
-        return $pengaturan ? $pengaturan->nilai : $default;
+        $values = self::cachedValues();
+
+        return array_key_exists($kunci, $values) ? $values[$kunci] : $default;
     }
 
     protected static function booted(): void
     {
-        static::saved(fn () => Cache::forget('pengaturan:app-shell'));
-        static::deleted(fn () => Cache::forget('pengaturan:app-shell'));
+        static::saved(fn () => self::forgetCachedValues());
+        static::deleted(fn () => self::forgetCachedValues());
+    }
+
+    private static function cachedValues(): array
+    {
+        if (self::$cachedValues !== null) {
+            return self::$cachedValues;
+        }
+
+        self::$cachedValues = Cache::rememberForever(self::CACHE_KEY, function () {
+            return self::query()
+                ->pluck('nilai', 'kunci')
+                ->all();
+        });
+
+        return self::$cachedValues;
+    }
+
+    private static function forgetCachedValues(): void
+    {
+        self::$cachedValues = null;
+
+        Cache::forget(self::CACHE_KEY);
+        Cache::forget('pengaturan:app-shell');
     }
 }

@@ -29,7 +29,7 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
-        View::composer('*', function ($view) {
+        View::composer(['layouts.app', 'auth.login', 'auth.register'], function ($view) {
             $settings = Cache::remember('pengaturan:app-shell', 300, function () {
                 return [
                     'app_theme' => Pengaturan::getNilai('app_theme', 'light'),
