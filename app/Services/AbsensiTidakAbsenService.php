@@ -32,8 +32,9 @@ class AbsensiTidakAbsenService
             return $result;
         }
 
-        if ($this->isHoliday($targetDate)) {
-            $result['reason'] = 'Tanggal libur atau weekend.';
+        $holiday = $this->holidayInfo($targetDate);
+        if ($holiday['is_holiday']) {
+            $result['reason'] = $holiday['reason'];
             return $result;
         }
 
@@ -164,10 +165,32 @@ class AbsensiTidakAbsenService
             ->first();
     }
 
-    private function isHoliday(Carbon $date): bool
+    public function holidayInfo(Carbon|string $date): array
     {
-        return $date->isWeekend()
-            || Kalender::whereDate('tanggal', $date->toDateString())->exists();
+        $targetDate = $date instanceof Carbon
+            ? $date->copy()->startOfDay()
+            : Carbon::parse($date)->startOfDay();
+
+        if ($targetDate->isWeekend()) {
+            return [
+                'is_holiday' => true,
+                'reason' => 'Weekend',
+                'event' => null,
+            ];
+        }
+
+        $event = Kalender::whereDate('tanggal', $targetDate->toDateString())
+            ->whereIn('jenis_event', ['libur', 'cuti_bersama'])
+            ->orderBy('id_kalender')
+            ->first();
+
+        return [
+            'is_holiday' => (bool) $event,
+            'reason' => $event
+                ? ($event->nama_event ?: ucfirst(str_replace('_', ' ', $event->jenis_event)))
+                : null,
+            'event' => $event,
+        ];
     }
 
     private function createdAfterDate(User $user, Carbon $date): bool

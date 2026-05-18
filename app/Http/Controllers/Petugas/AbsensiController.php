@@ -46,7 +46,10 @@ class AbsensiController extends Controller
 
         $absensiTidakAbsen = app(AbsensiTidakAbsenService::class);
         $absensiTidakAbsen->backfillForUserUntilYesterday($user);
-        $absensiTidakAbsen->generateTodayForUserAfterCutoff($user);
+        $holidayInfo = $absensiTidakAbsen->holidayInfo(today());
+        if (! $holidayInfo['is_holiday']) {
+            $absensiTidakAbsen->generateTodayForUserAfterCutoff($user);
+        }
 
         return view('petugas.absensi', [
             'today' => Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first(),
@@ -62,6 +65,7 @@ class AbsensiController extends Controller
             'jamPulangBuka' => config('absensi.jam_pulang_buka', '16:00:00'),
             'jamPulangTutup' => config('absensi.jam_pulang_tutup', '23:59:59'),
             'jarakMaksMeter' => config('absensi.jarak_maks_meter', 100),
+            'holidayInfo' => $holidayInfo,
         ]);
     }
 
@@ -212,6 +216,11 @@ class AbsensiController extends Controller
         ]);
 
         $user = $request->user();
+        $holidayInfo = app(AbsensiTidakAbsenService::class)->holidayInfo(today());
+        if ($holidayInfo['is_holiday']) {
+            return back()->with('error', 'Hari ini libur (' . $holidayInfo['reason'] . '), absensi tidak dibuka.');
+        }
+
         $now = now()->format('H:i:s');
         $jamMasukBuka = config('absensi.jam_masuk_buka', '06:00:00');
         $jamMasukTutup = config('absensi.jam_masuk_tutup', '07:15:00');
@@ -307,6 +316,11 @@ class AbsensiController extends Controller
             'longitude_pulang' => ['nullable', 'numeric'],
             'lokasi_pulang' => ['nullable', 'string', 'max:255'],
         ]);
+
+        $holidayInfo = app(AbsensiTidakAbsenService::class)->holidayInfo(today());
+        if ($holidayInfo['is_holiday']) {
+            return back()->with('error', 'Hari ini libur (' . $holidayInfo['reason'] . '), absensi pulang tidak dibuka.');
+        }
 
         $absensi = Absensi::where('id_user', $request->user()->id_user)->whereDate('tanggal', today())->first();
 

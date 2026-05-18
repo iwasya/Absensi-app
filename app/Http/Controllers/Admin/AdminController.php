@@ -253,6 +253,13 @@ class AdminController extends Controller
 
         $kalender = Kalender::create($validated);
 
+        if (in_array($kalender->jenis_event, ['libur', 'cuti_bersama'], true)) {
+            \App\Models\Absensi::whereDate('tanggal', $kalender->tanggal)
+                ->where('status', 'tidak_absen')
+                ->where('keterangan', 'Tidak hadir (otomatis sistem)')
+                ->delete();
+        }
+
         ActivityLogger::log($request, 'Membuat kalender', 'kalender', $kalender->id_kalender, Kalender::class);
 
         $waktu = now();
