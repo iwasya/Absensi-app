@@ -120,12 +120,15 @@
             flex: 0 0 auto;
         }
         .brand-logo {
-            padding: 6px;
+            width: 132px;
+            height: 58px;
+            padding: 0;
             box-sizing: border-box;
             display: block;
             object-fit: contain;
-            background: rgba(255,255,255,.08);
-            border: 1px solid var(--primary-border);
+            background: transparent;
+            border: 0;
+            border-radius: 0;
         }
         .brand-fallback {
             display: grid;

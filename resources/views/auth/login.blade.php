@@ -128,9 +128,12 @@
             flex-shrink: 0;
         }
         .logo-box.logo-image {
-            background: rgba(255,255,255,.08);
-            border: 1px solid rgba(255,255,255,.12);
-            padding: 7px;
+            width: 132px;
+            height: 58px;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            padding: 0;
             box-sizing: border-box;
         }
         .logo-box img {
