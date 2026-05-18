@@ -8,6 +8,17 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+RUN { \
+    echo "opcache.enable=1"; \
+    echo "opcache.enable_cli=1"; \
+    echo "opcache.memory_consumption=96"; \
+    echo "opcache.interned_strings_buffer=8"; \
+    echo "opcache.max_accelerated_files=10000"; \
+    echo "opcache.validate_timestamps=0"; \
+    echo "realpath_cache_size=4096K"; \
+    echo "realpath_cache_ttl=600"; \
+} > /usr/local/etc/php/conf.d/opcache-performance.ini
+
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
@@ -28,4 +39,4 @@ RUN mkdir -p storage/framework/cache/data storage/framework/sessions storage/fra
 EXPOSE 10000
 
 # Run Laravel
-CMD php artisan storage:link || true; php artisan config:cache && php artisan route:cache && php -S 0.0.0.0:${PORT:-10000} -t public
+CMD php artisan storage:link || true; php artisan optimize && php -S 0.0.0.0:${PORT:-10000} -t public

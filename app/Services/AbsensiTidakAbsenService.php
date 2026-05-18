@@ -8,6 +8,7 @@ use App\Models\Periode;
 use App\Models\User;
 use App\Support\QueryFilters;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class AbsensiTidakAbsenService
 {
@@ -77,6 +78,11 @@ class AbsensiTidakAbsenService
             return ['created' => 0, 'skipped' => 0];
         }
 
+        $cacheKey = "absensi:backfill:user:{$user->id_user}:" . today()->toDateString();
+        if (Cache::has($cacheKey)) {
+            return ['created' => 0, 'skipped' => 0];
+        }
+
         $periode = Periode::aktif();
         if (! $periode) {
             return ['created' => 0, 'skipped' => 0];
@@ -116,6 +122,8 @@ class AbsensiTidakAbsenService
             $total['skipped'] += $result['skipped'];
         }
 
+        Cache::put($cacheKey, true, now()->endOfDay());
+
         return $total;
     }
 
@@ -136,7 +144,15 @@ class AbsensiTidakAbsenService
             return ['date' => $now->toDateString(), 'created' => 0, 'skipped' => 1, 'reason' => 'Belum melewati batas absen masuk.'];
         }
 
-        return $this->generateForDate($now->copy()->startOfDay(), $user);
+        $cacheKey = "absensi:auto-today:user:{$user->id_user}:" . $now->toDateString();
+        if (Cache::has($cacheKey)) {
+            return ['date' => $now->toDateString(), 'created' => 0, 'skipped' => 0, 'reason' => 'Sudah diproses hari ini.'];
+        }
+
+        $result = $this->generateForDate($now->copy()->startOfDay(), $user);
+        Cache::put($cacheKey, true, now()->endOfDay());
+
+        return $result;
     }
 
     private function periodeForDate(string $tanggal): ?Periode
