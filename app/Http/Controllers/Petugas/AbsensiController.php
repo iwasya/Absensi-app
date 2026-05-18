@@ -7,6 +7,7 @@ use App\Models\Absensi;
 use App\Models\Periode;
 use App\Services\AbsensiTidakAbsenService;
 use App\Support\ActivityLogger;
+use App\Support\ImageOptimizer;
 use App\Support\QueryFilters;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -169,13 +170,7 @@ class AbsensiController extends Controller
             return null;
         }
 
-        // Use extension from actual MIME type, not from user input
-        $extension = $validMimes[$mimeType];
-        $fileName = $folder . '/' . uniqid() . '_' . time() . '.' . $extension;
-
-        \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $imageBase64);
-
-        return $fileName;
+        return ImageOptimizer::storeBinary($imageBase64, $folder, 720, 720, 72);
     }
 
     private function validateAssignedArea($user, ?float $latitude, ?float $longitude): ?string

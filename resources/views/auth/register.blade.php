@@ -220,7 +220,7 @@
         <div class="brand {{ $app_brand_display }}">
             @if($app_brand_display !== 'name_only')
                 @if($app_logo)
-                    <img src="{{ Storage::url($app_logo) }}" alt="Logo {{ $app_name }}" class="brand-logo">
+                    <img src="{{ Storage::url($app_logo) }}" alt="Logo {{ $app_name }}" class="brand-logo" decoding="async">
                 @else
                     <div class="brand-fallback">{{ strtoupper(substr($app_name, 0, 1)) }}</div>
                 @endif

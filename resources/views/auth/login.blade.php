@@ -364,7 +364,7 @@
         @if($app_brand_display !== 'name_only')
             @if($app_logo)
                 <div class="logo-box logo-image">
-                    <img src="{{ Storage::url($app_logo) }}" alt="Logo {{ $app_name }}">
+                    <img src="{{ Storage::url($app_logo) }}" alt="Logo {{ $app_name }}" decoding="async">
                 </div>
             @else
                 <div class="logo-box">

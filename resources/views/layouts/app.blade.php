@@ -835,7 +835,7 @@
         <div class="brand {{ $app_brand_display }}">
             @if($app_brand_display !== 'name_only')
                 @if($app_logo)
-                <img src="{{ Storage::url($app_logo) }}" alt="Logo" class="brand-logo-img">
+                <img src="{{ Storage::url($app_logo) }}" alt="Logo" class="brand-logo-img" decoding="async">
                 @else
                 <div class="brand-logo-box">
                     <svg fill="none" viewBox="0 0 18 18"><path d="M3 9a6 6 0 1012 0A6 6 0 003 9z" stroke="#fff" stroke-width="1.4"/><path d="M9 6v3l2 1.5" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>
@@ -855,7 +855,7 @@
         <div class="sb-user">
             <div class="sb-ava">
                 @if(auth()->user()->foto_profil)
-                    <img src="{{ Storage::url(auth()->user()->foto_profil) }}" alt="Foto">
+                    <img src="{{ Storage::url(auth()->user()->foto_profil) }}" alt="Foto" decoding="async">
                 @else
                     @php
                         $namaParts = explode(' ', trim(auth()->user()->nama ?? 'U'));
@@ -1103,7 +1103,7 @@
                             title="{{ auth()->user()->nama ?? 'Profil' }}"
                             style="background:none;border:none;cursor:pointer;padding:0;display:flex;border-radius:50%;">
                         @if(auth()->user()->foto_profil)
-                            <img src="{{ Storage::url(auth()->user()->foto_profil) }}" alt="Foto"
+                            <img src="{{ Storage::url(auth()->user()->foto_profil) }}" alt="Foto" decoding="async"
                                  style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2.5px solid var(--primary-border);transition:border-color .15s;">
                         @else
                             <div style="width:42px;height:42px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px;border:2.5px solid var(--primary-border);letter-spacing:.5px;">

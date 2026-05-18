@@ -412,7 +412,7 @@
         <aside class="profile-panel profile-card">
             <div class="profile-avatar-wrap">
                 @if($user->foto_profil)
-                    <img src="{{ Storage::url($user->foto_profil) }}" alt="Foto Profil" class="profile-avatar">
+                    <img src="{{ Storage::url($user->foto_profil) }}" alt="Foto Profil" class="profile-avatar" loading="lazy" decoding="async">
                 @else
                     <div class="profile-initial">{{ strtoupper(substr($user->nama ?? 'U', 0, 1)) }}</div>
                 @endif

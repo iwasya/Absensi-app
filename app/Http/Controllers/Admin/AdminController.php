@@ -12,6 +12,7 @@ use App\Models\TempatTugas;
 use App\Models\User;
 use App\Models\UserSensitive;
 use App\Support\ActivityLogger;
+use App\Support\ImageOptimizer;
 use App\Support\QueryFilters;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -338,7 +339,10 @@ class AdminController extends Controller
             if ($oldLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($oldLogo)) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($oldLogo);
             }
-            $logoPath = $request->file('app_logo')->store('pengaturan', 'public');
+            $logoPath = ImageOptimizer::storeUploaded($request->file('app_logo'), 'pengaturan', 900, 420, 82);
+            if (! $logoPath) {
+                return back()->with('error', 'Logo gagal diproses.');
+            }
             \App\Models\Pengaturan::updateOrCreate(
                 ['kunci' => 'app_logo'],
                 ['nilai' => $logoPath]
@@ -350,7 +354,10 @@ class AdminController extends Controller
             if ($oldIcon && \Illuminate\Support\Facades\Storage::disk('public')->exists($oldIcon)) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($oldIcon);
             }
-            $iconPath = $request->file('app_icon')->store('pengaturan', 'public');
+            $iconPath = ImageOptimizer::storeUploaded($request->file('app_icon'), 'pengaturan', 256, 256, 82);
+            if (! $iconPath) {
+                return back()->with('error', 'Ikon gagal diproses.');
+            }
             \App\Models\Pengaturan::updateOrCreate(
                 ['kunci' => 'app_icon'],
                 ['nilai' => $iconPath]

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\ImageOptimizer;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -63,7 +64,10 @@ class ProfileController extends Controller
                 Storage::disk('public')->delete($user->foto_profil);
             }
 
-            $path = $request->file('foto_profil')->store('profil', 'public');
+            $path = ImageOptimizer::storeUploaded($request->file('foto_profil'), 'profil', 512, 512, 78);
+            if (! $path) {
+                return back()->with('error', 'Foto profil gagal diproses.');
+            }
             $user->foto_profil = $path;
         }
 

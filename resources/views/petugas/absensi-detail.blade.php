@@ -35,7 +35,7 @@
             <h2>Data Masuk</h2>
             @if($item->foto_masuk)
                 <div class="photo-wrapper">
-                    <img src="{{ Storage::url($item->foto_masuk) }}" alt="Foto Masuk">
+                    <img src="{{ Storage::url($item->foto_masuk) }}" alt="Foto Masuk" loading="lazy" decoding="async">
                 </div>
             @else
                 <p class="muted">Tidak ada foto masuk.</p>
@@ -57,7 +57,7 @@
             <h2>Data Pulang</h2>
             @if($item->foto_pulang)
                 <div class="photo-wrapper">
-                    <img src="{{ Storage::url($item->foto_pulang) }}" alt="Foto Pulang">
+                    <img src="{{ Storage::url($item->foto_pulang) }}" alt="Foto Pulang" loading="lazy" decoding="async">
                 </div>
             @else
                 <p class="muted">Tidak ada foto pulang.</p>

@@ -203,7 +203,7 @@
                 <div class="asset-preview">
                     <div class="brand-preview {{ $brandDisplay }}">
                         @if($app_logo && $brandDisplay !== 'name_only')
-                            <img src="{{ Storage::url($app_logo) }}" alt="Logo Aplikasi">
+                            <img src="{{ Storage::url($app_logo) }}" alt="Logo Aplikasi" loading="lazy" decoding="async">
                         @endif
 
                         @if($brandDisplay !== 'logo_only' || ! $app_logo)
@@ -265,7 +265,7 @@
                     </div>
                 @elseif($app_icon)
                     <div class="asset-preview icon-preview">
-                        <img src="{{ Storage::url($app_icon) }}" alt="Ikon Web">
+                        <img src="{{ Storage::url($app_icon) }}" alt="Ikon Web" loading="lazy" decoding="async">
                     </div>
                 @else
                     <div class="asset-preview icon-preview muted">Belum ada ikon</div>
