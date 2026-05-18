@@ -121,6 +121,8 @@
         }
         .brand-logo {
             padding: 6px;
+            box-sizing: border-box;
+            display: block;
             object-fit: contain;
             background: rgba(255,255,255,.08);
             border: 1px solid var(--primary-border);

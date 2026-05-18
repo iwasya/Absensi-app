@@ -131,10 +131,12 @@
             background: rgba(255,255,255,.08);
             border: 1px solid rgba(255,255,255,.12);
             padding: 7px;
+            box-sizing: border-box;
         }
         .logo-box img {
             width: 100%;
             height: 100%;
+            display: block;
             object-fit: contain;
         }
         .logo-box svg {

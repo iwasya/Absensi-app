@@ -154,14 +154,23 @@
             flex-shrink: 0;
         }
         .brand-logo-img {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: rgba(255,255,255,.08);
-            border: 1px solid rgba(255,255,255,.10);
-            padding: 5px;
+            width: 116px;
+            height: 50px;
+            min-width: 116px;
+            max-width: 116px;
+            max-height: 50px;
+            padding: 0;
+            box-sizing: border-box;
+            display: block;
             object-fit: contain;
             flex-shrink: 0;
+        }
+        .brand.logo_only .brand-logo-img {
+            width: 148px;
+            height: 56px;
+            min-width: 148px;
+            max-width: 148px;
+            max-height: 56px;
         }
         .brand-logo-box svg { width: 22px; height: 22px; color: #fff; }
         .brand-text strong {

@@ -71,9 +71,18 @@
     }
 
     .brand-preview img {
+        width: auto;
+        height: auto;
         max-height: 58px;
-        max-width: 180px;
+        max-width: min(180px, calc(100vw - 96px));
+        display: block;
+        flex: 0 1 auto;
         object-fit: contain;
+    }
+
+    .brand-preview.logo_only img {
+        max-height: 72px;
+        max-width: min(220px, calc(100vw - 96px));
     }
 
     .brand-preview strong {
@@ -237,7 +246,7 @@
                 <div>
                     <label for="app_logo">Upload Logo Baru</label>
                     <input id="app_logo" type="file" name="app_logo" accept="image/*">
-                    <p class="settings-help">Format: JPG atau PNG. Maksimal 2MB.</p>
+                    <p class="settings-help">Format: JPG atau PNG. Maksimal 2MB. Tampilan logo otomatis dibatasi agar tidak melebihi area sidebar.</p>
                 </div>
 
                 @error('app_name')
