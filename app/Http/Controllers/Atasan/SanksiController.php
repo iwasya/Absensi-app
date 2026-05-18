@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Sanksi;
 use App\Models\User;
 use App\Support\ActivityLogger;
+use App\Support\QueryFilters;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -27,10 +28,10 @@ class SanksiController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $items->where(function($q) use ($search) {
-                $q->where('jenis_sanksi', 'like', "%{$search}%")
-                  ->orWhere('keterangan', 'like', "%{$search}%")
-                  ->orWhereHas('user', function($qu) use ($search) {
-                      $qu->where('nama', 'like', "%{$search}%");
+                QueryFilters::whereLike($q, 'jenis_sanksi', $search);
+                QueryFilters::orWhereLike($q, 'keterangan', $search);
+                $q->orWhereHas('user', function($qu) use ($search) {
+                      QueryFilters::whereLike($qu, 'nama', $search);
                   });
             });
         }
@@ -56,10 +57,10 @@ class SanksiController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $items->where(function($q) use ($search) {
-                $q->where('jenis_sanksi', 'like', "%{$search}%")
-                  ->orWhere('keterangan', 'like', "%{$search}%")
-                  ->orWhereHas('user', function($qu) use ($search) {
-                      $qu->where('nama', 'like', "%{$search}%");
+                QueryFilters::whereLike($q, 'jenis_sanksi', $search);
+                QueryFilters::orWhereLike($q, 'keterangan', $search);
+                $q->orWhereHas('user', function($qu) use ($search) {
+                      QueryFilters::whereLike($qu, 'nama', $search);
                   });
             });
         }

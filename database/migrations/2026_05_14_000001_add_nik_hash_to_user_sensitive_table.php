@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('user_sensitive') || Schema::hasColumn('user_sensitive', 'nik_hash')) {
+            return;
+        }
+
         Schema::table('user_sensitive', function (Blueprint $table) {
             $table->string('nik_hash', 64)->nullable()->after('nik_encrypted');
 
@@ -18,6 +22,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! Schema::hasTable('user_sensitive') || ! Schema::hasColumn('user_sensitive', 'nik_hash')) {
+            return;
+        }
+
         Schema::table('user_sensitive', function (Blueprint $table) {
             $table->dropIndex('user_sensitive_nik_hash_index');
             $table->dropColumn('nik_hash');

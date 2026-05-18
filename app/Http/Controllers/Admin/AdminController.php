@@ -12,6 +12,7 @@ use App\Models\TempatTugas;
 use App\Models\User;
 use App\Models\UserSensitive;
 use App\Support\ActivityLogger;
+use App\Support\QueryFilters;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -27,9 +28,7 @@ class AdminController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->where('nama', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('username', 'like', "%{$search}%");
+                QueryFilters::whereAnyLike($q, ['nama', 'email', 'username'], $search);
             });
         }
 
@@ -421,8 +420,7 @@ class AdminController extends Controller
     {
         return view('admin.buka_absen', [
             'users' => User::whereHas('role', function ($q) {
-                $q->where('nama_role', 'like', '%petugas%')
-                  ->orWhere('nama_role', 'like', '%karyawan%');
+                QueryFilters::whereRoleAlias($q, ['petugas', 'karyawan']);
             })->orderBy('nama')->get(),
             'items' => \App\Models\Absensi::with('user')
                 ->whereDate('tanggal', today())
@@ -460,9 +458,7 @@ class AdminController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->where('nama', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('username', 'like', "%{$search}%");
+                QueryFilters::whereAnyLike($q, ['nama', 'email', 'username'], $search);
             });
         }
 

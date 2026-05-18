@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Cuti;
 use App\Models\Periode;
 use App\Support\ActivityLogger;
+use App\Support\QueryFilters;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,8 +30,9 @@ class CutiController extends Controller
             });
         }
 
-        $petugasRole = \App\Models\Role::where('nama_role', 'like', '%petugas%')->first();
-        $petugasList = \App\Models\User::where('id_role', $petugasRole->id_role)
+        $petugasList = \App\Models\User::whereHas('role', function ($query) {
+                QueryFilters::whereRoleAlias($query, ['petugas', 'karyawan']);
+            })
             ->where('id_user', '!=', $request->user()->id_user)
             ->orderBy('nama')
             ->get();
@@ -81,9 +83,7 @@ class CutiController extends Controller
         ]);
 
         $atasans = \App\Models\User::whereHas('role', function($q) {
-            $q->where('nama_role', 'like', '%atasan%')
-              ->orWhere('nama_role', 'like', '%manager%')
-              ->orWhere('nama_role', 'like', '%menejer%');
+            QueryFilters::whereRoleAlias($q, ['atasan', 'manager', 'menejer']);
         })->get();
 
         foreach ($atasans as $atasan) {

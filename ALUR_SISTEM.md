@@ -500,7 +500,7 @@ Aplikasi Absensi adalah sistem manajemen kehadiran berbasis web yang dibangun de
 - PHP >= 8.1
 - Composer
 - Node.js & NPM
-- MySQL/PostgreSQL
+- PostgreSQL
 - Web Server (Apache/Nginx)
 
 ### Environment Variables (.env):
@@ -511,11 +511,11 @@ APP_KEY=base64:...
 APP_DEBUG=false
 APP_URL=http://localhost
 
-DB_CONNECTION=mysql
+DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
-DB_PORT=3306
+DB_PORT=5432
 DB_DATABASE=absensi_db
-DB_USERNAME=root
+DB_USERNAME=postgres
 DB_PASSWORD=
 ```
 
@@ -535,4 +535,3 @@ Sistem Absensi ini adalah aplikasi komprehensif yang mengelola:
 6. **Reporting** - Laporan dan print
 
 Dengan 3 role utama (Admin, Atasan, Petugas) yang memiliki hak akses berbeda, sistem ini mendukung workflow approval berjenjang dan audit trail lengkap.
-

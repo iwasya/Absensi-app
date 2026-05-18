@@ -8,10 +8,10 @@ use App\Models\Cuti;
 use App\Models\Kalender;
 use App\Models\Notifikasi;
 use App\Models\Periode;
-use App\Models\Role;
 use App\Models\Tugas;
 use App\Models\User;
 use App\Services\AbsensiTidakAbsenService;
+use App\Support\QueryFilters;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -24,12 +24,12 @@ class DashboardController extends Controller
         $user = $request->user()->load('role', 'tempatTugas');
 
         if ($user->isAdmin()) {
-            $petugasRoleId = Role::where('nama_role', 'like', '%Petugas%')->value('id_role') ?? 1;
-
             return view('admin.dashboard', [
                 'user' => $user,
                 'totalUsers' => User::count(),
-                'totalPetugas' => User::where('id_role', $petugasRoleId)->count(),
+                'totalPetugas' => User::whereHas('role', function ($query) {
+                    QueryFilters::whereRoleAlias($query, ['petugas', 'karyawan']);
+                })->count(),
                 'totalAbsensiHariIni' => Absensi::whereDate('tanggal', today())->count(),
                 'cutiPending' => Cuti::where('status', 'pending')->count(),
                 'tugasPending' => Tugas::where('status', 'pending')->count(),
@@ -50,8 +50,7 @@ class DashboardController extends Controller
             $tugasKalender = Tugas::with('user')
                 ->whereHas('user', function ($query) use ($user) {
                     $query->whereHas('role', function ($roleQuery) {
-                        $roleQuery->where('nama_role', 'like', '%petugas%')
-                            ->orWhere('nama_role', 'like', '%karyawan%');
+                        QueryFilters::whereRoleAlias($roleQuery, ['petugas', 'karyawan']);
                     });
 
                     if ($user->id_tempat) {
@@ -100,8 +99,7 @@ class DashboardController extends Controller
                 ->whereIn('modul', ['absensi', 'cuti', 'tugas'])
                 ->whereHas('user', function ($query) use ($user) {
                     $query->whereHas('role', function ($roleQuery) {
-                        $roleQuery->where('nama_role', 'like', '%petugas%')
-                            ->orWhere('nama_role', 'like', '%karyawan%');
+                        QueryFilters::whereRoleAlias($roleQuery, ['petugas', 'karyawan']);
                     });
 
                     if ($user->id_tempat) {

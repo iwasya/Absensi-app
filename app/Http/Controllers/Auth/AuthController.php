@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\TempatTugas;
+use App\Support\QueryFilters;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -82,8 +83,8 @@ class AuthController extends Controller
         ]);
 
         $roleId = User::count() === 0
-            ? (Role::where('nama_role', 'like', '%Admin%')->value('id_role') ?? 2)
-            : (Role::where('nama_role', 'like', '%Petugas%')->value('id_role') ?? 1);
+            ? (QueryFilters::whereRoleAlias(Role::query(), ['admin'])->value('id_role') ?? 1)
+            : (QueryFilters::whereRoleAlias(Role::query(), ['petugas', 'karyawan'])->value('id_role') ?? 3);
 
         $user = User::create([
             'nama' => $validated['nama'],

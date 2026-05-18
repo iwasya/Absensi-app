@@ -6,6 +6,7 @@ use App\Models\Absensi;
 use App\Models\Kalender;
 use App\Models\Periode;
 use App\Models\User;
+use App\Support\QueryFilters;
 use Carbon\Carbon;
 
 class AbsensiTidakAbsenService
@@ -38,8 +39,7 @@ class AbsensiTidakAbsenService
         $users = $onlyUser
             ? collect([$onlyUser])
             : User::whereHas('role', function ($query) {
-                $query->where('nama_role', 'like', '%petugas%')
-                    ->orWhere('nama_role', 'like', '%karyawan%');
+                QueryFilters::whereRoleAlias($query, ['petugas', 'karyawan']);
             })->get();
 
         foreach ($users as $petugas) {

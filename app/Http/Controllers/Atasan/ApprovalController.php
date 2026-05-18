@@ -9,6 +9,7 @@ use App\Models\Notifikasi;
 use App\Models\Periode;
 use App\Models\Tugas;
 use App\Support\ActivityLogger;
+use App\Support\QueryFilters;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -35,9 +36,10 @@ class ApprovalController extends Controller
             $search = $request->search;
             $items->where(function($q) use ($search) {
                 $q->whereHas('user', function($qu) use ($search) {
-                    $qu->where('nama', 'like', "%{$search}%");
-                })->orWhere('lokasi_masuk', 'like', "%{$search}%")
-                  ->orWhere('keterangan', 'like', "%{$search}%");
+                    QueryFilters::whereLike($qu, 'nama', $search);
+                });
+                QueryFilters::orWhereLike($q, 'lokasi_masuk', $search);
+                QueryFilters::orWhereLike($q, 'keterangan', $search);
             });
         }
 
@@ -86,9 +88,10 @@ class ApprovalController extends Controller
             $search = $request->search;
             $items->where(function($q) use ($search) {
                 $q->whereHas('user', function($qu) use ($search) {
-                    $qu->where('nama', 'like', "%{$search}%");
-                })->orWhere('lokasi_masuk', 'like', "%{$search}%")
-                  ->orWhere('keterangan', 'like', "%{$search}%");
+                    QueryFilters::whereLike($qu, 'nama', $search);
+                });
+                QueryFilters::orWhereLike($q, 'lokasi_masuk', $search);
+                QueryFilters::orWhereLike($q, 'keterangan', $search);
             });
         }
 
@@ -259,8 +262,7 @@ class ApprovalController extends Controller
             ])
             ->whereHas('user', function ($query) use ($user) {
                 $query->whereHas('role', function ($roleQuery) {
-                    $roleQuery->where('nama_role', 'like', '%petugas%')
-                        ->orWhere('nama_role', 'like', '%karyawan%');
+                    QueryFilters::whereRoleAlias($roleQuery, ['petugas', 'karyawan']);
                 });
 
                 if ($user->id_tempat) {
@@ -274,8 +276,7 @@ class ApprovalController extends Controller
         $allTugas = Tugas::with('user')
             ->whereHas('user', function ($query) use ($user) {
                 $query->whereHas('role', function ($roleQuery) {
-                    $roleQuery->where('nama_role', 'like', '%petugas%')
-                        ->orWhere('nama_role', 'like', '%karyawan%');
+                    QueryFilters::whereRoleAlias($roleQuery, ['petugas', 'karyawan']);
                 });
 
                 if ($user->id_tempat) {

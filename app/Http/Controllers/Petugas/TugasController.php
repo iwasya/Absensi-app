@@ -7,6 +7,7 @@ use App\Models\Kalender;
 use App\Models\Periode;
 use App\Models\Tugas;
 use App\Support\ActivityLogger;
+use App\Support\QueryFilters;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,8 +40,7 @@ class TugasController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $items->where(function($q) use ($search) {
-                $q->where('uraian', 'like', "%{$search}%")
-                  ->orWhere('status', 'like', "%{$search}%");
+                QueryFilters::whereAnyLike($q, ['uraian', 'status'], $search);
             });
         }
 
@@ -76,8 +76,7 @@ class TugasController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $items->where(function($q) use ($search) {
-                $q->where('uraian', 'like', "%{$search}%")
-                  ->orWhere('status', 'like', "%{$search}%");
+                QueryFilters::whereAnyLike($q, ['uraian', 'status'], $search);
             });
         }
 

@@ -959,7 +959,7 @@
 
             @if(auth()->user()->isAdmin())
                 <div class="nav-section">Admin</div>
-                @if(auth()->user()->role->nama_role === 'Admin Absensi')
+                @if(auth()->user()->isAdmin())
                     <a href="{{ route('admin.pengaturan.index') }}">
                         <svg fill="none" viewBox="0 0 16 16"><path d="M8 10a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="1.3"/><path d="M13.7 9.5l.8-.5v-2l-.8-.5a6 6 0 00-.6-1.4l.3-.9-1.4-1.4-.9.3a6 6 0 00-1.4-.6L9.5 2h-3l-.2.5a6 6 0 00-1.4.6l-.9-.3L2.6 4.2l.3.9a6 6 0 00-.6 1.4L2 7v2l.3.5a6 6 0 00.6 1.4l-.3.9 1.4 1.4.9-.3a6 6 0 001.4.6l.2.5h3l.5-.5a6 6 0 001.4-.6l.9.3 1.4-1.4-.3-.9a6 6 0 00.6-1.4z" stroke="currentColor" stroke-width="1.3"/></svg>
                         Pengaturan

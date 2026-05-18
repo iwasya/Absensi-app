@@ -7,6 +7,7 @@ use App\Models\Absensi;
 use App\Models\Periode;
 use App\Services\AbsensiTidakAbsenService;
 use App\Support\ActivityLogger;
+use App\Support\QueryFilters;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -25,9 +26,7 @@ class AbsensiController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $items->where(function($q) use ($search) {
-                $q->where('status', 'like', "%{$search}%")
-                  ->orWhere('keterangan', 'like', "%{$search}%")
-                  ->orWhere('lokasi_masuk', 'like', "%{$search}%");
+                QueryFilters::whereAnyLike($q, ['status', 'keterangan', 'lokasi_masuk'], $search);
             });
         }
 
@@ -73,9 +72,7 @@ class AbsensiController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $items->where(function($q) use ($search) {
-                $q->where('status', 'like', "%{$search}%")
-                  ->orWhere('keterangan', 'like', "%{$search}%")
-                  ->orWhere('lokasi_masuk', 'like', "%{$search}%");
+                QueryFilters::whereAnyLike($q, ['status', 'keterangan', 'lokasi_masuk'], $search);
             });
         }
 

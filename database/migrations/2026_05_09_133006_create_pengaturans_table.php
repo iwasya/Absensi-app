@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('pengaturan')) {
+            return;
+        }
+
         Schema::create('pengaturan', function (Blueprint $table) {
             $table->string('kunci', 50)->primary();
             $table->text('nilai')->nullable();
