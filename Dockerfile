@@ -28,4 +28,4 @@ RUN mkdir -p storage/framework/cache/data storage/framework/sessions storage/fra
 EXPOSE 10000
 
 # Run Laravel
-CMD php artisan config:cache && php artisan route:cache && php -S 0.0.0.0:${PORT:-10000} -t public
+CMD php artisan storage:link || true; php artisan config:cache && php artisan route:cache && php -S 0.0.0.0:${PORT:-10000} -t public

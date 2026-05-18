@@ -57,6 +57,11 @@ class AbsensiController extends Controller
                 ->withQueryString(),
             'periodeAktif' => Periode::aktif(),
             'tempatTugas' => $user->tempatTugas,
+            'jamMasukBuka' => config('absensi.jam_masuk_buka', '06:00:00'),
+            'jamMasukTutup' => config('absensi.jam_masuk_tutup', '07:15:00'),
+            'jamPulangBuka' => config('absensi.jam_pulang_buka', '16:00:00'),
+            'jamPulangTutup' => config('absensi.jam_pulang_tutup', '23:59:59'),
+            'jarakMaksMeter' => config('absensi.jarak_maks_meter', 100),
         ]);
     }
 
@@ -169,6 +174,33 @@ class AbsensiController extends Controller
         return $fileName;
     }
 
+    private function validateAssignedArea($user, ?float $latitude, ?float $longitude): ?string
+    {
+        $tempat = $user->tempatTugas;
+
+        if (! $tempat || $tempat->latitude === null || $tempat->longitude === null) {
+            return null;
+        }
+
+        if ($latitude === null || $longitude === null) {
+            return 'Lokasi GPS belum terbaca. Izinkan akses lokasi lalu coba lagi.';
+        }
+
+        $dist = $this->calculateDistance(
+            $latitude,
+            $longitude,
+            (float) $tempat->latitude,
+            (float) $tempat->longitude
+        );
+
+        $jarakMaks = config('absensi.jarak_maks_meter', 100);
+        if ($dist === null || $dist > $jarakMaks) {
+            return 'Anda berada di luar area kantor.';
+        }
+
+        return null;
+    }
+
     public function masuk(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -176,6 +208,7 @@ class AbsensiController extends Controller
             'latitude_masuk' => ['nullable', 'numeric'],
             'longitude_masuk' => ['nullable', 'numeric'],
             'lokasi_masuk' => ['nullable', 'string', 'max:255'],
+            'keterangan' => ['nullable', 'string', 'max:500'],
         ]);
 
         $user = $request->user();
@@ -200,18 +233,13 @@ class AbsensiController extends Controller
             return back()->with('error', 'Kamu sudah absen masuk hari ini.');
         }
 
-        $tempat = $user->tempatTugas;
-        if ($tempat && $tempat->latitude && $tempat->longitude) {
-            $dist = $this->calculateDistance(
-                $validated['latitude_masuk'] ?? 0,
-                $validated['longitude_masuk'] ?? 0,
-                $tempat->latitude,
-                $tempat->longitude
-            );
-            $jarakMaks = config('absensi.jarak_maks_meter', 100);
-            if ($dist === null || $dist > $jarakMaks) {
-                return back()->with('error', 'Anda berada di luar area kantor.');
-            }
+        $areaError = $this->validateAssignedArea(
+            $user,
+            isset($validated['latitude_masuk']) ? (float) $validated['latitude_masuk'] : null,
+            isset($validated['longitude_masuk']) ? (float) $validated['longitude_masuk'] : null
+        );
+        if ($areaError) {
+            return back()->with('error', $areaError);
         }
 
         $foto = null;
@@ -235,6 +263,9 @@ class AbsensiController extends Controller
         } else {
             $status = 'hadir';
             $keteranganOtomatis = 'Hadir tepat waktu';
+        }
+        if (! empty($validated['keterangan'])) {
+            $keteranganOtomatis .= ' | ' . $validated['keterangan'];
         }
 
         if ($existing && $existing->status === 'akses_dibuka') {
@@ -291,18 +322,13 @@ class AbsensiController extends Controller
         }
 
         $user = $request->user();
-        $tempat = $user->tempatTugas;
-        if ($tempat && $tempat->latitude && $tempat->longitude) {
-            $dist = $this->calculateDistance(
-                $validated['latitude_pulang'] ?? 0,
-                $validated['longitude_pulang'] ?? 0,
-                $tempat->latitude,
-                $tempat->longitude
-            );
-            $jarakMaks = config('absensi.jarak_maks_meter', 100);
-            if ($dist === null || $dist > $jarakMaks) {
-                return back()->with('error', 'Anda berada di luar area kantor.');
-            }
+        $areaError = $this->validateAssignedArea(
+            $user,
+            isset($validated['latitude_pulang']) ? (float) $validated['latitude_pulang'] : null,
+            isset($validated['longitude_pulang']) ? (float) $validated['longitude_pulang'] : null
+        );
+        if ($areaError) {
+            return back()->with('error', $areaError);
         }
 
         if ($absensi->jam_pulang) {

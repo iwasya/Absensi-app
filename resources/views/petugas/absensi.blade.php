@@ -3,6 +3,13 @@
 @section('title', 'Absensi')
 
 @section('content')
+@php
+    $jamMasukBuka = $jamMasukBuka ?? config('absensi.jam_masuk_buka', '06:00:00');
+    $jamMasukTutup = $jamMasukTutup ?? config('absensi.jam_masuk_tutup', '07:15:00');
+    $jamPulangBuka = $jamPulangBuka ?? config('absensi.jam_pulang_buka', '16:00:00');
+    $jamPulangTutup = $jamPulangTutup ?? config('absensi.jam_pulang_tutup', '23:59:59');
+    $jarakMaksMeter = $jarakMaksMeter ?? config('absensi.jarak_maks_meter', 100);
+@endphp
 <style>
     main { max-width: 100% !important; margin: 0 !important; padding: 20px !important; }
 
@@ -313,19 +320,19 @@
                 <svg fill="none" viewBox="0 0 16 16"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 Absen Masuk
             </div>
-            <span class="abs-card-time">07:00 – 07:15</span>
+            <span class="abs-card-time">{{ substr($jamMasukBuka, 0, 5) }} – {{ substr($jamMasukTutup, 0, 5) }}</span>
         </div>
         <div class="abs-card-body">
             @if($today?->jam_masuk)
                 <div class="success" style="margin:0;">
                     <strong>Sudah absen masuk</strong> — pukul {{ $today->jam_masuk }}
                 </div>
-            @elseif(now()->format('H:i:s') > '07:15:00' && $today?->status !== 'akses_dibuka')
+            @elseif(now()->format('H:i:s') > $jamMasukTutup && $today?->status !== 'akses_dibuka')
                 <div class="error" style="margin:0;">Waktu absen masuk telah habis. Jika tidak ada akses admin, hari ini akan tercatat Tidak Absen setelah hari berganti.</div>
-            @elseif(now()->format('H:i:s') < '07:00:00' && $today?->status !== 'akses_dibuka')
+            @elseif(now()->format('H:i:s') < $jamMasukBuka && $today?->status !== 'akses_dibuka')
                 <div class="abs-info">
                     <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                    Absen masuk belum dibuka. Silakan kembali pukul <strong>07:00</strong>.
+                    Absen masuk belum dibuka. Silakan kembali pukul <strong>{{ substr($jamMasukBuka, 0, 5) }}</strong>.
                 </div>
             @else
                 @if($today?->status === 'akses_dibuka')
@@ -380,7 +387,7 @@
                 <svg fill="none" viewBox="0 0 16 16"><path d="M10 3l5 5-5 5M3 8h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 Absen Pulang
             </div>
-            <span class="abs-card-time">16:00 – 23:59</span>
+            <span class="abs-card-time">{{ substr($jamPulangBuka, 0, 5) }} – {{ substr($jamPulangTutup, 0, 5) }}</span>
         </div>
         <div class="abs-card-body">
             @if(!$today?->jam_masuk && $today?->status !== 'tidak_absen')
@@ -392,12 +399,12 @@
                 <div class="success" style="margin:0;">
                     <strong>Sudah absen pulang</strong> — pukul {{ $today->jam_pulang }}
                 </div>
-            @elseif($today?->status === 'tidak_absen' || (now()->format('H:i:s') > '07:15:00' && !$today?->jam_masuk && $today?->status !== 'akses_dibuka'))
+            @elseif($today?->status === 'tidak_absen' || (now()->format('H:i:s') > $jamMasukTutup && !$today?->jam_masuk && $today?->status !== 'akses_dibuka'))
                 <div class="error" style="margin:0;">Tidak ada absen masuk untuk hari ini sehingga tidak bisa absen pulang.</div>
-            @elseif(now()->format('H:i:s') < '16:00:00')
+            @elseif(now()->format('H:i:s') < $jamPulangBuka)
                 <div class="abs-info">
                     <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                    Absen pulang belum dibuka. Silakan kembali pukul <strong>16:00</strong>.
+                    Absen pulang belum dibuka. Silakan kembali pukul <strong>{{ substr($jamPulangBuka, 0, 5) }}</strong>.
                 </div>
             @else
                 <form id="form_pulang" method="POST" action="{{ route('petugas.absensi.pulang') }}" enctype="multipart/form-data">
@@ -554,6 +561,7 @@
     var tempatLat  = {{ isset($tempatTugas) && $tempatTugas->latitude  ? $tempatTugas->latitude  : 'null' }};
     var tempatLng  = {{ isset($tempatTugas) && $tempatTugas->longitude ? $tempatTugas->longitude : 'null' }};
     var namaTempat = "{{ isset($tempatTugas) ? $tempatTugas->nama_tempat : '' }}";
+    var jarakMaksMeter = {{ (int) $jarakMaksMeter }};
 
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function (position) {
@@ -562,7 +570,7 @@
 
             var inRange = true;
             if (tempatLat !== null && tempatLng !== null) {
-                if (calculateDistance(userLat, userLng, tempatLat, tempatLng) > 100) inRange = false;
+                if (calculateDistance(userLat, userLng, tempatLat, tempatLng) > jarakMaksMeter) inRange = false;
             }
 
             ['masuk', 'pulang'].forEach(function (type) {
@@ -596,7 +604,9 @@
                     btn.style.cursor   = 'not-allowed';
                 });
             }
-        });
+        }, function () {
+            alert('Lokasi GPS belum terbaca. Izinkan akses lokasi agar absensi bisa disimpan.');
+        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
     }
 
     function setupCamera(type) {
