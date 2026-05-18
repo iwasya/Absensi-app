@@ -10,6 +10,7 @@ use App\Http\Controllers\Petugas\CutiController;
 use App\Http\Controllers\Petugas\TugasController;
 use App\Http\Controllers\Petugas\SanksiController as PetugasSanksiController;
 use App\Http\Controllers\Atasan\SanksiController as AtasanSanksiController;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -123,6 +124,12 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/logs', [AdminController::class, 'logs'])->name('logs.index');
         Route::get('/logs/export', [AdminController::class, 'exportLogs'])->name('logs.export');
+
+        Route::get('/clear-cache', function () {
+            Artisan::call('optimize:clear');
+
+            return response('Cache cleared successfully.');
+        })->middleware('throttle:3,1')->name('clear-cache');
     });
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
