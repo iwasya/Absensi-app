@@ -6,6 +6,7 @@ use App\Models\Notifikasi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class NotifikasiController extends Controller
@@ -22,6 +23,7 @@ class NotifikasiController extends Controller
         Notifikasi::where('id_user', $request->user()->id_user)
             ->where('id_notifikasi', $id)
             ->update(['status_baca' => true]);
+        $this->clearNotificationCache($request->user()->id_user);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -40,6 +42,7 @@ class NotifikasiController extends Controller
         Notifikasi::where('id_user', $request->user()->id_user)
             ->where('status_baca', false)
             ->update(['status_baca' => true]);
+        $this->clearNotificationCache($request->user()->id_user);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -49,5 +52,11 @@ class NotifikasiController extends Controller
         }
 
         return back()->with('success', 'Semua notifikasi ditandai sudah dibaca.');
+    }
+
+    private function clearNotificationCache(int $userId): void
+    {
+        Cache::forget("notifikasi:unread-count:{$userId}");
+        Cache::forget("notifikasi:header:{$userId}");
     }
 }

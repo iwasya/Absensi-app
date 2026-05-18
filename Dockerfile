@@ -29,7 +29,7 @@ WORKDIR /var/www
 COPY . .
 
 # Install Laravel dependency
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader --classmap-authoritative
 
 # Prepare writable Laravel runtime directories
 RUN mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \

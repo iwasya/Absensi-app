@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class Pengaturan extends Model
 {
@@ -20,5 +21,11 @@ class Pengaturan extends Model
     {
         $pengaturan = self::find($kunci);
         return $pengaturan ? $pengaturan->nilai : $default;
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => Cache::forget('pengaturan:app-shell'));
+        static::deleted(fn () => Cache::forget('pengaturan:app-shell'));
     }
 }

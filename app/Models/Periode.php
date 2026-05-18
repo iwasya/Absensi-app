@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class Periode extends Model
 {
@@ -24,10 +25,34 @@ class Periode extends Model
 
     public static function aktif(): ?self
     {
-        return self::where('status', 'aktif')
-            ->whereDate('tanggal_mulai', '<=', now()->toDateString())
-            ->whereDate('tanggal_selesai', '>=', now()->toDateString())
-            ->orderByDesc('id_periode')
-            ->first();
+        return Cache::remember('periode:aktif:' . now()->toDateString(), 300, function () {
+            return self::query()
+                ->where('status', 'aktif')
+                ->whereDate('tanggal_mulai', '<=', now()->toDateString())
+                ->whereDate('tanggal_selesai', '>=', now()->toDateString())
+                ->orderByDesc('id_periode')
+                ->first();
+        });
+    }
+
+    public static function latestCached()
+    {
+        return Cache::remember('periode:list:latest', 300, function () {
+            return self::query()
+                ->orderBy('tanggal_mulai', 'desc')
+                ->get();
+        });
+    }
+
+    public static function clearCache(): void
+    {
+        Cache::forget('periode:aktif:' . now()->toDateString());
+        Cache::forget('periode:list:latest');
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => self::clearCache());
+        static::deleted(fn () => self::clearCache());
     }
 }
