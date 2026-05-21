@@ -112,7 +112,7 @@ class SanksiController extends Controller
         
         // Authorization: Only allow deletion if sanksi was created recently (within 24 hours)
         // This prevents manipulation of historical data
-        if ($sanksi->created_at->diffInHours(now()) > 24) {
+        if ($sanksi->created_at && $sanksi->created_at->diffInHours(now()) > 24) {
             return back()->with('error', 'Sanksi yang sudah lebih dari 24 jam tidak dapat dihapus.');
         }
 

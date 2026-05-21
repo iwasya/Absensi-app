@@ -386,7 +386,7 @@
                 <select id="status" name="status">
                     <option value="">Semua Status</option>
                     <option value="hadir" {{ request('status') == 'hadir' ? 'selected' : '' }}>Hadir</option>
-                    <option value="terlambat" {{ request('status') == 'terlambat' ? 'selected' : '' }}>Terlambat</option>
+                    <option value="telat" {{ request('status') == 'telat' ? 'selected' : '' }}>Terlambat</option>
                     <option value="tidak_absen" {{ request('status') == 'tidak_absen' ? 'selected' : '' }}>Tidak Absen</option>
                     <option value="cuti" {{ request('status') == 'cuti' ? 'selected' : '' }}>Cuti</option>
                 </select>
@@ -425,6 +425,7 @@
                         <th style="width:110px;">Masuk</th>
                         <th style="width:110px;">Pulang</th>
                         <th style="width:150px;">Status</th>
+                        <th style="width:170px;">Approval Pulang</th>
                         <th style="width:110px;">Aksi</th>
                     </tr>
                 </thead>
@@ -461,12 +462,31 @@
                                 <span class="badge status-badge {{ $item->status }}">{{ ucfirst(str_replace('_', ' ', $item->status)) }}</span>
                             </td>
                             <td>
+                                @if($item->approval_pulang_status === 'pending_atasan')
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                        <form method="POST" action="{{ route('atasan.absensi.approve-pulang', $item->id_absensi) }}" style="margin:0;">
+                                            @csrf
+                                            <button type="submit" class="monitor-link monitor-link-print" style="border:0;">Approve</button>
+                                        </form>
+                                        <form method="POST" action="{{ route('atasan.absensi.reject-pulang', $item->id_absensi) }}" style="margin:0;">
+                                            @csrf
+                                            <button type="submit" class="monitor-link monitor-link-secondary" style="border-color:var(--red);color:var(--red);">Reject</button>
+                                        </form>
+                                    </div>
+                                    <small class="place-text">{{ $item->approval_pulang_reason }}</small>
+                                @elseif($item->approval_pulang_status)
+                                    <span class="badge {{ $item->approval_pulang_status }}">{{ ucfirst($item->approval_pulang_status) }}</span>
+                                @else
+                                    <span class="time-empty">-</span>
+                                @endif
+                            </td>
+                            <td>
                                 <a href="{{ route('absensi.detail', $item->id_absensi) }}" class="monitor-link monitor-link-detail">Detail</a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7">
+                            <td colspan="8">
                                 <div class="monitor-empty">
                                     <div class="monitor-empty-icon" aria-hidden="true">
                                         <svg fill="none" viewBox="0 0 20 20">

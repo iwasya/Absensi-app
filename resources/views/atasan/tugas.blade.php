@@ -26,6 +26,10 @@
                                 <button type="submit" class="danger">Reject</button>
                             </form>
                         @endif
+                        <form method="POST" action="{{ route('atasan.tugas.remind', $item->id_tugas) }}">
+                            @csrf
+                            <button type="submit">Ingatkan Isi Laporan</button>
+                        </form>
                     </td>
                 </tr>
             @empty

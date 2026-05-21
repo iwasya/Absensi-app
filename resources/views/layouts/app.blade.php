@@ -901,6 +901,13 @@
                     <svg fill="none" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     Absensi
                 </a>
+                @if(auth()->user()->isKetuaRegu())
+                    <a href="{{ route('petugas.approval-regu.index') }}"
+                       class="{{ request()->routeIs('petugas.approval-regu.*') ? 'active' : '' }}">
+                        <svg fill="none" viewBox="0 0 16 16"><path d="M3 8l3 3 7-7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/></svg>
+                        Approval Regu
+                    </a>
+                @endif
                 <div class="dropdown" id="dd-tugas">
                     <button type="button" onclick="toggleDropdown('dd-tugas')"
                         style="{{ request()->routeIs('petugas.tugas.*') ? 'background:var(--primary);color:#fff;' : '' }}">
@@ -956,6 +963,10 @@
                     <svg fill="none" viewBox="0 0 16 16"><path d="M2 4h12M2 8h9M2 12h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     Approve Tugas
                 </a>
+                <a href="{{ route('atasan.regu.index') }}" class="{{ request()->routeIs('atasan.regu.*') ? 'active' : '' }}">
+                    <svg fill="none" viewBox="0 0 16 16"><circle cx="5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><circle cx="11" cy="5.5" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M1.5 14c.5-3 2-5 3.5-5s3 2 3.5 5M8.5 13.5c.3-2 1.3-3.5 2.5-3.5s2.2 1.5 2.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    Kelola Regu
+                </a>
                 <a href="{{ route('atasan.kalender.index') }}">
                     <svg fill="none" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     Kalender
@@ -989,6 +1000,14 @@
                 <a href="{{ route('admin.kalender.index') }}">
                     <svg fill="none" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1.5v3M11 1.5v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M5 10h.01M8 10h.01M11 10h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
                     Kalender
+                </a>
+                <a href="{{ route('admin.cuti.index') }}" class="{{ request()->routeIs('admin.cuti.*') ? 'active' : '' }}">
+                    <svg fill="none" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 8.3l2 2L11.5 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Laporan Cuti
+                </a>
+                <a href="{{ route('admin.sift.index') }}" class="{{ request()->routeIs('admin.sift.*') ? 'active' : '' }}">
+                    <svg fill="none" viewBox="0 0 16 16"><circle cx="5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 14c0-3 2.2-5 5-5M10 9c2.5 0 5 2 5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M6.5 9.5L8 11l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    SIFT
                 </a>
                 <a href="{{ route('admin.buka-absen.index') }}">
                     <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>

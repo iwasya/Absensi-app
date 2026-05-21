@@ -287,7 +287,7 @@
                 <span class="cuti-panel-badge">Form Baru</span>
             </div>
 
-            <form method="POST" action="{{ route('petugas.cuti.store') }}" class="cuti-form">
+            <form method="POST" action="{{ route('petugas.cuti.store') }}" class="cuti-form" enctype="multipart/form-data">
                 @csrf
                 <div class="cuti-form-grid">
                     <div>
@@ -311,6 +311,7 @@
                         <select id="jenis_cuti" name="jenis_cuti" required>
                             <option value="Tahunan" @selected(old('jenis_cuti') === 'Tahunan')>Tahunan</option>
                             <option value="Besar" @selected(old('jenis_cuti') === 'Besar')>Besar</option>
+                            <option value="Sakit" @selected(old('jenis_cuti') === 'Sakit')>Sakit</option>
                         </select>
                         @error('jenis_cuti')
                             <div class="field-error">{{ $message }}</div>
@@ -344,11 +345,18 @@
                     </div>
 
                     <div>
-                        <label for="id_pengganti">Pendamping Pengganti</label>
+                        <label for="id_pengganti">Pendamping Pengganti <small style="color: var(--muted);">(dari regu sama)</small></label>
                         <select id="id_pengganti" name="id_pengganti" required>
                             <option value="">-- Pilih Petugas Pengganti --</option>
-                            @foreach($petugasList as $p)
-                                <option value="{{ $p->id_user }}" @selected(old('id_pengganti') == $p->id_user)>{{ $p->nama }}</option>
+                            @php
+                                $groupedPetugas = $petugasList->groupBy(fn($p) => $p->regu ?: '(Tanpa Regu)');
+                            @endphp
+                            @foreach($groupedPetugas as $reguName => $anggota)
+                                <optgroup label="{{ $reguName }}">
+                                    @foreach($anggota as $p)
+                                        <option value="{{ $p->id_user }}" @selected(old('id_pengganti') == $p->id_user)>{{ $p->nama }}</option>
+                                    @endforeach
+                                </optgroup>
                             @endforeach
                         </select>
                         @error('id_pengganti')
@@ -360,6 +368,15 @@
                         <label for="alamat_cuti">Alamat Selama Cuti</label>
                         <textarea id="alamat_cuti" name="alamat_cuti" class="cuti-textarea" required placeholder="Tuliskan alamat lengkap selama masa cuti...">{{ old('alamat_cuti') }}</textarea>
                         @error('alamat_cuti')
+                            <div class="field-error">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="cuti-full">
+                        <label for="dokumen">Bukti Dokumen</label>
+                        <input id="dokumen" type="file" name="dokumen" accept=".pdf,.jpg,.jpeg,.png,.webp">
+                        <small class="muted">Wajib untuk cuti sakit. Format PDF/JPG/PNG/WebP maksimal 4 MB.</small>
+                        @error('dokumen')
                             <div class="field-error">{{ $message }}</div>
                         @enderror
                     </div>
@@ -415,6 +432,8 @@
                         <th>Jenis</th>
                         <th>Alasan</th>
                         <th>Pengganti</th>
+                        <th>Dokumen</th>
+                        <th>Admin</th>
                         <th>Status</th>
                         <th>Aksi</th>
                     </tr>
@@ -432,6 +451,14 @@
                                 @endif
                             </td>
                             <td>{{ $item->pengganti->nama ?? '-' }}</td>
+                            <td>
+                                @if($item->dokumen_path)
+                                    <a href="{{ asset('storage/' . $item->dokumen_path) }}" target="_blank" class="cuti-action-link">Lihat</a>
+                                @else
+                                    <span class="muted">-</span>
+                                @endif
+                            </td>
+                            <td><span class="badge {{ $item->admin_status }}">{{ $item->admin_status ?? 'pending' }}</span></td>
                             <td><span class="badge {{ $item->status }}">{{ $item->status }}</span></td>
                             <td>
                                 @if($item->status === 'approve')
@@ -443,7 +470,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="muted cuti-empty">Belum ada pengajuan cuti.</td>
+                            <td colspan="9" class="muted cuti-empty">Belum ada pengajuan cuti.</td>
                         </tr>
                     @endforelse
                 </tbody>

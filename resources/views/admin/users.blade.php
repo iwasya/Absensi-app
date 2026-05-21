@@ -417,6 +417,26 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div><label>Regu</label><input name="regu" placeholder="Contoh: Regu A"></div>
+                        <div>
+                            <label>Shift</label>
+                            <select name="shift">
+                                <option value="">-</option>
+                                <option value="Shift 1">Shift 1</option>
+                                <option value="Shift 2">Shift 2</option>
+                                <option value="Shift 3">Shift 3</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Status User</label>
+                            <select name="status_aktif">
+                                <option value="aktif">Aktif</option>
+                                <option value="nonaktif">Nonaktif</option>
+                            </select>
+                        </div>
+                        <div><label>No HP</label><input name="no_hp"></div>
+                        <div><label>Jabatan</label><input name="jabatan"></div>
+                        <div><label>Alamat</label><input name="alamat"></div>
                         <button type="submit">Tambah User</button>
                     </div>
                 </form>
@@ -507,6 +527,8 @@
                         <th style="min-width:300px;">Akun</th>
                         <th style="min-width:190px;">Role</th>
                         <th style="min-width:220px;">Tempat Tugas</th>
+                        <th style="min-width:260px;">Regu / Shift / Status</th>
+                        <th style="min-width:260px;">Data Diri</th>
                         <th style="min-width:170px;">Aksi</th>
                     </tr>
                 </thead>
@@ -563,6 +585,31 @@
                             </td>
 
                             <td>
+                                <div class="users-info-grid">
+                                    <input type="text" name="regu_{{ $item->id_user }}" value="{{ $item->regu }}" placeholder="Regu">
+                                    <select name="shift_{{ $item->id_user }}" class="users-select">
+                                        <option value="">Shift</option>
+                                        <option value="Shift 1" @selected($item->shift === 'Shift 1')>Shift 1</option>
+                                        <option value="Shift 2" @selected($item->shift === 'Shift 2')>Shift 2</option>
+                                        <option value="Shift 3" @selected($item->shift === 'Shift 3')>Shift 3</option>
+                                    </select>
+                                    <select name="status_aktif_{{ $item->id_user }}" class="users-select">
+                                        <option value="aktif" @selected(($item->status_aktif ?? 'aktif') === 'aktif')>Aktif</option>
+                                        <option value="nonaktif" @selected($item->status_aktif === 'nonaktif')>Nonaktif</option>
+                                    </select>
+                                    <small class="muted">{{ $item->is_ketua_regu ? 'Ketua ditentukan atasan' : 'Anggota regu' }}</small>
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="users-info-grid">
+                                    <input type="text" name="no_hp_{{ $item->id_user }}" value="{{ $item->no_hp }}" placeholder="No HP">
+                                    <input type="text" name="jabatan_{{ $item->id_user }}" value="{{ $item->jabatan }}" placeholder="Jabatan">
+                                    <input type="text" name="alamat_{{ $item->id_user }}" value="{{ $item->alamat }}" placeholder="Alamat">
+                                </div>
+                            </td>
+
+                            <td>
                                 <div class="users-actions">
                                     <button type="button" onclick="updateUser({{ $item->id_user }})" class="users-btn users-btn-save">
                                         Simpan
@@ -575,7 +622,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6">
+                            <td colspan="8">
                                 <div class="users-empty">
                                     <strong>Belum ada user</strong>
                                     Data user akan tampil di sini setelah ditambahkan atau diimport.
@@ -626,6 +673,12 @@
         if (pass) formData.append('password', pass);
         formData.append('id_role', document.querySelector('[name="id_role_' + id + '"]').value);
         formData.append('id_tempat', document.querySelector('[name="id_tempat_' + id + '"]').value);
+        formData.append('regu', document.querySelector('[name="regu_' + id + '"]').value);
+        formData.append('shift', document.querySelector('[name="shift_' + id + '"]').value);
+        formData.append('status_aktif', document.querySelector('[name="status_aktif_' + id + '"]').value);
+        formData.append('no_hp', document.querySelector('[name="no_hp_' + id + '"]').value);
+        formData.append('jabatan', document.querySelector('[name="jabatan_' + id + '"]').value);
+        formData.append('alamat', document.querySelector('[name="alamat_' + id + '"]').value);
 
         fetch('/admin/users/' + id, { method: 'POST', body: formData })
             .then(res => res.ok ? alert('Berhasil diupdate') : alert('Gagal update'))

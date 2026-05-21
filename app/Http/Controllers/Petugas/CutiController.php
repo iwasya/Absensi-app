@@ -10,6 +10,7 @@ use App\Support\QueryFilters;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class CutiController extends Controller
@@ -30,10 +31,17 @@ class CutiController extends Controller
             });
         }
 
+        $user = $request->user();
         $petugasList = \App\Models\User::whereHas('role', function ($query) {
                 QueryFilters::whereRoleAlias($query, ['petugas', 'karyawan']);
             })
-            ->where('id_user', '!=', $request->user()->id_user)
+            ->where('id_user', '!=', $user->id_user)
+            ->where(function ($query) use ($user) {
+                // Filter: tampilkan hanya user yang sama regunya atau tidak punya regu
+                $query->where('regu', $user->regu)
+                    ->orWhereNull('regu');
+            })
+            ->orderBy('regu')
             ->orderBy('nama')
             ->get();
 
@@ -53,12 +61,17 @@ class CutiController extends Controller
         $validated = $request->validate([
             'tanggal_mulai' => ['required', 'date'],
             'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
-            'jenis_cuti' => ['required', 'in:Tahunan,Besar'],
+            'jenis_cuti' => ['required', 'in:Tahunan,Besar,Sakit'],
             'alasan' => ['required', 'string'],
             'alasan_lainnya' => ['nullable', 'string'],
             'alamat_cuti' => ['required', 'string'],
             'id_pengganti' => ['required', 'exists:users,id_user'],
+            'dokumen' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:4096'],
         ]);
+
+        if (($validated['jenis_cuti'] === 'Sakit' || $validated['alasan'] === 'Sakit') && ! $request->hasFile('dokumen')) {
+            return back()->withInput()->with('error', 'Cuti sakit wajib melampirkan bukti dokumen.');
+        }
 
         $tahunCuti = Carbon::parse($validated['tanggal_mulai'])->year;
         $jumlahCutiTahunan = $this->jumlahCutiTahunan($request->user()->id_user, $tahunCuti);
@@ -68,6 +81,10 @@ class CutiController extends Controller
                 ->withInput()
                 ->with('error', "Kuota cuti tahun {$tahunCuti} sudah habis. Maksimal 12 kali pengajuan cuti per tahun.");
         }
+
+        $dokumenPath = $request->hasFile('dokumen')
+            ? $request->file('dokumen')->store('cuti_dokumen', 'public')
+            : null;
 
         $cuti = Cuti::create([
             'id_user' => $request->user()->id_user,
@@ -79,18 +96,20 @@ class CutiController extends Controller
             'alasan_lainnya' => $validated['alasan_lainnya'] ?? null,
             'alamat_cuti' => $validated['alamat_cuti'],
             'id_pengganti' => $validated['id_pengganti'],
+            'dokumen_path' => $dokumenPath,
+            'admin_status' => 'pending',
             'status' => 'pending',
         ]);
 
-        $atasans = \App\Models\User::whereHas('role', function($q) {
-            QueryFilters::whereRoleAlias($q, ['atasan', 'manager', 'menejer']);
+        $admins = \App\Models\User::whereHas('role', function($q) {
+            QueryFilters::whereRoleAlias($q, ['admin']);
         })->get();
 
-        foreach ($atasans as $atasan) {
+        foreach ($admins as $admin) {
             \App\Models\Notifikasi::create([
-                'id_user' => $atasan->id_user,
+                'id_user' => $admin->id_user,
                 'judul' => 'Pengajuan Cuti Baru',
-                'pesan' => 'Petugas ' . $request->user()->nama . ' mengajukan cuti.',
+                'pesan' => 'Petugas ' . $request->user()->nama . ' mengajukan cuti. Mohon approval admin sebelum diteruskan ke atasan.',
                 'tipe' => 'cuti',
                 'status_baca' => false,
                 'reference_id' => $cuti->id_cuti,
@@ -100,7 +119,7 @@ class CutiController extends Controller
 
         ActivityLogger::log($request, 'Mengajukan cuti', 'cuti', $cuti->id_cuti, Cuti::class);
 
-        return back()->with('success', 'Pengajuan cuti berhasil dikirim.');
+        return back()->with('success', 'Pengajuan cuti berhasil dikirim ke admin.');
     }
 
     public function print(int $id): View

@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
+use App\Models\Absensi;
+use App\Models\Cuti;
 use App\Models\Kalender;
+use App\Models\Notifikasi;
 use App\Models\Periode;
 use App\Models\Role;
 use App\Models\Sanksi;
@@ -54,6 +57,13 @@ class AdminController extends Controller
             'id_role' => ['required', 'exists:roles,id_role'],
             'id_tempat' => ['nullable', 'exists:tempat_tugas,id_tempat'],
             'nik' => ['nullable', 'string', 'max:20'],
+            'regu' => ['nullable', 'string', 'max:20'],
+            'is_ketua_regu' => ['nullable', 'boolean'],
+            'shift' => ['nullable', 'string', 'max:30'],
+            'status_aktif' => ['nullable', 'in:aktif,nonaktif'],
+            'no_hp' => ['nullable', 'string', 'max:30'],
+            'alamat' => ['nullable', 'string'],
+            'jabatan' => ['nullable', 'string', 'max:100'],
         ]);
 
         $user = User::create([
@@ -63,6 +73,13 @@ class AdminController extends Controller
             'password' => Hash::make($validated['password']),
             'id_role' => $validated['id_role'],
             'id_tempat' => $validated['id_tempat'] ?? null,
+            'regu' => $validated['regu'] ?? null,
+            'is_ketua_regu' => (bool) ($validated['is_ketua_regu'] ?? false),
+            'shift' => $validated['shift'] ?? null,
+            'status_aktif' => $validated['status_aktif'] ?? 'aktif',
+            'no_hp' => $validated['no_hp'] ?? null,
+            'alamat' => $validated['alamat'] ?? null,
+            'jabatan' => $validated['jabatan'] ?? null,
         ]);
 
 
@@ -90,6 +107,13 @@ class AdminController extends Controller
             'id_role' => ['required', 'exists:roles,id_role'],
             'id_tempat' => ['nullable', 'exists:tempat_tugas,id_tempat'],
             'nik' => ['nullable', 'string', 'max:20'],
+            'regu' => ['nullable', 'string', 'max:20'],
+            'is_ketua_regu' => ['nullable', 'boolean'],
+            'shift' => ['nullable', 'string', 'max:30'],
+            'status_aktif' => ['nullable', 'in:aktif,nonaktif'],
+            'no_hp' => ['nullable', 'string', 'max:30'],
+            'alamat' => ['nullable', 'string'],
+            'jabatan' => ['nullable', 'string', 'max:100'],
         ]);
 
         if (! empty($validated['password'])) {
@@ -167,6 +191,7 @@ class AdminController extends Controller
     {
         return view('admin.periode', [
             'items' => Periode::orderBy('id_periode', 'asc')->paginate($request->get('per_page', 15)),
+            'users' => User::with('role')->orderBy('nama')->get(),
         ]);
     }
 
@@ -215,6 +240,54 @@ class AdminController extends Controller
         ActivityLogger::log($request, 'Menghapus periode', 'periode', $id, Periode::class);
 
         return back()->with('success', 'Periode berhasil dihapus.');
+    }
+
+    public function exportPeriode(Request $request)
+    {
+        $year = (int) $request->query('tahun', now()->year);
+        if ($year < 2000 || $year > 2100) {
+            $year = now()->year;
+        }
+
+        $headers = [
+            'Content-type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=absensi_{$year}.csv",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        $callback = function () use ($year) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Tanggal', 'Nama', 'Regu', 'Shift', 'Status User', 'Masuk', 'Pulang', 'Status Absensi', 'Approval Pulang', 'Keterangan']);
+
+            Absensi::with('user')
+                ->whereYear('tanggal', $year)
+                ->orderBy('tanggal')
+                ->orderBy('id_user')
+                ->chunk(500, function ($items) use ($file) {
+                    foreach ($items as $item) {
+                        fputcsv($file, [
+                            optional($item->tanggal)->format('Y-m-d'),
+                            $item->user->nama ?? '-',
+                            $item->user->regu ?? '-',
+                            $item->shift ?? $item->user->shift ?? '-',
+                            $item->user->status_aktif ?? '-',
+                            $item->jam_masuk,
+                            $item->jam_pulang,
+                            $item->status,
+                            $item->approval_pulang_status,
+                            $item->keterangan,
+                        ]);
+                    }
+                });
+
+            fclose($file);
+        };
+
+        ActivityLogger::log($request, "Export absensi tahun {$year}", 'absensi', null, Absensi::class);
+
+        return response()->stream($callback, 200, $headers);
     }
 
     public function kalender(Request $request): View
@@ -305,6 +378,44 @@ class AdminController extends Controller
         ]);
     }
 
+    public function cuti(Request $request): View
+    {
+        return view('admin.cuti', [
+            'items' => Cuti::with(['user', 'pengganti', 'adminApprover', 'approver'])
+                ->latest('id_cuti')
+                ->paginate($request->get('per_page', 20))
+                ->withQueryString(),
+        ]);
+    }
+
+    public function approvePulangAbsensi(Request $request, int $id): RedirectResponse
+    {
+        $absensi = Absensi::with('user')->findOrFail($id);
+
+        if (! in_array($absensi->approval_pulang_status, ['pending_ketua', 'pending_atasan'], true)) {
+            return back()->with('error', 'Request absen pulang ini tidak sedang pending.');
+        }
+
+        $absensi->update([
+            'approval_pulang_status' => 'approved',
+            'approval_pulang_approved_by' => $request->user()->id_user,
+        ]);
+
+        Notifikasi::create([
+            'id_user' => $absensi->id_user,
+            'judul' => 'Absen Pulang Dibuka Admin',
+            'pesan' => 'Admin membuka absen pulang untuk tanggal ' . $absensi->tanggal->format('d/m/Y') . '. Silakan upload foto pulang.',
+            'tipe' => 'absensi',
+            'status_baca' => false,
+            'reference_id' => $absensi->id_absensi,
+            'reference_type' => Absensi::class,
+        ]);
+
+        ActivityLogger::log($request, 'Approve request absen pulang oleh admin', 'absensi', $absensi->id_absensi, Absensi::class);
+
+        return back()->with('success', 'Absen pulang berhasil dibuka untuk petugas.');
+    }
+
     public function pengaturan(): View
     {
         return view('admin.pengaturan', [
@@ -386,6 +497,80 @@ class AdminController extends Controller
         ActivityLogger::log($request, 'Memperbarui pengaturan aplikasi', 'pengaturan', null, \App\Models\Pengaturan::class);
 
         return back()->with('success', 'Pengaturan berhasil disimpan.');
+    }
+
+    public function exportCuti(Request $request)
+    {
+        $items = Cuti::with(['user', 'adminApprover', 'approver', 'pengganti']);
+
+        if ($request->filled('status')) {
+            $items->where('status', $request->status);
+        }
+
+        if ($request->filled('admin_status')) {
+            $items->where('admin_status', $request->admin_status);
+        }
+
+        if ($request->filled('jenis_cuti')) {
+            $items->where('jenis_cuti', $request->jenis_cuti);
+        }
+
+        $items = $items->orderBy('id_cuti', 'desc')->get();
+
+        $headers = [
+            'Content-type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename=cuti_' . date('Ymd_His') . '.csv',
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        $callback = function () use ($items) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, [
+                'ID',
+                'Nama Petugas',
+                'Tanggal Mulai',
+                'Tanggal Selesai',
+                'Jenis Cuti',
+                'Alasan',
+                'Alamat Cuti',
+                'Pengganti',
+                'Status Admin',
+                'Approved Oleh Admin',
+                'Tanggal Proses Admin',
+                'Status Atasan',
+                'Approved Oleh Atasan',
+                'Tanggal Proses Atasan',
+                'Created At',
+            ]);
+
+            foreach ($items as $item) {
+                fputcsv($file, [
+                    $item->id_cuti,
+                    $item->user->nama ?? '-',
+                    $item->tanggal_mulai?->format('Y-m-d') ?? '-',
+                    $item->tanggal_selesai?->format('Y-m-d') ?? '-',
+                    $item->jenis_cuti,
+                    $item->alasan,
+                    $item->alamat_cuti ?? '-',
+                    $item->pengganti->nama ?? '-',
+                    $item->admin_status ?? 'pending',
+                    $item->adminApprover->nama ?? '-',
+                    $item->admin_processed_at?->format('Y-m-d H:i:s') ?? '-',
+                    $item->status,
+                    $item->approver->nama ?? '-',
+                    $item->approved_at?->format('Y-m-d H:i:s') ?? '-',
+                    $item->created_at?->format('Y-m-d H:i:s') ?? '-',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        ActivityLogger::log($request, 'Export cuti ke CSV', 'cuti', null, Cuti::class);
+
+        return response()->stream($callback, 200, $headers);
     }
 
     public function logs(Request $request): View

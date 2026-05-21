@@ -16,10 +16,12 @@ class Sanksi extends Model
         'jenis_sanksi',
         'tanggal',
         'keterangan',
+        'acknowledged_at',
     ];
 
     protected $casts = [
         'tanggal' => 'date',
+        'acknowledged_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

@@ -430,6 +430,8 @@
                         <th style="width:160px;">Jenis</th>
                         <th>Alasan & Alamat</th>
                         <th style="width:170px;">Pengganti</th>
+                        <th style="width:120px;">Dokumen</th>
+                        <th style="width:130px;">Admin</th>
                         <th style="width:130px;">Status</th>
                         <th style="width:170px;">Disetujui Oleh</th>
                         <th style="width:180px;">Aksi</th>
@@ -480,6 +482,16 @@
                                 <span class="leave-muted">{{ $item->pengganti->nama ?? '-' }}</span>
                             </td>
                             <td>
+                                @if($item->dokumen_path)
+                                    <a class="leave-link" href="{{ asset('storage/' . $item->dokumen_path) }}" target="_blank">Lihat</a>
+                                @else
+                                    <span class="leave-muted">-</span>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="badge {{ $item->admin_status }}">{{ ucfirst($item->admin_status ?? 'pending') }}</span>
+                            </td>
+                            <td>
                                 <span class="badge {{ $item->status }}">{{ ucfirst(str_replace('_', ' ', $item->status)) }}</span>
                             </td>
                             <td>
@@ -487,7 +499,9 @@
                             </td>
                             <td>
                                 <div class="leave-actions">
-                                    @if($item->status === 'pending')
+                                    @if($item->admin_status !== 'approve')
+                                        <span class="leave-muted">Menunggu admin</span>
+                                    @elseif($item->status === 'pending')
                                         <form method="POST" action="{{ route('atasan.cuti.approve', $item->id_cuti) }}" style="margin:0;">
                                             @csrf
                                             <button type="submit" class="leave-btn leave-btn-approve">Approve</button>
@@ -504,7 +518,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8">
+                            <td colspan="10">
                                 <div class="leave-empty">
                                     <div class="leave-empty-icon" aria-hidden="true">
                                         <svg fill="none" viewBox="0 0 20 20">

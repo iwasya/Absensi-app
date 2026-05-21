@@ -320,6 +320,45 @@
                     </select>
                 </div>
             </form>
+            <form action="{{ route('admin.periode.export') }}" method="GET" class="filter-bar" style="padding-top:10px;">
+                <div class="filter-control" style="width:100%;">
+                    <label for="tahun_export">Export Tahun</label>
+                    <input id="tahun_export" type="number" name="tahun" min="2000" max="2100" value="{{ request('tahun', date('Y')) }}">
+                </div>
+                <button type="submit">Export CSV</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="period-card" style="margin-bottom:16px;">
+        <div class="period-card-head">
+            <h2 class="period-card-title">Status Semua User</h2>
+        </div>
+        <div class="period-table-scroll">
+            <table class="period-table">
+                <thead>
+                    <tr>
+                        <th>Nama</th>
+                        <th>Role</th>
+                        <th>Regu</th>
+                        <th>Shift</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($users ?? [] as $user)
+                        <tr>
+                            <td>{{ $user->nama }}</td>
+                            <td>{{ $user->role->nama_role ?? '-' }}</td>
+                            <td>{{ $user->regu ?? '-' }}</td>
+                            <td>{{ $user->shift ?? '-' }}</td>
+                            <td><span class="badge {{ $user->status_aktif ?? 'aktif' }}">{{ $user->status_aktif ?? 'aktif' }}</span></td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5" class="period-empty">Belum ada user.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 

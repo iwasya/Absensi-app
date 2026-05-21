@@ -194,6 +194,29 @@
         </div>
     </div>
 
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-lbl">Request approval absen</div>
+            <div class="stat-val" style="color:var(--primary)">{{ $totalApprovalDiminta ?? 0 }}</div>
+            <div class="stat-hint" style="color:var(--primary2)">total pengajuan kamu</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-lbl">Approval pending</div>
+            <div class="stat-val" style="color:var(--amber)">{{ $approvalPending ?? 0 }}</div>
+            <div class="stat-hint" style="color:var(--amber-dark)">menunggu atasan/admin</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-lbl">Teguran belum diakui</div>
+            <div class="stat-val" style="color:var(--red)">{{ $teguranBelumDiakui ?? 0 }}</div>
+            <div class="stat-hint" style="color:var(--red-dark)">konfirmasi di menu sanksi</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-lbl">Laporan tugas terlambat input</div>
+            <div class="stat-val" style="color:#6366F1">{{ $tugasLupaInput ?? 0 }}</div>
+            <div class="stat-hint" style="color:#4338CA">tetap tercatat di dashboard</div>
+        </div>
+    </div>
+
     {{-- â•â•â• MID ROW â•â•â• --}}
     <div class="mid-grid">
         {{-- Donut --}}

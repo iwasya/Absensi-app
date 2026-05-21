@@ -79,6 +79,7 @@
                 <th>Jenis</th>
                 <th>Tanggal</th>
                 <th>Keterangan</th>
+                <th>Konfirmasi Petugas</th>
                 <th>Aksi</th>
             </tr>
         </thead>
@@ -89,6 +90,7 @@
                     <td>{{ $item->jenis_sanksi }}</td>
                     <td>{{ $item->tanggal?->format('d/m/Y') ?? '-' }}</td>
                     <td>{{ $item->keterangan }}</td>
+                    <td>{{ $item->acknowledged_at ? $item->acknowledged_at->format('d/m/Y H:i') : 'Belum diakui' }}</td>
                     <td>
                         <form method="POST" action="{{ route('atasan.sanksi.delete', $item->id_sanksi) }}">
                             @csrf 

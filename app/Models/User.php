@@ -29,6 +29,13 @@ class User extends Authenticatable
         'password',
         'id_role',
         'id_tempat',
+        'regu',
+        'is_ketua_regu',
+        'shift',
+        'status_aktif',
+        'no_hp',
+        'alamat',
+        'jabatan',
     ];
 
     /**
@@ -46,6 +53,7 @@ class User extends Authenticatable
      * @var array<string, string>
      */
     protected $casts = [
+        'is_ketua_regu' => 'boolean',
     ];
 
     public function role(): BelongsTo
@@ -99,6 +107,11 @@ class User extends Authenticatable
     {
         return str_contains($this->roleName(), 'petugas')
             || str_contains($this->roleName(), 'karyawan');
+    }
+
+    public function isKetuaRegu(): bool
+    {
+        return $this->isPetugas() && (bool) $this->is_ketua_regu;
     }
 
     public function hasRoleAlias(array $aliases): bool

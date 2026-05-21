@@ -308,8 +308,8 @@
             </svg>
         </div>
         <div>
-            <div class="abs-stat-label">Hari Ini</div>
-            <div class="abs-stat-value" style="font-size:14px;">{{ now()->translatedFormat('d M Y') }}</div>
+            <div class="abs-stat-label">Shift / Regu</div>
+            <div class="abs-stat-value" style="font-size:14px;">{{ $today?->shift ?? auth()->user()->shift ?? '-' }} / {{ auth()->user()->regu ?? '-' }}</div>
         </div>
     </div>
 </div>
@@ -336,7 +336,7 @@
                 <svg fill="none" viewBox="0 0 16 16"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 Absen Masuk
             </div>
-            <span class="abs-card-time">{{ substr($jamMasukBuka, 0, 5) }} – {{ substr($jamMasukTutup, 0, 5) }}</span>
+            <span class="abs-card-time">Terbuka sepanjang hari</span>
         </div>
         <div class="abs-card-body">
             @if($today?->jam_masuk)
@@ -353,14 +353,12 @@
                     <svg fill="none" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7h5M5.5 10h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     Absen masuk tidak dibuka karena kamu sedang cuti.
                 </div>
-            @elseif(now()->format('H:i:s') > $jamMasukTutup && $today?->status !== 'akses_dibuka')
-                <div class="error" style="margin:0;">Waktu absen masuk telah habis. Jika tidak ada akses admin, hari ini akan tercatat Tidak Absen setelah hari berganti.</div>
-            @elseif(now()->format('H:i:s') < $jamMasukBuka && $today?->status !== 'akses_dibuka')
-                <div class="abs-info">
-                    <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                    Absen masuk belum dibuka. Silakan kembali pukul <strong>{{ substr($jamMasukBuka, 0, 5) }}</strong>.
-                </div>
             @else
+                @if(now()->format('H:i:s') > $jamMasukTutup)
+                    <div class="abs-info" style="margin-bottom:16px;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
+                        Lewat batas absen masuk. Absensi tetap bisa disimpan dan akan tercatat <strong>telat</strong>.
+                    </div>
+                @endif
                 @if($today?->status === 'akses_dibuka')
                     <div style="padding:12px 16px;background:var(--green-soft);border:1px solid #A7F3D0;border-radius:10px;color:var(--green-dark);font-size:13px;font-weight:600;margin-bottom:16px;">
                         Akses khusus diberikan oleh Admin. Anda dapat melakukan absen telat.
@@ -398,8 +396,21 @@
                         <div><label>Longitude</label><input name="longitude_masuk" id="lng_masuk"></div>
                         <div><label>Lokasi</label><input name="lokasi_masuk"></div>
                     </div>
+                    <div class="coord-row" style="margin-top:12px;">
+                        <div>
+                            <label>Shift</label>
+                            <select name="shift">
+                                <option value="">Ikuti data petugas</option>
+                                <option value="Shift 1" @selected(old('shift', auth()->user()->shift) === 'Shift 1')>Shift 1</option>
+                                <option value="Shift 2" @selected(old('shift', auth()->user()->shift) === 'Shift 2')>Shift 2</option>
+                                <option value="Shift 3" @selected(old('shift', auth()->user()->shift) === 'Shift 3')>Shift 3</option>
+                            </select>
+                        </div>
+                        <div><label>Mulai Istirahat</label><input type="time" name="jam_istirahat_mulai" value="{{ old('jam_istirahat_mulai', '12:00') }}"></div>
+                        <div><label>Selesai Istirahat</label><input type="time" name="jam_istirahat_selesai" value="{{ old('jam_istirahat_selesai', '14:00') }}"></div>
+                    </div>
                     <label style="margin-top:14px;">Keterangan</label>
-                    <textarea name="keterangan" style="margin-top:6px;"></textarea>
+                    <textarea name="keterangan" style="margin-top:6px;" placeholder="Contoh: alasan telat, kendala di lapangan, atau catatan shift.">{{ old('keterangan') }}</textarea>
                     <button type="submit" style="margin-top:14px;width:100%;padding:11px;">Simpan Absen Masuk</button>
                 </form>
             @endif
@@ -413,7 +424,7 @@
                 <svg fill="none" viewBox="0 0 16 16"><path d="M10 3l5 5-5 5M3 8h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 Absen Pulang
             </div>
-            <span class="abs-card-time">{{ substr($jamPulangBuka, 0, 5) }} – {{ substr($jamPulangTutup, 0, 5) }}</span>
+            <span class="abs-card-time">Terbuka sepanjang hari</span>
         </div>
         <div class="abs-card-body">
             @if($today?->status === 'cuti' || $isLeave)
@@ -430,14 +441,41 @@
                 <div class="success" style="margin:0;">
                     <strong>Sudah absen pulang</strong> — pukul {{ $today->jam_pulang }}
                 </div>
-            @elseif($today?->status === 'tidak_absen' || (now()->format('H:i:s') > $jamMasukTutup && !$today?->jam_masuk && $today?->status !== 'akses_dibuka'))
-                <div class="error" style="margin:0;">Tidak ada absen masuk untuk hari ini sehingga tidak bisa absen pulang.</div>
-            @elseif(now()->format('H:i:s') < $jamPulangBuka)
-                <div class="abs-info">
-                    <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                    Absen pulang belum dibuka. Silakan kembali pukul <strong>{{ substr($jamPulangBuka, 0, 5) }}</strong>.
+            @elseif($today?->approval_pulang_status === 'approved')
+                <div class="success" style="margin-bottom:14px;">
+                    <strong>Absen pulang sudah dibuka</strong> — silakan upload foto pulang.
                 </div>
+                <form id="form_pulang" method="POST" action="{{ route('petugas.absensi.pulang') }}" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="id_absensi" value="{{ $today->id_absensi }}">
+                    <label style="margin-bottom:8px;">Foto Pulang</label>
+                    <div class="camera-container" id="camera_wrap_pulang">
+                        <div class="cam-placeholder" id="cam_placeholder_pulang"><p>Kamera belum aktif</p></div>
+                        <video id="video_pulang" width="100%" style="display:none;" autoplay playsinline></video>
+                        <canvas id="canvas_pulang" style="display:none;"></canvas>
+                        <img id="photo_pulang" style="width:100%;display:none;" />
+                    </div>
+                    <input type="hidden" name="foto_pulang" id="foto_pulang_input">
+                    <div class="cam-actions">
+                        <button type="button" id="btn_open_cam_pulang" class="btn-cam btn-cam-open">Buka Kamera</button>
+                        <button type="button" id="btn_capture_pulang" class="btn-cam btn-cam-capture" style="display:none;">Ambil Foto</button>
+                        <button type="button" id="btn_retake_pulang" class="btn-cam btn-cam-retake" style="display:none;">Ulangi Foto</button>
+                    </div>
+                    <div class="coord-row">
+                        <div><label>Latitude</label><input name="latitude_pulang" id="lat_pulang"></div>
+                        <div><label>Longitude</label><input name="longitude_pulang" id="lng_pulang"></div>
+                        <div><label>Lokasi</label><input name="lokasi_pulang"></div>
+                    </div>
+                    <button type="submit" style="margin-top:14px;width:100%;padding:11px;">Simpan Absen Pulang</button>
+                </form>
+            @elseif($today?->status === 'tidak_absen' && !$today?->jam_masuk)
+                <div class="error" style="margin:0;">Tidak ada absen masuk untuk hari ini sehingga tidak bisa absen pulang.</div>
             @else
+                @if(now()->format('H:i:s') < $jamPulangBuka)
+                    <div class="abs-info" style="margin-bottom:16px;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
+                        Absen pulang dilakukan sebelum jam pulang normal. Absensi tetap bisa disimpan.
+                    </div>
+                @endif
                 <form id="form_pulang" method="POST" action="{{ route('petugas.absensi.pulang') }}" enctype="multipart/form-data">
                     @csrf
                     <label style="margin-bottom:8px;">Foto Pulang</label>
@@ -524,7 +562,9 @@
                     <th>Tanggal</th>
                     <th>Jam Masuk</th>
                     <th>Jam Pulang</th>
+                    <th>Shift</th>
                     <th>Status</th>
+                    <th>Approval</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -549,7 +589,21 @@
                                 <span class="abs-time-nil">—</span>
                             @endif
                         </td>
+                        <td>{{ $item->shift ?? '-' }}</td>
                         <td><span class="badge {{ $item->status }}">{{ $item->status }}</span></td>
+                        <td>
+                            @if($item->approval_pulang_status)
+                                <span class="badge {{ $item->approval_pulang_status }}">{{ str_replace('_', ' ', $item->approval_pulang_status) }}</span>
+                            @elseif($item->jam_masuk && !$item->jam_pulang && $item->tanggal->lt(today()))
+                                <form method="POST" action="{{ route('petugas.absensi.request-pulang', $item->id_absensi) }}" style="display:grid;gap:6px;min-width:190px;">
+                                    @csrf
+                                    <input name="approval_pulang_reason" placeholder="Alasan lupa absen pulang" required>
+                                    <button type="submit" class="btn-detail">Minta Approval</button>
+                                </form>
+                            @else
+                                <span class="abs-time-nil">-</span>
+                            @endif
+                        </td>
                         <td>
                             <a href="{{ route('absensi.detail', $item->id_absensi) }}" class="btn-detail">
                                 <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 6v2l1 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
@@ -559,7 +613,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5">
+                        <td colspan="7">
                             <div class="abs-empty">
                                 <svg fill="none" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="1.5"/></svg>
                                 Belum ada riwayat absensi.

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\AdminSiftController;
 use App\Http\Controllers\Atasan\ApprovalController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotifikasiController;
@@ -56,6 +57,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/absensi/print', [AbsensiController::class, 'print'])->name('absensi.print');
         Route::post('/absensi/masuk', [AbsensiController::class, 'masuk'])->middleware('throttle:10,1')->name('absensi.masuk');
         Route::post('/absensi/pulang', [AbsensiController::class, 'pulang'])->middleware('throttle:10,1')->name('absensi.pulang');
+        Route::post('/absensi/{id}/request-pulang', [AbsensiController::class, 'requestPulangApproval'])->middleware('throttle:5,1')->name('absensi.request-pulang');
+        Route::get('/approval-regu', [AbsensiController::class, 'approvalRegu'])->name('approval-regu.index');
+        Route::post('/approval-regu/{id}/forward', [AbsensiController::class, 'forwardPulangApproval'])->middleware('throttle:30,1')->name('approval-regu.forward');
+        Route::post('/approval-regu/{id}/reject', [AbsensiController::class, 'rejectPulangApprovalByKetua'])->middleware('throttle:30,1')->name('approval-regu.reject');
 
         Route::get('/cuti', [CutiController::class, 'index'])->name('cuti.index');
         Route::get('/cuti/{id}/print', [CutiController::class, 'print'])->name('cuti.print');
@@ -69,17 +74,26 @@ Route::middleware('auth')->group(function () {
         Route::post('/tugas', [TugasController::class, 'store'])->middleware('throttle:20,1')->name('tugas.store');
         
         Route::get('/sanksi', [PetugasSanksiController::class, 'index'])->name('sanksi.index');
+        Route::post('/sanksi/{id}/acknowledge', [PetugasSanksiController::class, 'acknowledge'])->middleware('throttle:20,1')->name('sanksi.acknowledge');
     });
 
     Route::prefix('atasan')->name('atasan.')->middleware('role:atasan')->group(function () {
         Route::get('/absensi', [ApprovalController::class, 'absensi'])->name('absensi.index');
         Route::get('/absensi/print', [ApprovalController::class, 'printAbsensi'])->name('absensi.print');
+        Route::post('/absensi/{id}/approve-pulang', [ApprovalController::class, 'approvePulang'])->middleware('throttle:30,1')->name('absensi.approve-pulang');
+        Route::post('/absensi/{id}/reject-pulang', [ApprovalController::class, 'rejectPulang'])->middleware('throttle:30,1')->name('absensi.reject-pulang');
         Route::get('/cuti', [ApprovalController::class, 'cuti'])->name('cuti.index');
         Route::post('/cuti/{id}/approve', [ApprovalController::class, 'approveCuti'])->middleware('throttle:30,1')->name('cuti.approve');
         Route::post('/cuti/{id}/reject', [ApprovalController::class, 'rejectCuti'])->middleware('throttle:30,1')->name('cuti.reject');
         Route::get('/tugas', [ApprovalController::class, 'tugas'])->name('tugas.index');
         Route::post('/tugas/{id}/approve', [ApprovalController::class, 'approveTugas'])->middleware('throttle:30,1')->name('tugas.approve');
         Route::post('/tugas/{id}/reject', [ApprovalController::class, 'rejectTugas'])->middleware('throttle:30,1')->name('tugas.reject');
+        Route::post('/tugas/{id}/remind', [ApprovalController::class, 'remindTugas'])->middleware('throttle:30,1')->name('tugas.remind');
+
+        Route::get('/regu', [ApprovalController::class, 'regu'])->name('regu.index');
+        Route::post('/regu', [ApprovalController::class, 'storeRegu'])->middleware('throttle:20,1')->name('regu.store');
+        Route::post('/regu/update-operasional', [ApprovalController::class, 'updateReguOperasional'])->middleware('throttle:30,1')->name('regu.update-operasional');
+        Route::post('/regu/ketua', [ApprovalController::class, 'setKetuaRegu'])->middleware('throttle:20,1')->name('regu.ketua');
 
         Route::get('/kalender', [ApprovalController::class, 'kalender'])->name('kalender.index');
         Route::get('/sanksi', [AtasanSanksiController::class, 'index'])->name('sanksi.index');
@@ -103,6 +117,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/tempat/{id}', [AdminController::class, 'deleteTempat'])->middleware('throttle:10,1')->name('tempat.delete');
 
         Route::get('/periode', [AdminController::class, 'periode'])->name('periode.index');
+        Route::get('/periode/export', [AdminController::class, 'exportPeriode'])->name('periode.export');
         Route::post('/periode', [AdminController::class, 'storePeriode'])->middleware('throttle:20,1')->name('periode.store');
         Route::put('/periode/{id}', [AdminController::class, 'updatePeriode'])->middleware('throttle:20,1')->name('periode.update');
         Route::delete('/periode/{id}', [AdminController::class, 'deletePeriode'])->middleware('throttle:10,1')->name('periode.delete');
@@ -111,7 +126,19 @@ Route::middleware('auth')->group(function () {
         Route::post('/kalender', [AdminController::class, 'storeKalender'])->middleware('throttle:20,1')->name('kalender.store');
         Route::delete('/kalender/{id}', [AdminController::class, 'deleteKalender'])->middleware('throttle:10,1')->name('kalender.delete');
 
+        Route::get('/cuti', [AdminController::class, 'cuti'])->name('cuti.index');
+        Route::get('/cuti/export', [AdminController::class, 'exportCuti'])->name('cuti.export');
         Route::get('/sanksi', [AdminController::class, 'sanksi'])->name('sanksi.index');
+
+        Route::get('/sift', [AdminSiftController::class, 'index'])->name('sift.index');
+        Route::post('/sift/shift', [AdminSiftController::class, 'storeShift'])->middleware('throttle:20,1')->name('sift.store-shift');
+        Route::put('/sift/shift/{id}', [AdminSiftController::class, 'updateShift'])->middleware('throttle:20,1')->name('sift.update-shift');
+        Route::post('/sift/shift/{id}/toggle', [AdminSiftController::class, 'toggleShift'])->middleware('throttle:20,1')->name('sift.toggle-shift');
+        Route::delete('/sift/shift/{id}', [AdminSiftController::class, 'destroyShift'])->middleware('throttle:10,1')->name('sift.destroy-shift');
+        Route::post('/sift/assign', [AdminSiftController::class, 'assignShift'])->middleware('throttle:30,1')->name('sift.assign');
+        Route::post('/sift/bulk', [AdminSiftController::class, 'bulkAssignShift'])->middleware('throttle:10,1')->name('sift.bulk-assign');
+        Route::get('/sift/export', [AdminSiftController::class, 'export'])->name('sift.export');
+        Route::post('/absensi/{id}/approve-pulang', [AdminController::class, 'approvePulangAbsensi'])->middleware('throttle:30,1')->name('absensi.approve-pulang');
 
         Route::get('/buka-absen', [AdminController::class, 'bukaAksesAbsen'])->name('buka-absen.index');
         Route::post('/buka-absen', [AdminController::class, 'storeAksesAbsen'])->middleware('throttle:20,1')->name('buka-absen.store');

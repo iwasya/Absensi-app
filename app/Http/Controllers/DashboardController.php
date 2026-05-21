@@ -32,6 +32,8 @@ class DashboardController extends Controller
                 })->count(),
                 'totalAbsensiHariIni' => Absensi::whereDate('tanggal', today())->count(),
                 'cutiPending' => Cuti::where('status', 'pending')->count(),
+                'cutiPendingAdmin' => Cuti::where('admin_status', 'pending')->count(),
+                'approvalPulangPending' => Absensi::whereIn('approval_pulang_status', ['pending_ketua', 'pending_atasan'])->count(),
                 'tugasPending' => Tugas::where('status', 'pending')->count(),
                 'periodeAktif' => Periode::aktif(),
             ]);
@@ -114,6 +116,11 @@ class DashboardController extends Controller
                 'user' => $user,
                 'absensiHariIni' => Absensi::with('user')->whereDate('tanggal', today())->latest('id_absensi')->limit(5)->get(),
                 'cutiPending' => Cuti::with('user')->where('status', 'pending')->latest('id_cuti')->limit(5)->get(),
+                'approvalPulangPending' => Absensi::with('user')
+                    ->whereIn('approval_pulang_status', ['pending_ketua', 'pending_atasan'])
+                    ->latest('id_absensi')
+                    ->limit(5)
+                    ->get(),
                 'tugasPending' => Tugas::with('user')->where('status', 'pending')->latest('id_tugas')->limit(5)->get(),
                 'absensiBulanIni' => Absensi::whereBetween('tanggal', [
                     $calendar['currentMonth']->copy()->startOfMonth()->toDateString(),
@@ -141,8 +148,6 @@ class DashboardController extends Controller
         if (! $holidayInfo['is_holiday']) {
             if ($leaveInfo['is_leave']) {
                 $absensiTidakAbsen->generateForDate(today(), $user);
-            } else {
-                $absensiTidakAbsen->generateTodayForUserAfterCutoff($user);
             }
         }
 
@@ -254,6 +259,18 @@ class DashboardController extends Controller
             'cutiTerakhir' => Cuti::where('id_user', $user->id_user)->latest('id_cuti')->limit(5)->get(),
             'tugasTerakhir' => Tugas::where('id_user', $user->id_user)->latest('id_tugas')->limit(5)->get(),
             'notifikasiBelumBaca' => Notifikasi::where('id_user', $user->id_user)->where('status_baca', false)->count(),
+            'totalApprovalDiminta' => Absensi::where('id_user', $user->id_user)
+                ->whereNotNull('approval_pulang_status')
+                ->count(),
+            'approvalPending' => Absensi::where('id_user', $user->id_user)
+                ->whereIn('approval_pulang_status', ['pending_ketua', 'pending_atasan'])
+                ->count(),
+            'teguranBelumDiakui' => \App\Models\Sanksi::where('id_user', $user->id_user)
+                ->whereNull('acknowledged_at')
+                ->count(),
+            'tugasLupaInput' => Tugas::where('id_user', $user->id_user)
+                ->whereRaw('DATE(created_at) > DATE(tanggal_mulai)')
+                ->count(),
             'kalender' => Kalender::whereDate('tanggal', '>=', today())->orderBy('tanggal')->limit(5)->get(),
             'cutiTerpakaiTahunIni' => $cutiTerpakaiTahunIni,
             'sisaCutiTahunIni' => max(12 - $cutiTerpakaiTahunIni, 0),

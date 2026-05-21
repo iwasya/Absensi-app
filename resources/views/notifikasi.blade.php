@@ -20,6 +20,15 @@
                                 <button type="submit">Tandai dibaca</button>
                             </form>
                         @endif
+                        @if($item->reference_type === \App\Models\Sanksi::class && auth()->user()->isPetugas())
+                            @php $sanksi = \App\Models\Sanksi::where('id_user', auth()->id())->find($item->reference_id); @endphp
+                            @if($sanksi && ! $sanksi->acknowledged_at)
+                                <form method="POST" action="{{ route('petugas.sanksi.acknowledge', $sanksi->id_sanksi) }}" style="margin-top:6px;">
+                                    @csrf
+                                    <button type="submit">Approve Teguran</button>
+                                </form>
+                            @endif
+                        @endif
                     </td>
                 </tr>
             @empty
