@@ -1,10 +1,10 @@
 <?php
-    $app_theme = \App\Models\Pengaturan::getNilai('app_theme', 'light');
-    $app_name = \App\Models\Pengaturan::getNilai('app_name', 'Absensi PPSU') ?: 'Absensi PPSU';
-    $app_logo = \App\Models\Pengaturan::getNilai('app_logo');
-    $app_brand_display = \App\Models\Pengaturan::getNilai('app_brand_display', 'logo_name');
-    $app_icon = \App\Models\Pengaturan::getNilai('app_icon');
-    $app_icon_mode = \App\Models\Pengaturan::getNilai('app_icon_mode', 'upload');
+    $app_theme = $app_theme ?? 'light';
+    $app_name = ($app_name ?? 'Absensi PPSU') ?: 'Absensi PPSU';
+    $app_logo = $app_logo ?? null;
+    $app_brand_display = $app_brand_display ?? 'logo_name';
+    $app_icon = $app_icon ?? null;
+    $app_icon_mode = $app_icon_mode ?? 'upload';
     $app_icon_href = null;
 
     if (! in_array($app_theme, ['light', 'dark'], true)) {
@@ -16,9 +16,9 @@
     }
 
     if ($app_icon_mode === 'manual') {
-        $iconText = strtoupper(substr(\App\Models\Pengaturan::getNilai('app_icon_text', 'A') ?: 'A', 0, 2));
-        $iconBg = \App\Models\Pengaturan::getNilai('app_icon_bg', '#2563eb');
-        $iconColor = \App\Models\Pengaturan::getNilai('app_icon_color', '#ffffff');
+        $iconText = strtoupper(substr(($app_icon_text ?? 'A') ?: 'A', 0, 2));
+        $iconBg = $app_icon_bg ?? '#2563eb';
+        $iconColor = $app_icon_color ?? '#ffffff';
 
         if (! preg_match('/^#[0-9A-Fa-f]{6}$/', $iconBg)) {
             $iconBg = '#2563eb';
@@ -49,10 +49,10 @@
         :root {
             --bg:           #F0F4F8;
             --card:         #FFFFFF;
-            --accent:       #0EA5C9;
-            --accent2:      #0284A8;
-            --accent-soft:  #E0F5FB;
-            --accent-border:#BAE8F5;
+            --accent:       #0E7490;
+            --accent2:      #155E75;
+            --accent-soft:  #CFFAFE;
+            --accent-border:#A5F3FC;
             --sidebar:      #1A2E3B;
             --green:        #10B981;
             --green-soft:   #D1FAE5;
@@ -70,10 +70,10 @@
         [data-theme="dark"] {
             --bg:           #0F172A;
             --card:         #1E293B;
-            --accent:       #38BDF8;
-            --accent2:      #0EA5C9;
-            --accent-soft:  #0C2D3F;
-            --accent-border:#164E63;
+            --accent:       #22D3EE;
+            --accent2:      #06B6D4;
+            --accent-soft:  #083344;
+            --accent-border:#155E75;
             --sidebar:      #020617;
             --green-soft:   #052E24;
             --green-dark:   #86EFAC;
@@ -104,13 +104,13 @@
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 16px;
-            box-shadow: 0 4px 32px rgba(14, 165, 201, 0.08), 0 1px 4px rgba(0,0,0,0.04);
+            box-shadow: 0 4px 32px rgba(14, 116, 144, 0.08), 0 1px 4px rgba(0,0,0,0.04);
             overflow: hidden;
         }
 
         /* ── HEADER STRIP ── */
         .panel-header {
-            background: var(--sidebar);
+            background: var(--accent);
             padding: 25px 32px 22px;
             display: flex;
             flex-direction: column;
@@ -128,13 +128,18 @@
             flex-shrink: 0;
         }
         .logo-box.logo-image {
-            background: rgba(255,255,255,.08);
-            border: 1px solid rgba(255,255,255,.12);
-            padding: 7px;
+            width: 132px;
+            height: 58px;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         .logo-box img {
             width: 100%;
             height: 100%;
+            display: block;
             object-fit: contain;
         }
         .logo-box svg {
@@ -153,7 +158,7 @@
         }
         .header-text p {
             font-size: 13px;
-            color: #64A8C0;
+            color: rgba(255, 255, 255, 0.78);
             margin-top: 4px;
         }
 
@@ -217,7 +222,7 @@
         input[type="password"]:focus {
             border-color: var(--accent);
             background: var(--card);
-            box-shadow: 0 0 0 3px rgba(14,165,201,.12);
+            box-shadow: 0 0 0 3px rgba(14,116,144,.12);
         }
         input::placeholder { color: var(--text3); }
 
@@ -364,7 +369,7 @@
         <?php if($app_brand_display !== 'name_only'): ?>
             <?php if($app_logo): ?>
                 <div class="logo-box logo-image">
-                    <img src="<?php echo e(Storage::url($app_logo)); ?>" alt="Logo <?php echo e($app_name); ?>">
+                    <img src="<?php echo e(Storage::url($app_logo)); ?>" alt="Logo <?php echo e($app_name); ?>" decoding="async">
                 </div>
             <?php else: ?>
                 <div class="logo-box">

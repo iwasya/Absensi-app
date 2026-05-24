@@ -49,10 +49,10 @@
         :root {
             --bg:           #F0F4F8;
             --card:         #FFFFFF;
-            --accent:       #0EA5C9;
-            --accent2:      #0284A8;
-            --accent-soft:  #E0F5FB;
-            --accent-border:#BAE8F5;
+            --accent:       #0E7490;
+            --accent2:      #155E75;
+            --accent-soft:  #CFFAFE;
+            --accent-border:#A5F3FC;
             --sidebar:      #1A2E3B;
             --green:        #10B981;
             --green-soft:   #D1FAE5;
@@ -70,10 +70,10 @@
         [data-theme="dark"] {
             --bg:           #0F172A;
             --card:         #1E293B;
-            --accent:       #38BDF8;
-            --accent2:      #0EA5C9;
-            --accent-soft:  #0C2D3F;
-            --accent-border:#164E63;
+            --accent:       #22D3EE;
+            --accent2:      #06B6D4;
+            --accent-soft:  #083344;
+            --accent-border:#155E75;
             --sidebar:      #020617;
             --green-soft:   #052E24;
             --green-dark:   #86EFAC;
@@ -104,13 +104,13 @@
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 16px;
-            box-shadow: 0 4px 32px rgba(14, 165, 201, 0.08), 0 1px 4px rgba(0,0,0,0.04);
+            box-shadow: 0 4px 32px rgba(14, 116, 144, 0.08), 0 1px 4px rgba(0,0,0,0.04);
             overflow: hidden;
         }
 
         /* ── HEADER STRIP ── */
         .panel-header {
-            background: var(--sidebar);
+            background: var(--accent);
             padding: 25px 32px 22px;
             display: flex;
             flex-direction: column;
@@ -158,7 +158,7 @@
         }
         .header-text p {
             font-size: 13px;
-            color: #64A8C0;
+            color: rgba(255, 255, 255, 0.78);
             margin-top: 4px;
         }
 
@@ -222,7 +222,7 @@
         input[type="password"]:focus {
             border-color: var(--accent);
             background: var(--card);
-            box-shadow: 0 0 0 3px rgba(14,165,201,.12);
+            box-shadow: 0 0 0 3px rgba(14,116,144,.12);
         }
         input::placeholder { color: var(--text3); }
 

@@ -69,9 +69,18 @@
     }
 
     .brand-preview img {
+        width: auto;
+        height: auto;
         max-height: 58px;
-        max-width: 180px;
+        max-width: min(180px, calc(100vw - 96px));
+        display: block;
+        flex: 0 1 auto;
         object-fit: contain;
+    }
+
+    .brand-preview.logo_only img {
+        max-height: 72px;
+        max-width: min(220px, calc(100vw - 96px));
     }
 
     .brand-preview strong {
@@ -201,7 +210,7 @@
                 <div class="asset-preview">
                     <div class="brand-preview <?php echo e($brandDisplay); ?>">
                         <?php if($app_logo && $brandDisplay !== 'name_only'): ?>
-                            <img src="<?php echo e(Storage::url($app_logo)); ?>" alt="Logo Aplikasi">
+                            <img src="<?php echo e(Storage::url($app_logo)); ?>" alt="Logo Aplikasi" loading="lazy" decoding="async">
                         <?php endif; ?>
 
                         <?php if($brandDisplay !== 'logo_only' || ! $app_logo): ?>
@@ -235,7 +244,7 @@
                 <div>
                     <label for="app_logo">Upload Logo Baru</label>
                     <input id="app_logo" type="file" name="app_logo" accept="image/*">
-                    <p class="settings-help">Format: JPG atau PNG. Maksimal 2MB.</p>
+                    <p class="settings-help">Format: JPG atau PNG. Maksimal 2MB. Tampilan logo otomatis dibatasi agar tidak melebihi area sidebar.</p>
                 </div>
 
                 <?php $__errorArgs = ['app_name'];
@@ -285,7 +294,7 @@ unset($__errorArgs, $__bag); ?>
                     </div>
                 <?php elseif($app_icon): ?>
                     <div class="asset-preview icon-preview">
-                        <img src="<?php echo e(Storage::url($app_icon)); ?>" alt="Ikon Web">
+                        <img src="<?php echo e(Storage::url($app_icon)); ?>" alt="Ikon Web" loading="lazy" decoding="async">
                     </div>
                 <?php else: ?>
                     <div class="asset-preview icon-preview muted">Belum ada ikon</div>

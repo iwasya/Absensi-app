@@ -83,10 +83,19 @@
     .cal-day-labels { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; margin-bottom: 4px; }
     .cal-day-lbl { text-align: center; font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; padding: 4px 0; }
     .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
-    .cal-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 7px; color: var(--text-color); position: relative; cursor: default; }
+    .cal-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 7px; color: var(--text-color); position: relative; cursor: pointer; border: 1px solid transparent; background: transparent; font-family: inherit; }
     .cal-cell.other { color: var(--border2); }
     .cal-cell.today { background: var(--primary-soft); color: var(--primary); font-weight: 700; border: 1px solid var(--primary-border); }
+    .cal-cell.selected { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
     .cal-cell .cal-dot { position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; }
+    .cal-detail { margin: 10px 16px 14px; padding: 12px 14px; border-radius: 10px; background: var(--bg-color); border: 1px solid var(--border-color); }
+    .cal-detail-title { font-size: 12px; font-weight: 600; color: var(--text-color); margin-bottom: 8px; }
+    .cal-detail-list { display: flex; flex-direction: column; gap: 8px; }
+    .cal-detail-row { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+    .cal-detail-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 6px; flex: 0 0 auto; }
+    .cal-detail-text { min-width: 0; flex: 1; }
+    .cal-detail-main { font-size: 12px; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cal-detail-sub { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
     .cal-legend { display: flex; gap: 12px; padding: 10px 16px 14px; border-top: 1px solid var(--border-color); }
     .cal-leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
     .cal-leg-dot { width: 7px; height: 7px; border-radius: 50%; }
@@ -285,6 +294,7 @@
                 </div>
                 <div class="cal-grid" id="cal-grid"></div>
             </div>
+            <div class="cal-detail" id="cal-detail"></div>
             <div class="cal-legend">
                 <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--primary)"></div>Hari ini</div>
                 <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--green)"></div>Hadir</div>
@@ -372,6 +382,86 @@
     var hadirDays = <?php echo json_encode($kalenderHadir ?? []); ?>;
     var telatDays = <?php echo json_encode($kalenderTelat ?? []); ?>;
     var absenDays = <?php echo json_encode($kalenderAbsen ?? []); ?>;
+    var absensiDetails = <?php echo json_encode($absensiCalendarDetails ?? [], 15, 512) ?>;
+    var tugasDetails = <?php echo json_encode($tugasCalendarDetails ?? [], 15, 512) ?>;
+    var eventDetails = <?php echo json_encode($eventCalendarDetails ?? [], 15, 512) ?>;
+    var selectedKey = keyFromDate(today);
+
+    function pad(n) {
+        return String(n).padStart(2, '0');
+    }
+
+    function keyFromDate(date) {
+        return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate());
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, function (char) {
+            return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char];
+        });
+    }
+
+    function detailRows(key) {
+        var rows = [];
+        (absensiDetails[key] || []).forEach(function(item) {
+            rows.push({ color: 'var(--green)', title: item.nama, meta: item.waktu + ' - ' + item.status });
+        });
+        (tugasDetails[key] || []).forEach(function(item) {
+            rows.push({ color: 'var(--amber)', title: item.nama, meta: item.waktu + ' - ' + item.status });
+        });
+        (eventDetails[key] || []).forEach(function(item) {
+            rows.push({ color: 'var(--red)', title: item.nama, meta: item.status });
+        });
+        return rows;
+    }
+
+    function renderDetail(key, date) {
+        var box = document.getElementById('cal-detail');
+        if (!box) return;
+        var rows = detailRows(key);
+        var title = date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear();
+
+        if (!rows.length) {
+            box.innerHTML = '<div class="cal-detail-title">' + escapeHtml(title) + '</div>'
+                + '<div class="cal-detail-sub">Belum ada keterangan pada tanggal ini.</div>';
+            return;
+        }
+
+        box.innerHTML = '<div class="cal-detail-title">' + escapeHtml(title) + '</div>'
+            + '<div class="cal-detail-list">'
+            + rows.map(function(row) {
+                return '<div class="cal-detail-row">'
+                    + '<span class="cal-detail-dot" style="background:' + row.color + '"></span>'
+                    + '<div class="cal-detail-text">'
+                    + '<div class="cal-detail-main">' + escapeHtml(row.title) + '</div>'
+                    + '<div class="cal-detail-sub">' + escapeHtml(row.meta) + '</div>'
+                    + '</div>'
+                    + '</div>';
+            }).join('')
+            + '</div>';
+    }
+
+    function markSelected() {
+        document.querySelectorAll('#cal-grid .cal-cell').forEach(function(cell) {
+            cell.classList.toggle('selected', cell.dataset.date === selectedKey);
+        });
+    }
+
+    function makeCell(text, className, date) {
+        var cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = className;
+        cell.textContent = text;
+        cell.dataset.date = keyFromDate(date);
+
+        cell.addEventListener('click', function() {
+            selectedKey = cell.dataset.date;
+            renderDetail(selectedKey, date);
+            markSelected();
+        });
+
+        return cell;
+    }
 
     function buildCal() {
         var g = document.getElementById('cal-grid'), t = document.getElementById('cal-title');
@@ -382,9 +472,13 @@
         var daysInM = new Date(curDate.getFullYear(), curDate.getMonth()+1, 0).getDate();
         var prevDays = new Date(curDate.getFullYear(), curDate.getMonth(), 0).getDate();
         var isCurM = curDate.getFullYear()===today.getFullYear() && curDate.getMonth()===today.getMonth();
-        for (var i=0;i<first;i++){var d=document.createElement('div');d.className='cal-cell other';d.textContent=prevDays-first+1+i;g.appendChild(d);}
+        for (var i=0;i<first;i++){
+            var prevDate = new Date(curDate.getFullYear(), curDate.getMonth() - 1, prevDays - first + 1 + i);
+            g.appendChild(makeCell(prevDays-first+1+i, 'cal-cell other', prevDate));
+        }
         for (var n=1;n<=daysInM;n++){
-            var c=document.createElement('div');c.className='cal-cell';c.textContent=n;
+            var date = new Date(curDate.getFullYear(), curDate.getMonth(), n);
+            var c=makeCell(n, 'cal-cell', date);
             if(isCurM&&n===today.getDate())c.classList.add('today');
             if(isCurM){var dot=null;
                 if(hadirDays.indexOf(n)!==-1){dot=document.createElement('div');dot.className='cal-dot';dot.style.background='var(--green)';}
@@ -394,7 +488,12 @@
             }
             g.appendChild(c);
         }
-        var remain=7-((first+daysInM)%7);if(remain<7)for(var j=1;j<=remain;j++){var d2=document.createElement('div');d2.className='cal-cell other';d2.textContent=j;g.appendChild(d2);}
+        var remain=7-((first+daysInM)%7);if(remain<7)for(var j=1;j<=remain;j++){
+            var nextDate = new Date(curDate.getFullYear(), curDate.getMonth() + 1, j);
+            g.appendChild(makeCell(j, 'cal-cell other', nextDate));
+        }
+        markSelected();
+        renderDetail(selectedKey, new Date(selectedKey + 'T00:00:00'));
     }
     buildCal();
     var pb=document.getElementById('prev-btn'),nb=document.getElementById('next-btn');

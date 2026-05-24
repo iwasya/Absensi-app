@@ -1,10 +1,10 @@
 <?php
-    $app_theme = \App\Models\Pengaturan::getNilai('app_theme', 'light');
-    $app_name = \App\Models\Pengaturan::getNilai('app_name', 'Absensi PPSU') ?: 'Absensi PPSU';
-    $app_logo = \App\Models\Pengaturan::getNilai('app_logo');
-    $app_brand_display = \App\Models\Pengaturan::getNilai('app_brand_display', 'logo_name');
-    $app_icon = \App\Models\Pengaturan::getNilai('app_icon');
-    $app_icon_mode = \App\Models\Pengaturan::getNilai('app_icon_mode', 'upload');
+    $app_theme = $app_theme ?? 'light';
+    $app_name = $app_name ?? 'Absensi PPSU';
+    $app_logo = $app_logo ?? null;
+    $app_brand_display = $app_brand_display ?? 'logo_name';
+    $app_icon = $app_icon ?? null;
+    $app_icon_mode = $app_icon_mode ?? 'upload';
     $app_icon_href = null;
 
     if (! in_array($app_brand_display, ['logo_name', 'logo_only', 'name_only'], true)) {
@@ -12,9 +12,9 @@
     }
 
     if ($app_icon_mode === 'manual') {
-        $iconText = strtoupper(substr(\App\Models\Pengaturan::getNilai('app_icon_text', 'A') ?: 'A', 0, 2));
-        $iconBg = \App\Models\Pengaturan::getNilai('app_icon_bg', '#2563eb');
-        $iconColor = \App\Models\Pengaturan::getNilai('app_icon_color', '#ffffff');
+        $iconText = strtoupper(substr(($app_icon_text ?? 'A') ?: 'A', 0, 2));
+        $iconBg = $app_icon_bg ?? '#2563eb';
+        $iconColor = $app_icon_color ?? '#ffffff';
 
         if (! preg_match('/^#[0-9A-Fa-f]{6}$/', $iconBg)) {
             $iconBg = '#2563eb';
@@ -137,44 +137,61 @@
 
         /* Brand */
         .brand {
-            padding: 20px 16px 16px;
+            padding: 20px 14px 18px;
             border-bottom: 1px solid rgba(255,255,255,.08);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            gap: 12px;
+            text-align: center;
         }
         .brand.logo_only { justify-content: center; }
-        .brand.name_only { align-items: flex-start; }
+        .brand.name_only { align-items: center; padding-top: 22px; }
         .brand-logo-box {
-            width: 44px; height: 44px;
+            width: 52px; height: 52px;
             border-radius: 12px;
             background: var(--primary);
             display: flex; align-items: center; justify-content: center;
             flex-shrink: 0;
+            box-shadow: 0 10px 24px rgba(14, 165, 201, .18);
         }
         .brand-logo-img {
-            width: 44px;
-            height: 44px;
+            width: min(160px, 100%);
+            height: 64px;
+            max-width: 150px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255,255,255,.12);
             border-radius: 12px;
             background: rgba(255,255,255,.08);
-            border: 1px solid rgba(255,255,255,.10);
-            padding: 5px;
+            box-sizing: border-box;
+            display: block;
             object-fit: contain;
             flex-shrink: 0;
         }
-        .brand-logo-box svg { width: 22px; height: 22px; color: #fff; }
+        .brand.logo_only .brand-logo-img {
+            width: min(168px, 100%);
+            height: 64px;
+            max-width: 168px;
+        }
+        .brand-logo-box svg { width: 24px; height: 24px; color: #fff; }
+        .brand-text {
+            max-width: 200px;
+        }
         .brand-text strong {
             display: block;
-            font-size: 15px;
+            font-size: 13.5px;
             font-weight: 600;
             color: #fff;
-            line-height: 1.3;
+            line-height: 1.25;
             overflow-wrap: anywhere;
         }
         .brand-text span {
             font-size: 11px;
-            color: #5B9BB5;
+            color: rgba(186, 217, 227, .82);
+            display: block;
+            margin-top: 3px;
         }
 
         /* User card */
@@ -673,7 +690,7 @@
             white-space: nowrap;
         }
         .badge.pending           { background: var(--amber-soft); color: var(--amber-dark); border-color: #FDE68A; }
-        .badge.approve, .badge.hadir, .badge.kegiatan { background: var(--green-soft); color: var(--green-dark); border-color: #A7F3D0; }
+        .badge.approve, .badge.hadir, .badge.kegiatan, .badge.cuti { background: var(--green-soft); color: var(--green-dark); border-color: #A7F3D0; }
         .badge.reject, .badge.telat { background: var(--red-soft); color: var(--red-dark); border-color: #FCA5A5; }
         .badge.libur, .badge.cuti_bersama { background: var(--red-soft); color: var(--red-dark); border-color: #FCA5A5; }
 
@@ -835,7 +852,7 @@
         <div class="brand <?php echo e($app_brand_display); ?>">
             <?php if($app_brand_display !== 'name_only'): ?>
                 <?php if($app_logo): ?>
-                <img src="<?php echo e(Storage::url($app_logo)); ?>" alt="Logo" class="brand-logo-img">
+                <img src="<?php echo e(Storage::url($app_logo)); ?>" alt="Logo" class="brand-logo-img" decoding="async">
                 <?php else: ?>
                 <div class="brand-logo-box">
                     <svg fill="none" viewBox="0 0 18 18"><path d="M3 9a6 6 0 1012 0A6 6 0 003 9z" stroke="#fff" stroke-width="1.4"/><path d="M9 6v3l2 1.5" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>
@@ -846,7 +863,6 @@
             <?php if($app_brand_display !== 'logo_only' || ! $app_logo): ?>
             <div class="brand-text">
                 <strong><?php echo e($app_name); ?></strong>
-                <span>Kel. Pisangan baru</span>
             </div>
             <?php endif; ?>
         </div>
@@ -855,7 +871,7 @@
         <div class="sb-user">
             <div class="sb-ava">
                 <?php if(auth()->user()->foto_profil): ?>
-                    <img src="<?php echo e(Storage::url(auth()->user()->foto_profil)); ?>" alt="Foto">
+                    <img src="<?php echo e(Storage::url(auth()->user()->foto_profil)); ?>" alt="Foto" decoding="async">
                 <?php else: ?>
                     <?php
                         $namaParts = explode(' ', trim(auth()->user()->nama ?? 'U'));
@@ -961,7 +977,7 @@
 
             <?php if(auth()->user()->isAdmin()): ?>
                 <div class="nav-section">Admin</div>
-                <?php if(auth()->user()->role->nama_role === 'Admin Absensi'): ?>
+                <?php if(auth()->user()->isAdmin()): ?>
                     <a href="<?php echo e(route('admin.pengaturan.index')); ?>">
                         <svg fill="none" viewBox="0 0 16 16"><path d="M8 10a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="1.3"/><path d="M13.7 9.5l.8-.5v-2l-.8-.5a6 6 0 00-.6-1.4l.3-.9-1.4-1.4-.9.3a6 6 0 00-1.4-.6L9.5 2h-3l-.2.5a6 6 0 00-1.4.6l-.9-.3L2.6 4.2l.3.9a6 6 0 00-.6 1.4L2 7v2l.3.5a6 6 0 00.6 1.4l-.3.9 1.4 1.4.9-.3a6 6 0 001.4.6l.2.5h3l.5-.5a6 6 0 001.4-.6l.9.3 1.4-1.4-.3-.9a6 6 0 00.6-1.4z" stroke="currentColor" stroke-width="1.3"/></svg>
                         Pengaturan
@@ -1058,8 +1074,6 @@
 
                 
                 <?php
-                    $unreadNotifications = \App\Models\Notifikasi::where('id_user', auth()->id())->where('status_baca', false)->count();
-                    $headerNotifications = \App\Models\Notifikasi::where('id_user', auth()->id())->latest('id_notifikasi')->limit(5)->get();
                 ?>
                 <div class="notification-wrap" id="notificationWrap">
                     <button type="button" class="notification-button" id="notificationToggle"
@@ -1110,7 +1124,7 @@
                             title="<?php echo e(auth()->user()->nama ?? 'Profil'); ?>"
                             style="background:none;border:none;cursor:pointer;padding:0;display:flex;border-radius:50%;">
                         <?php if(auth()->user()->foto_profil): ?>
-                            <img src="<?php echo e(Storage::url(auth()->user()->foto_profil)); ?>" alt="Foto"
+                            <img src="<?php echo e(Storage::url(auth()->user()->foto_profil)); ?>" alt="Foto" decoding="async"
                                  style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2.5px solid var(--primary-border);transition:border-color .15s;">
                         <?php else: ?>
                             <div style="width:42px;height:42px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px;border:2.5px solid var(--primary-border);letter-spacing:.5px;">
