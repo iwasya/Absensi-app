@@ -13,6 +13,15 @@
     $holidayReason = $holidayInfo['reason'] ?? 'Hari libur';
     $isLeave = $leaveInfo['is_leave'] ?? false;
     $leaveReason = $leaveInfo['reason'] ?? 'Cuti disetujui';
+    $isMasukLocked = ! $isHoliday
+        && ! $isLeave
+        && ! $today?->jam_masuk
+        && now()->format('H:i:s') > $jamMasukTutup
+        && $today?->status !== 'akses_dibuka';
+    $isMasukNotOpen = ! $isHoliday
+        && ! $isLeave
+        && ! $today?->jam_masuk
+        && now()->format('H:i:s') < $jamMasukBuka;
 @endphp
 <style>
     main { max-width: 100% !important; margin: 0 !important; padding: 20px !important; }
@@ -20,10 +29,11 @@
     /* ── Status Cards ── */
     .abs-status-bar {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 14px;
         margin-bottom: 24px;
     }
+    @media (max-width: 1120px) { .abs-status-bar { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 900px) { .abs-status-bar { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 500px) { .abs-status-bar { grid-template-columns: 1fr; } }
 
@@ -308,8 +318,21 @@
             </svg>
         </div>
         <div>
-            <div class="abs-stat-label">Shift / Regu</div>
-            <div class="abs-stat-value" style="font-size:14px;">{{ $today?->shift ?? auth()->user()->shift ?? '-' }} / {{ auth()->user()->regu ?? '-' }}</div>
+            <div class="abs-stat-label">Shift</div>
+            <div class="abs-stat-value" style="font-size:14px;">{{ $today?->shift ?? auth()->user()->shift ?? '-' }}</div>
+        </div>
+    </div>
+    <div class="abs-stat-card">
+        <div class="abs-stat-icon" style="background:var(--green-soft);">
+            <svg fill="none" viewBox="0 0 24 24" style="color:var(--green)">
+                <path d="M8 9a4 4 0 118 0M3 21a9 9 0 0118 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <div style="min-width:0;">
+            <div class="abs-stat-label">Regu / Tempat Kerja</div>
+            <div class="abs-stat-value" style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ (auth()->user()->regu ?? '-') . ' / ' . ($tempatTugas->nama_tempat ?? '-') }}">
+                {{ auth()->user()->regu ?? '-' }} / {{ $tempatTugas->nama_tempat ?? '-' }}
+            </div>
         </div>
     </div>
 </div>
@@ -336,7 +359,7 @@
                 <svg fill="none" viewBox="0 0 16 16"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 Absen Masuk
             </div>
-            <span class="abs-card-time">Terbuka sepanjang hari</span>
+            <span class="abs-card-time">Batas {{ substr($jamMasukTutup, 0, 5) }}</span>
         </div>
         <div class="abs-card-body">
             @if($today?->jam_masuk)
@@ -353,10 +376,20 @@
                     <svg fill="none" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7h5M5.5 10h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     Absen masuk tidak dibuka karena kamu sedang cuti.
                 </div>
+            @elseif($isMasukNotOpen)
+                <div class="abs-info" style="margin:0;">
+                    <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    Absen masuk belum dibuka untuk shift kamu. Mulai pukul <strong>{{ substr($jamMasukBuka, 0, 5) }}</strong>.
+                </div>
+            @elseif($isMasukLocked)
+                <div class="abs-info" style="margin:0;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
+                    <svg fill="none" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 7V5.5a3 3 0 016 0V7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    Absen masuk sudah terkunci karena melewati batas waktu. Hubungi admin untuk membuka akses absen telat.
+                </div>
             @else
                 @if(now()->format('H:i:s') > $jamMasukTutup)
                     <div class="abs-info" style="margin-bottom:16px;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
-                        Lewat batas absen masuk. Absensi tetap bisa disimpan dan akan tercatat <strong>telat</strong>.
+                        Lewat batas absen masuk. Akses admin aktif, absensi akan tercatat <strong>telat</strong>.
                     </div>
                 @endif
                 @if($today?->status === 'akses_dibuka')

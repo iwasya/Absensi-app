@@ -877,10 +877,10 @@
             <div class="sb-user-info">
                 <div class="sb-user-name">{{ auth()->user()->nama ?? 'Pengguna' }}</div>
                 <div class="sb-user-role">{{ auth()->user()->role->nama_role ?? '' }}</div>
-                @if(auth()->user()->tempat_tugas)
+                @if(auth()->user()->tempatTugas)
                     <div class="sb-user-tempat">
                         <span class="sb-dot"></span>
-                        {{ auth()->user()->tempat_tugas->nama_tempat }}
+                        {{ auth()->user()->tempatTugas->nama_tempat }}
                     </div>
                 @endif
             </div>
@@ -896,6 +896,11 @@
             </a>
 
             @if(auth()->user()->isPetugas())
+                <a href="{{ route('petugas.regu.index') }}"
+                   class="{{ request()->routeIs('petugas.regu.*') ? 'active' : '' }}">
+                    <svg fill="none" viewBox="0 0 16 16"><path d="M5 6.5a3 3 0 116 0M2.5 13a5.5 5.5 0 0111 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    Regu & Penugasan
+                </a>
                 <a href="{{ route('petugas.absensi.index') }}"
                    class="{{ request()->routeIs('petugas.absensi.*') ? 'active' : '' }}">
                     <svg fill="none" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>

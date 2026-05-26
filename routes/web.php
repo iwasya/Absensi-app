@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\Petugas\AbsensiController;
 use App\Http\Controllers\Petugas\CutiController;
+use App\Http\Controllers\Petugas\ReguController;
 use App\Http\Controllers\Petugas\TugasController;
 use App\Http\Controllers\Petugas\SanksiController as PetugasSanksiController;
 use App\Http\Controllers\Atasan\SanksiController as AtasanSanksiController;
@@ -53,6 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->middleware('throttle:5,1')->name('profile.password');
 
     Route::prefix('petugas')->name('petugas.')->middleware('role:petugas')->group(function () {
+        Route::get('/regu', [ReguController::class, 'index'])->name('regu.index');
         Route::get('/absensi', [AbsensiController::class, 'index'])->name('absensi.index');
         Route::get('/absensi/print', [AbsensiController::class, 'print'])->name('absensi.print');
         Route::post('/absensi/masuk', [AbsensiController::class, 'masuk'])->middleware('throttle:10,1')->name('absensi.masuk');
