@@ -168,6 +168,7 @@ class DashboardController extends Controller
         $totalHadir = $absensiUser->where('status', 'hadir')->count();
         $totalTelat = $absensiUser->where('status', 'telat')->count();
         $totalTidakHadir = $absensiUser->whereIn('status', ['tidak_hadir', 'tidak_absen'])->count();
+        $totalCuti = $absensiUser->where('status', 'cuti')->count();
         
         // Hitung hari kerja (Senin-Jumat) dalam bulan ini
         $hariKerja = 0;
@@ -181,6 +182,7 @@ class DashboardController extends Controller
             'hadir' => $totalHadir,
             'telat' => $totalTelat,
             'tidak_hadir' => $totalTidakHadir,
+            'cuti' => $totalCuti,
             'hari_kerja' => $hariKerja,
         ];
         
@@ -188,6 +190,7 @@ class DashboardController extends Controller
         $kalenderHadir = $absensiUser->where('status', 'hadir')->pluck('tanggal')->map(fn($d) => (int)$d->format('d'))->toArray();
         $kalenderTelat = $absensiUser->where('status', 'telat')->pluck('tanggal')->map(fn($d) => (int)$d->format('d'))->toArray();
         $kalenderAbsen = $absensiUser->whereIn('status', ['tidak_hadir', 'tidak_absen'])->pluck('tanggal')->map(fn($d) => (int)$d->format('d'))->toArray();
+        $kalenderCuti = $absensiUser->where('status', 'cuti')->pluck('tanggal')->map(fn($d) => (int)$d->format('d'))->toArray();
         
         $userTugas = Tugas::where('id_user', $user->id_user)
             ->where(function ($query) use ($calendar) {
@@ -289,6 +292,7 @@ class DashboardController extends Controller
             'kalenderHadir' => $kalenderHadir,
             'kalenderTelat' => $kalenderTelat,
             'kalenderAbsen' => $kalenderAbsen,
+            'kalenderCuti' => $kalenderCuti,
             'absensiCalendarDetails' => $absensiCalendarDetails,
             'tugasCalendarDetails' => $tugasCalendarDetails,
             'eventCalendarDetails' => $eventCalendarDetails,

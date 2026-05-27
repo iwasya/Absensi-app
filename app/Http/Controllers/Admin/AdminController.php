@@ -44,6 +44,35 @@ class AdminController extends Controller
             'items' => $query->orderBy('created_at', 'asc')->paginate($request->get("per_page", 25))->withQueryString(),
             'roles' => Role::orderBy('id_role')->get(),
             'tempatTugas' => TempatTugas::orderBy('nama_tempat')->get(),
+            'filters' => [
+                'search'   => $request->get('search', ''),
+                'role'     => $request->get('role', ''),
+                'per_page' => (int) $request->get('per_page', 25),
+            ],
+        ]);
+    }
+
+    public function createUser(): View
+    {
+        return view('admin.users-create', [
+            'roles' => Role::orderBy('id_role')->get(),
+            'tempatTugas' => TempatTugas::orderBy('nama_tempat')->get(),
+        ]);
+    }
+
+    public function showImportUsers(): View
+    {
+        return view('admin.users-import');
+    }
+
+    public function filterUsers(Request $request): View
+    {
+        return view('admin.users-filter', [
+            'roles' => Role::orderBy('id_role')->get(),
+            'filters' => [
+                'search' => $request->search,
+                'role' => $request->role,
+            ],
         ]);
     }
 
@@ -93,7 +122,7 @@ class AdminController extends Controller
 
         ActivityLogger::log($request, 'Membuat user', 'users', $user->id_user, User::class);
 
-        return back()->with('success', 'User berhasil dibuat.');
+        return redirect()->route('admin.users.index')->with('success', 'User berhasil dibuat.');
     }
 
     public function updateUser(Request $request, int $id): RedirectResponse

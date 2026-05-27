@@ -106,6 +106,9 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
         Route::get('/users', [AdminController::class, 'users'])->name('users.index');
+        Route::get('/users/create', [AdminController::class, 'createUser'])->name('users.create');
+        Route::get('/users/import', [AdminController::class, 'showImportUsers'])->name('users.import.form');
+        Route::get('/users/filter', [AdminController::class, 'filterUsers'])->name('users.filter');
         Route::post('/users', [AdminController::class, 'storeUser'])->middleware('throttle:20,1')->name('users.store');
         Route::put('/users/{id}', [AdminController::class, 'updateUser'])->middleware('throttle:20,1')->name('users.update');
         Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->middleware('throttle:10,1')->name('users.delete');

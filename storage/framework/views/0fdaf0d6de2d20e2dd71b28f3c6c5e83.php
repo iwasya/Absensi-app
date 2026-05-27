@@ -1,16 +1,37 @@
 <?php $__env->startSection('title', 'Absensi'); ?>
 
 <?php $__env->startSection('content'); ?>
+<?php
+    $jamMasukBuka = $jamMasukBuka ?? config('absensi.jam_masuk_buka', '06:00:00');
+    $jamMasukTutup = $jamMasukTutup ?? config('absensi.jam_masuk_tutup', '07:15:00');
+    $jamPulangBuka = $jamPulangBuka ?? config('absensi.jam_pulang_buka', '16:00:00');
+    $jamPulangTutup = $jamPulangTutup ?? config('absensi.jam_pulang_tutup', '23:59:59');
+    $jarakMaksMeter = $jarakMaksMeter ?? config('absensi.jarak_maks_meter', 100);
+    $isHoliday = $holidayInfo['is_holiday'] ?? false;
+    $holidayReason = $holidayInfo['reason'] ?? 'Hari libur';
+    $isLeave = $leaveInfo['is_leave'] ?? false;
+    $leaveReason = $leaveInfo['reason'] ?? 'Cuti disetujui';
+    $isMasukLocked = ! $isHoliday
+        && ! $isLeave
+        && ! $today?->jam_masuk
+        && now()->format('H:i:s') > $jamMasukTutup
+        && $today?->status !== 'akses_dibuka';
+    $isMasukNotOpen = ! $isHoliday
+        && ! $isLeave
+        && ! $today?->jam_masuk
+        && now()->format('H:i:s') < $jamMasukBuka;
+?>
 <style>
     main { max-width: 100% !important; margin: 0 !important; padding: 20px !important; }
 
     /* ── Status Cards ── */
     .abs-status-bar {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 14px;
         margin-bottom: 24px;
     }
+    @media (max-width: 1120px) { .abs-status-bar { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 900px) { .abs-status-bar { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 500px) { .abs-status-bar { grid-template-columns: 1fr; } }
 
@@ -295,11 +316,37 @@
             </svg>
         </div>
         <div>
-            <div class="abs-stat-label">Hari Ini</div>
-            <div class="abs-stat-value" style="font-size:14px;"><?php echo e(now()->translatedFormat('d M Y')); ?></div>
+            <div class="abs-stat-label">Shift</div>
+            <div class="abs-stat-value" style="font-size:14px;"><?php echo e($today?->shift ?? auth()->user()->shift ?? '-'); ?></div>
+        </div>
+    </div>
+    <div class="abs-stat-card">
+        <div class="abs-stat-icon" style="background:var(--green-soft);">
+            <svg fill="none" viewBox="0 0 24 24" style="color:var(--green)">
+                <path d="M8 9a4 4 0 118 0M3 21a9 9 0 0118 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <div style="min-width:0;">
+            <div class="abs-stat-label">Regu / Tempat Kerja</div>
+            <div class="abs-stat-value" style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="<?php echo e((auth()->user()->regu ?? '-') . ' / ' . ($tempatTugas->nama_tempat ?? '-')); ?>">
+                <?php echo e(auth()->user()->regu ?? '-'); ?> / <?php echo e($tempatTugas->nama_tempat ?? '-'); ?>
+
+            </div>
         </div>
     </div>
 </div>
+
+<?php if($isHoliday): ?>
+    <div class="abs-info" style="margin-bottom:20px;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
+        <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Hari ini libur: <strong><?php echo e($holidayReason); ?></strong>. Absensi tidak dibuka dan tidak akan dicatat tidak absen.
+    </div>
+<?php elseif($isLeave): ?>
+    <div class="abs-info" style="margin-bottom:20px;background:var(--primary-soft);border-color:var(--primary-border);color:var(--primary2);">
+        <svg fill="none" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7h5M5.5 10h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Hari ini kamu sedang cuti: <strong><?php echo e($leaveReason); ?></strong>. Absensi tidak dibuka dan tidak akan dicatat tidak absen.
+    </div>
+<?php endif; ?>
 
 
 <div class="abs-grid">
@@ -311,7 +358,7 @@
                 <svg fill="none" viewBox="0 0 16 16"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 Absen Masuk
             </div>
-            <span class="abs-card-time">07:00 – 07:15</span>
+            <span class="abs-card-time">Batas <?php echo e(substr($jamMasukTutup, 0, 5)); ?></span>
         </div>
         <div class="abs-card-body">
             <?php if($today?->jam_masuk): ?>
@@ -319,14 +366,32 @@
                     <strong>Sudah absen masuk</strong> — pukul <?php echo e($today->jam_masuk); ?>
 
                 </div>
-            <?php elseif(now()->format('H:i:s') > '07:15:00' && $today?->status !== 'akses_dibuka'): ?>
-                <div class="error" style="margin:0;">Waktu absen masuk telah habis. Jika tidak ada akses admin, hari ini akan tercatat Tidak Absen setelah hari berganti.</div>
-            <?php elseif(now()->format('H:i:s') < '07:00:00' && $today?->status !== 'akses_dibuka'): ?>
-                <div class="abs-info">
+            <?php elseif($isHoliday): ?>
+                <div class="abs-info" style="margin:0;">
                     <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                    Absen masuk belum dibuka. Silakan kembali pukul <strong>07:00</strong>.
+                    Absen masuk tidak dibuka karena hari libur.
+                </div>
+            <?php elseif($isLeave || $today?->status === 'cuti'): ?>
+                <div class="abs-info" style="margin:0;">
+                    <svg fill="none" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7h5M5.5 10h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    Absen masuk tidak dibuka karena kamu sedang cuti.
+                </div>
+            <?php elseif($isMasukNotOpen): ?>
+                <div class="abs-info" style="margin:0;">
+                    <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    Absen masuk belum dibuka untuk shift kamu. Mulai pukul <strong><?php echo e(substr($jamMasukBuka, 0, 5)); ?></strong>.
+                </div>
+            <?php elseif($isMasukLocked): ?>
+                <div class="abs-info" style="margin:0;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
+                    <svg fill="none" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 7V5.5a3 3 0 016 0V7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    Absen masuk sudah terkunci karena melewati batas waktu. Hubungi admin untuk membuka akses absen telat.
                 </div>
             <?php else: ?>
+                <?php if(now()->format('H:i:s') > $jamMasukTutup): ?>
+                    <div class="abs-info" style="margin-bottom:16px;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
+                        Lewat batas absen masuk. Akses admin aktif, absensi akan tercatat <strong>telat</strong>.
+                    </div>
+                <?php endif; ?>
                 <?php if($today?->status === 'akses_dibuka'): ?>
                     <div style="padding:12px 16px;background:var(--green-soft);border:1px solid #A7F3D0;border-radius:10px;color:var(--green-dark);font-size:13px;font-weight:600;margin-bottom:16px;">
                         Akses khusus diberikan oleh Admin. Anda dapat melakukan absen telat.
@@ -364,8 +429,21 @@
                         <div><label>Longitude</label><input name="longitude_masuk" id="lng_masuk"></div>
                         <div><label>Lokasi</label><input name="lokasi_masuk"></div>
                     </div>
+                    <div class="coord-row" style="margin-top:12px;">
+                        <div>
+                            <label>Shift</label>
+                            <select name="shift">
+                                <option value="">Ikuti data petugas</option>
+                                <option value="Shift 1" <?php if(old('shift', auth()->user()->shift) === 'Shift 1'): echo 'selected'; endif; ?>>Shift 1</option>
+                                <option value="Shift 2" <?php if(old('shift', auth()->user()->shift) === 'Shift 2'): echo 'selected'; endif; ?>>Shift 2</option>
+                                <option value="Shift 3" <?php if(old('shift', auth()->user()->shift) === 'Shift 3'): echo 'selected'; endif; ?>>Shift 3</option>
+                            </select>
+                        </div>
+                        <div><label>Mulai Istirahat</label><input type="time" name="jam_istirahat_mulai" value="<?php echo e(old('jam_istirahat_mulai', '12:00')); ?>"></div>
+                        <div><label>Selesai Istirahat</label><input type="time" name="jam_istirahat_selesai" value="<?php echo e(old('jam_istirahat_selesai', '14:00')); ?>"></div>
+                    </div>
                     <label style="margin-top:14px;">Keterangan</label>
-                    <textarea name="keterangan" style="margin-top:6px;"></textarea>
+                    <textarea name="keterangan" style="margin-top:6px;" placeholder="Contoh: alasan telat, kendala di lapangan, atau catatan shift."><?php echo e(old('keterangan')); ?></textarea>
                     <button type="submit" style="margin-top:14px;width:100%;padding:11px;">Simpan Absen Masuk</button>
                 </form>
             <?php endif; ?>
@@ -379,27 +457,60 @@
                 <svg fill="none" viewBox="0 0 16 16"><path d="M10 3l5 5-5 5M3 8h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 Absen Pulang
             </div>
-            <span class="abs-card-time">16:00 – 23:59</span>
+            <span class="abs-card-time">Terbuka sepanjang hari</span>
         </div>
         <div class="abs-card-body">
-            <?php if(!$today?->jam_masuk && $today?->status !== 'tidak_absen'): ?>
+            <?php if($today?->status === 'cuti' || $isLeave): ?>
+                <div class="abs-info">
+                    <svg fill="none" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7h5M5.5 10h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    Absen pulang tidak dibuka karena kamu sedang cuti.
+                </div>
+            <?php elseif(!$today?->jam_masuk && $today?->status !== 'tidak_absen'): ?>
                 <div class="abs-info">
                     <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                    Silakan absen masuk terlebih dahulu.
+                    <?php echo e($isHoliday ? 'Absen pulang tidak dibuka karena hari libur.' : 'Silakan absen masuk terlebih dahulu.'); ?>
+
                 </div>
             <?php elseif($today?->jam_pulang): ?>
                 <div class="success" style="margin:0;">
                     <strong>Sudah absen pulang</strong> — pukul <?php echo e($today->jam_pulang); ?>
 
                 </div>
-            <?php elseif($today?->status === 'tidak_absen' || (now()->format('H:i:s') > '07:15:00' && !$today?->jam_masuk && $today?->status !== 'akses_dibuka')): ?>
-                <div class="error" style="margin:0;">Tidak ada absen masuk untuk hari ini sehingga tidak bisa absen pulang.</div>
-            <?php elseif(now()->format('H:i:s') < '16:00:00'): ?>
-                <div class="abs-info">
-                    <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                    Absen pulang belum dibuka. Silakan kembali pukul <strong>16:00</strong>.
+            <?php elseif($today?->approval_pulang_status === 'approved'): ?>
+                <div class="success" style="margin-bottom:14px;">
+                    <strong>Absen pulang sudah dibuka</strong> — silakan upload foto pulang.
                 </div>
+                <form id="form_pulang" method="POST" action="<?php echo e(route('petugas.absensi.pulang')); ?>" enctype="multipart/form-data">
+                    <?php echo csrf_field(); ?>
+                    <input type="hidden" name="id_absensi" value="<?php echo e($today->id_absensi); ?>">
+                    <label style="margin-bottom:8px;">Foto Pulang</label>
+                    <div class="camera-container" id="camera_wrap_pulang">
+                        <div class="cam-placeholder" id="cam_placeholder_pulang"><p>Kamera belum aktif</p></div>
+                        <video id="video_pulang" width="100%" style="display:none;" autoplay playsinline></video>
+                        <canvas id="canvas_pulang" style="display:none;"></canvas>
+                        <img id="photo_pulang" style="width:100%;display:none;" />
+                    </div>
+                    <input type="hidden" name="foto_pulang" id="foto_pulang_input">
+                    <div class="cam-actions">
+                        <button type="button" id="btn_open_cam_pulang" class="btn-cam btn-cam-open">Buka Kamera</button>
+                        <button type="button" id="btn_capture_pulang" class="btn-cam btn-cam-capture" style="display:none;">Ambil Foto</button>
+                        <button type="button" id="btn_retake_pulang" class="btn-cam btn-cam-retake" style="display:none;">Ulangi Foto</button>
+                    </div>
+                    <div class="coord-row">
+                        <div><label>Latitude</label><input name="latitude_pulang" id="lat_pulang"></div>
+                        <div><label>Longitude</label><input name="longitude_pulang" id="lng_pulang"></div>
+                        <div><label>Lokasi</label><input name="lokasi_pulang"></div>
+                    </div>
+                    <button type="submit" style="margin-top:14px;width:100%;padding:11px;">Simpan Absen Pulang</button>
+                </form>
+            <?php elseif($today?->status === 'tidak_absen' && !$today?->jam_masuk): ?>
+                <div class="error" style="margin:0;">Tidak ada absen masuk untuk hari ini sehingga tidak bisa absen pulang.</div>
             <?php else: ?>
+                <?php if(now()->format('H:i:s') < $jamPulangBuka): ?>
+                    <div class="abs-info" style="margin-bottom:16px;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
+                        Absen pulang dilakukan sebelum jam pulang normal. Absensi tetap bisa disimpan.
+                    </div>
+                <?php endif; ?>
                 <form id="form_pulang" method="POST" action="<?php echo e(route('petugas.absensi.pulang')); ?>" enctype="multipart/form-data">
                     <?php echo csrf_field(); ?>
                     <label style="margin-bottom:8px;">Foto Pulang</label>
@@ -487,7 +598,9 @@
                     <th>Tanggal</th>
                     <th>Jam Masuk</th>
                     <th>Jam Pulang</th>
+                    <th>Shift</th>
                     <th>Status</th>
+                    <th>Approval</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -512,7 +625,21 @@
                                 <span class="abs-time-nil">—</span>
                             <?php endif; ?>
                         </td>
+                        <td><?php echo e($item->shift ?? '-'); ?></td>
                         <td><span class="badge <?php echo e($item->status); ?>"><?php echo e($item->status); ?></span></td>
+                        <td>
+                            <?php if($item->approval_pulang_status): ?>
+                                <span class="badge <?php echo e($item->approval_pulang_status); ?>"><?php echo e(str_replace('_', ' ', $item->approval_pulang_status)); ?></span>
+                            <?php elseif($item->jam_masuk && !$item->jam_pulang && $item->tanggal->lt(today())): ?>
+                                <form method="POST" action="<?php echo e(route('petugas.absensi.request-pulang', $item->id_absensi)); ?>" style="display:grid;gap:6px;min-width:190px;">
+                                    <?php echo csrf_field(); ?>
+                                    <input name="approval_pulang_reason" placeholder="Alasan lupa absen pulang" required>
+                                    <button type="submit" class="btn-detail">Minta Approval</button>
+                                </form>
+                            <?php else: ?>
+                                <span class="abs-time-nil">-</span>
+                            <?php endif; ?>
+                        </td>
                         <td>
                             <a href="<?php echo e(route('absensi.detail', $item->id_absensi)); ?>" class="btn-detail">
                                 <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 6v2l1 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
@@ -522,7 +649,7 @@
                     </tr>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                     <tr>
-                        <td colspan="5">
+                        <td colspan="7">
                             <div class="abs-empty">
                                 <svg fill="none" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="1.5"/></svg>
                                 Belum ada riwayat absensi.
@@ -556,6 +683,7 @@
     var tempatLat  = <?php echo e(isset($tempatTugas) && $tempatTugas->latitude  ? $tempatTugas->latitude  : 'null'); ?>;
     var tempatLng  = <?php echo e(isset($tempatTugas) && $tempatTugas->longitude ? $tempatTugas->longitude : 'null'); ?>;
     var namaTempat = "<?php echo e(isset($tempatTugas) ? $tempatTugas->nama_tempat : ''); ?>";
+    var jarakMaksMeter = <?php echo e((int) $jarakMaksMeter); ?>;
 
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function (position) {
@@ -564,7 +692,7 @@
 
             var inRange = true;
             if (tempatLat !== null && tempatLng !== null) {
-                if (calculateDistance(userLat, userLng, tempatLat, tempatLng) > 100) inRange = false;
+                if (calculateDistance(userLat, userLng, tempatLat, tempatLng) > jarakMaksMeter) inRange = false;
             }
 
             ['masuk', 'pulang'].forEach(function (type) {
@@ -598,7 +726,9 @@
                     btn.style.cursor   = 'not-allowed';
                 });
             }
-        });
+        }, function () {
+            alert('Lokasi GPS belum terbaca. Izinkan akses lokasi agar absensi bisa disimpan.');
+        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
     }
 
     function setupCamera(type) {

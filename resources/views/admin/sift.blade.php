@@ -116,20 +116,40 @@
                                 </span>
                             </td>
                             <td>
-                                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                                    <button type="button" onclick="editShift({{ $shift->id }}, '{{ $shift->nama_shift }}', '{{ $shift->jam_masuk ? \Carbon\Carbon::parse($shift->jam_masuk)->format('H:i') : '' }}', {{ $shift->durasi_jam }}, '{{ $shift->warna }}')" style="padding: 4px 8px; font-size: 11px; background: var(--amber);">Edit</button>
+                                <div class="sift-action-group">
+                                    {{-- Edit --}}
+                                    <button type="button"
+                                        class="sift-btn sift-btn-edit"
+                                        onclick="editShift({{ $shift->id }}, '{{ $shift->nama_shift }}', '{{ $shift->jam_masuk ? \Carbon\Carbon::parse($shift->jam_masuk)->format('H:i') : '' }}', {{ $shift->durasi_jam }}, '{{ $shift->warna }}')">
+                                        <svg fill="none" viewBox="0 0 14 14" style="width:12px;height:12px;flex-shrink:0"><path d="M9.5 1.5l3 3L5 12l-3 .5.5-3L9.5 1.5z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                        Edit
+                                    </button>
 
-                                    <form method="POST" action="{{ route('admin.sift.toggle-shift', $shift->id) }}" style="margin: 0;">
+                                    {{-- Toggle Aktif / Nonaktif --}}
+                                    <form method="POST" action="{{ route('admin.sift.toggle-shift', $shift->id) }}" style="margin:0;">
                                         @csrf
-                                        <button type="submit" style="padding: 4px 8px; font-size: 11px; background: var(--primary);">
-                                            {{ $shift->status ? 'Nonaktifkan' : 'Aktifkan' }}
-                                        </button>
+                                        @if($shift->status)
+                                            <button type="submit" class="sift-btn sift-btn-deactivate">
+                                                <svg fill="none" viewBox="0 0 14 14" style="width:12px;height:12px;flex-shrink:0"><rect x="3" y="2" width="3" height="10" rx="1" fill="currentColor"/><rect x="8" y="2" width="3" height="10" rx="1" fill="currentColor"/></svg>
+                                                Nonaktifkan
+                                            </button>
+                                        @else
+                                            <button type="submit" class="sift-btn sift-btn-activate">
+                                                <svg fill="none" viewBox="0 0 14 14" style="width:12px;height:12px;flex-shrink:0"><path d="M2 7l4 4 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                Aktifkan
+                                            </button>
+                                        @endif
                                     </form>
 
-                                    <form method="POST" action="{{ route('admin.sift.destroy-shift', $shift->id) }}" style="margin: 0;" onsubmit="return confirm('Hapus shift {{ $shift->nama_shift }}?')">
+                                    {{-- Hapus --}}
+                                    <form method="POST" action="{{ route('admin.sift.destroy-shift', $shift->id) }}" style="margin:0;"
+                                          onsubmit="return confirm('Hapus shift {{ $shift->nama_shift }}?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="danger" style="padding: 4px 8px; font-size: 11px;">Hapus</button>
+                                        <button type="submit" class="sift-btn sift-btn-delete">
+                                            <svg fill="none" viewBox="0 0 14 14" style="width:12px;height:12px;flex-shrink:0"><path d="M2 4h10M9 4V3H5v1M6 7v4M8 7v4M3 4l.7 8h6.6L11 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                            Hapus
+                                        </button>
                                     </form>
                                 </div>
                             </td>
@@ -168,8 +188,14 @@
                         <input type="color" name="warna" id="edit_warna" style="width: 60px; height: 36px;">
                     </div>
                     <div style="display: flex; gap: 8px; margin-top: 8px;">
-                        <button type="submit" style="flex: 1;">Simpan</button>
-                        <button type="button" onclick="closeEditModal()" style="flex: 1; background: var(--muted);">Batal</button>
+                        <button type="submit" class="sift-btn sift-btn-save">
+                            <svg fill="none" viewBox="0 0 14 14" style="width:13px;height:13px;flex-shrink:0"><path d="M2 7l4 4 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            Simpan
+                        </button>
+                        <button type="button" onclick="closeEditModal()" class="sift-btn sift-btn-cancel">
+                            <svg fill="none" viewBox="0 0 14 14" style="width:13px;height:13px;flex-shrink:0"><path d="M3 3l8 8M11 3L3 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                            Batal
+                        </button>
                     </div>
                 </div>
             </form>
@@ -198,7 +224,11 @@
                             <option value="{{ $shift->nama_shift }}">{{ $shift->nama_shift }} ({{ $shift->jam_masuk ? \Carbon\Carbon::parse($shift->jam_masuk)->format('H:i') : '' }} - {{ $shift->jam_pulang ? \Carbon\Carbon::parse($shift->jam_pulang)->format('H:i') : '' }})</option>
                         @endforeach
                     </select>
-                    <button type="submit" class="btn btn-warning" onclick="return confirm('Yakin assign shift ke petugas yang dipilih?')">Update Shift Terpilih</button>
+                    <button type="submit" class="sift-btn sift-btn-bulk"
+                            onclick="return confirm('Yakin assign shift ke petugas yang dipilih?')">
+                        <svg fill="none" viewBox="0 0 14 14" style="width:13px;height:13px;flex-shrink:0"><path d="M2 7l4 4 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        Update Shift Terpilih
+                    </button>
                 </div>
             </form>
         </div>
@@ -261,7 +291,10 @@
                                         </option>
                                     @endforeach
                                 </select>
-                                <button type="submit" style="padding: 5px 10px; font-size: 11px;">Update</button>
+                                <button type="submit" class="sift-btn sift-btn-update">
+                                    <svg fill="none" viewBox="0 0 14 14" style="width:11px;height:11px;flex-shrink:0"><path d="M2 7l4 4 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    Simpan
+                                </button>
                             </form>
                         </td>
                     </tr>
@@ -292,6 +325,105 @@
             color: var(--primary);
             border-bottom-color: var(--primary);
         }
+
+        /* ── Sift Action Buttons ── */
+        .sift-action-group {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .sift-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 11px;
+            cursor: pointer;
+            transition: all .18s ease;
+            white-space: nowrap;
+            text-decoration: none;
+            line-height: 1;
+        }
+        .sift-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,.12); }
+        .sift-btn:active { transform: translateY(0); box-shadow: none; }
+
+        /* Edit – amber */
+        .sift-btn-edit {
+            background: rgba(245,158,11,.10);
+            color: #b45309;
+            border: 1px solid rgba(245,158,11,.30);
+        }
+        .sift-btn-edit:hover { background: rgba(245,158,11,.20); border-color: rgba(245,158,11,.5); }
+
+        /* Aktifkan – green */
+        .sift-btn-activate {
+            background: rgba(34,197,94,.10);
+            color: #15803d;
+            border: 1px solid rgba(34,197,94,.28);
+        }
+        .sift-btn-activate:hover { background: rgba(34,197,94,.20); border-color: rgba(34,197,94,.5); }
+
+        /* Nonaktifkan – blue */
+        .sift-btn-deactivate {
+            background: rgba(59,130,246,.10);
+            color: var(--primary2, #1d4ed8);
+            border: 1px solid rgba(59,130,246,.25);
+        }
+        .sift-btn-deactivate:hover { background: rgba(59,130,246,.18); }
+
+        /* Hapus – red */
+        .sift-btn-delete {
+            background: rgba(239,68,68,.10);
+            color: #dc2626;
+            border: 1px solid rgba(239,68,68,.25);
+        }
+        .sift-btn-delete:hover { background: rgba(239,68,68,.18); border-color: rgba(239,68,68,.4); }
+
+        /* Update per-row – primary solid */
+        .sift-btn-update {
+            background: var(--primary);
+            color: #fff;
+            border: 1px solid transparent;
+            padding: 6px 13px;
+        }
+        .sift-btn-update:hover { background: #2563eb; }
+
+        /* Bulk assign */
+        .sift-btn-bulk {
+            background: var(--primary);
+            color: #fff;
+            border: 1px solid transparent;
+            padding: 9px 16px;
+            font-size: 13px;
+        }
+        .sift-btn-bulk:hover { background: #2563eb; }
+
+        /* Modal – save */
+        .sift-btn-save {
+            flex: 1;
+            background: var(--primary);
+            color: #fff;
+            border: 1px solid transparent;
+            padding: 10px 16px;
+            font-size: 13px;
+        }
+        .sift-btn-save:hover { background: #2563eb; }
+
+        /* Modal – cancel */
+        .sift-btn-cancel {
+            flex: 1;
+            background: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 10px 16px;
+            font-size: 13px;
+        }
+        .sift-btn-cancel:hover { background: var(--border-color); }
     </style>
 @endsection
 

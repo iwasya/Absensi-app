@@ -44,9 +44,174 @@
 
     .users-tools {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 12px;
         align-items: start;
+    }
+
+    .users-action-card {
+        min-height: 92px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 16px;
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        background: var(--panel-bg);
+        color: var(--text-color);
+        cursor: pointer;
+        text-align: left;
+        transition: border-color .18s, background .18s, box-shadow .18s, transform .18s;
+    }
+
+    .users-action-card:hover {
+        border-color: var(--primary-border);
+        background: var(--primary-soft);
+        box-shadow: 0 5px 16px rgba(14, 165, 201, .08);
+        transform: translateY(-1px);
+    }
+
+    .users-action-title {
+        display: block;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-color);
+    }
+
+    .users-action-sub {
+        display: block;
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    .users-action-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-color);
+        color: var(--primary);
+        border: 1px solid var(--border-color);
+        flex: 0 0 auto;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .users-page-view {
+        display: none;
+    }
+
+    .users-page-view.active {
+        display: block;
+    }
+
+    .users-form-page {
+        background: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .users-form-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .users-form-head h2 {
+        margin: 0;
+        font-size: 18px;
+        color: var(--text-color);
+    }
+
+    .users-form-sub {
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    .users-back-btn {
+        min-height: 34px;
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-color);
+        color: var(--text-color);
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .users-form-body {
+        padding: 18px;
+    }
+
+    .users-form-section {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .users-section-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-color);
+    }
+
+    .choice-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .choice-grid-scroll {
+        max-height: 132px;
+        overflow: auto;
+        padding-right: 4px;
+    }
+
+    .choice-pill {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 36px;
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        background: var(--bg-color);
+        color: var(--text-color);
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .choice-pill input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .choice-pill:has(input:checked) {
+        border-color: var(--primary);
+        background: var(--primary-soft);
+        color: var(--primary2);
+        box-shadow: inset 0 0 0 1px var(--primary-border);
+    }
+
+    @media (max-width: 768px) {
+        .users-tools {
+            grid-template-columns: 1fr;
+        }
     }
 
     .users-panel,
@@ -114,6 +279,317 @@
         color: var(--muted);
         font-size: 13px;
         line-height: 1.5;
+    }
+
+    /* Import Excel Styles */
+    .import-container {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .import-template-btn {
+        align-self: flex-start;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 16px;
+        background: linear-gradient(135deg, var(--green), #22c55e);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
+    }
+
+    .import-template-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    }
+
+    .import-drop-zone {
+        position: relative;
+        padding: 28px 16px;
+        border: 2px dashed var(--border-color);
+        border-radius: 10px;
+        background: var(--bg-color);
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .import-drop-zone:hover {
+        border-color: var(--primary);
+        background: rgba(59, 130, 246, 0.02);
+    }
+
+    .import-drop-zone.dragover {
+        border-color: var(--primary);
+        background: rgba(59, 130, 246, 0.05);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .import-drop-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .import-drop-icon {
+        font-size: 32px;
+        opacity: 0.6;
+    }
+
+    .import-drop-title {
+        font-weight: 600;
+        color: var(--text-color);
+        font-size: 14px;
+    }
+
+    .import-drop-hint {
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    .import-file-input {
+        display: none;
+    }
+
+    .import-filename {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 12px;
+        background: var(--primary-soft);
+        border: 1px solid var(--primary-border);
+        border-radius: 8px;
+        color: var(--primary);
+        font-size: 13px;
+        margin-top: 12px;
+    }
+
+    .import-filename strong {
+        flex: 1;
+        word-break: break-all;
+    }
+
+    .import-filename button {
+        background: none;
+        border: none;
+        color: var(--primary);
+        cursor: pointer;
+        font-size: 14px;
+        padding: 0;
+        flex-shrink: 0;
+    }
+
+    .import-actions-footer {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .import-actions-footer button,
+    .import-actions-footer a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 9px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .import-btn-upload {
+        background: var(--primary);
+        color: white;
+    }
+
+    .import-btn-upload:hover:not(:disabled) {
+        background: #2563eb;
+    }
+
+    .import-btn-upload:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .import-btn-cancel {
+        background: var(--bg-color);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+    }
+
+    .import-btn-cancel:hover {
+        background: var(--border-color);
+    }
+
+    /* Filter Styles */
+    .filter-container {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .filter-bar {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: flex-end;
+    }
+
+    .filter-control {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex: 1 1 200px;
+    }
+
+    .filter-control label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .filter-control input[type="text"],
+    .filter-control select {
+        background: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 9px 11px;
+        font-size: 13px;
+        color: var(--text-color);
+        transition: all 0.2s ease;
+    }
+
+    .filter-control input[type="text"]:focus,
+    .filter-control select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .filter-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .filter-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 9px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .filter-btn-submit {
+        background: var(--primary);
+        color: white;
+    }
+
+    .filter-btn-submit:hover {
+        background: #2563eb;
+    }
+
+    .filter-btn-reset {
+        background: var(--bg-color);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+    }
+
+    .filter-btn-reset:hover {
+        background: var(--border-color);
+    }
+
+    .filter-chips {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .filter-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        background: var(--primary-soft);
+        border: 1px solid var(--primary-border);
+        border-radius: 20px;
+        color: var(--primary);
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .filter-chip button {
+        background: none;
+        border: none;
+        color: var(--primary);
+        cursor: pointer;
+        font-size: 14px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .perpage-group {
+        display: flex;
+        gap: 6px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--panel-bg);
+        padding: 2px;
+    }
+
+    .perpage-btn {
+        flex: 1;
+        padding: 8px 12px;
+        border: none;
+        background: transparent;
+        color: var(--text-color);
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 500;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .perpage-btn:hover {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--primary);
+    }
+
+    .perpage-btn.active {
+        background: var(--primary);
+        color: white;
     }
 
     .sr-only {
@@ -346,12 +822,6 @@
         border-top: 1px solid var(--border-color);
     }
 
-    @media (max-width: 1100px) {
-        .users-tools {
-            grid-template-columns: 1fr;
-        }
-    }
-
     @media (max-width: 640px) {
         main {
             padding: 16px !important;
@@ -387,91 +857,97 @@
     </div>
 
     <div class="users-tools">
-        <details class="users-panel">
-            <summary>Tambah User</summary>
-            <div class="users-panel-body">
-                <form method="POST" action="<?php echo e(route('admin.users.store')); ?>">
-                    <?php echo csrf_field(); ?>
-                    <div class="form-grid">
-                        <div><label>Nama</label><input name="nama" required></div>
-                        <div><label>Username / NIK</label><input name="username" required placeholder="NIK sebagai username"></div>
-                        <div><label>NIK</label><input name="nik" required placeholder="Nomor Induk Kependudukan"></div>
-                        <div><label>Email</label><input type="email" name="email" required></div>
-                        <div><label>Password</label><input type="password" name="password" required></div>
-                        <div>
-                            <label>Role</label>
-                            <select name="id_role" required>
-                                <?php $__currentLoopData = $roles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $role): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <option value="<?php echo e($role->id_role); ?>"><?php echo e($role->nama_role); ?></option>
-                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                            </select>
-                        </div>
-                        <div>
-                            <label>Tempat Tugas</label>
-                            <select name="id_tempat">
-                                <option value="">-</option>
-                                <?php $__currentLoopData = $tempatTugas; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tempat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <option value="<?php echo e($tempat->id_tempat); ?>"><?php echo e($tempat->nama_tempat); ?></option>
-                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                            </select>
-                        </div>
-                        <button type="submit">Tambah User</button>
-                    </div>
-                </form>
+        <a href="<?php echo e(route('admin.users.create')); ?>" class="users-action-card">
+            <div>
+                <span class="users-action-title">Tambah User</span>
+                <span class="users-action-sub">Buat user baru dengan form terpisah di halaman khusus.</span>
             </div>
-        </details>
+            <div class="users-action-icon">＋</div>
+        </a>
 
-        <details class="users-panel">
-            <summary>Import Users dari Excel</summary>
-            <div class="users-panel-body">
-                <p class="users-panel-note">Import data user secara massal menggunakan file Excel. NIK akan di-encrypt otomatis.</p>
-                <div class="import-actions">
-                    <a href="<?php echo e(route('admin.users.template')); ?>" class="users-button-success">Download Template Excel</a>
-                </div>
-                <form method="POST" action="<?php echo e(route('admin.users.import')); ?>" enctype="multipart/form-data">
-                    <?php echo csrf_field(); ?>
-                    <div class="import-form-row">
-                        <div><label>File Excel</label><input type="file" name="file" accept=".xlsx,.xls" required></div>
-                        <button type="submit">Upload dan Import</button>
-                    </div>
-                </form>
+        <a href="<?php echo e(route('admin.users.import.form')); ?>" class="users-action-card">
+            <div>
+                <span class="users-action-title">Import Users dari Excel</span>
+                <span class="users-action-sub">Unggah file Excel untuk menambahkan banyak user sekaligus.</span>
             </div>
-        </details>
+            <div class="users-action-icon">📁</div>
+        </a>
+    </div>
 
-        <details class="users-panel" <?php echo e(request()->filled('search') || request()->filled('role') ? 'open' : ''); ?>>
-            <summary>Filter Users</summary>
-            <div class="users-panel-body">
-                <form method="GET" action="<?php echo e(route('admin.users.index')); ?>" class="filter-bar">
-                    <div class="filter-control" style="flex:1; min-width:200px;">
-                        <label>Cari User</label>
-                        <input type="text" name="search" value="<?php echo e(request('search')); ?>" placeholder="Nama, username, email..." style="width:100%;">
-                    </div>
+    
+    <details class="users-panel" <?php echo e(($filters['search'] || $filters['role']) ? 'open' : ''); ?>>
+        <summary>
+            <span style="display:inline-flex;align-items:center;gap:10px;">
+                🔎 Filter &amp; Cari Users
+                <?php if($filters['search'] || $filters['role']): ?>
+                    <span style="padding:2px 10px;background:var(--primary);color:#fff;border-radius:99px;font-size:11px;font-weight:700;">Aktif</span>
+                <?php endif; ?>
+            </span>
+        </summary>
+
+        <div class="users-panel-body">
+            <form method="GET" action="<?php echo e(route('admin.users.index')); ?>" id="filterForm">
+                <div class="filter-row" style="margin-bottom:14px;">
+
                     <div class="filter-control">
-                        <label>Role</label>
-                        <select name="role" style="width:100%;">
-                            <option value="">Semua Role</option>
+                        <label for="filterSearch">Cari User</label>
+                        <input id="filterSearch" name="search" type="text"
+                               value="<?php echo e($filters['search']); ?>"
+                               placeholder="Nama, username, atau email…">
+                    </div>
+
+                    <div class="filter-control">
+                        <label for="filterRole">Role</label>
+                        <select id="filterRole" name="role">
+                            <option value="">📋 Semua Role</option>
                             <?php $__currentLoopData = $roles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $role): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <option value="<?php echo e($role->id_role); ?>" <?php echo e(request('role') == $role->id_role ? 'selected' : ''); ?>><?php echo e($role->nama_role); ?></option>
+                                <option value="<?php echo e($role->id_role); ?>"
+                                    <?php echo e((string)$filters['role'] === (string)$role->id_role ? 'selected' : ''); ?>>
+                                    👤 <?php echo e($role->nama_role); ?>
+
+                                </option>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
-                    <div class="filter-control" style="max-width:120px;">
-                        <label>Per Halaman</label>
-                        <select name="per_page" onchange="this.form.submit()" style="width:100%;">
-                            <option value="10" <?php echo e(request('per_page') == 10 ? 'selected' : ''); ?>>10 / hal</option>
-                            <option value="25" <?php echo e(request('per_page') == 25 ? 'selected' : (request('per_page') ? '' : 'selected')); ?>>25 / hal</option>
-                            <option value="50" <?php echo e(request('per_page') == 50 ? 'selected' : ''); ?>>50 / hal</option>
-                            <option value="100" <?php echo e(request('per_page') == 100 ? 'selected' : ''); ?>>100 / hal</option>
-                        </select>
+
+                    <div class="filter-control" style="flex:0 1 auto;">
+                        <label>Per halaman</label>
+                        <div class="perpage-group">
+                            <?php $__currentLoopData = [10, 25, 50, 100]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $pp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <button type="button"
+                                        class="perpage-btn <?php echo e($filters['per_page'] == $pp ? 'active' : ''); ?>"
+                                        onclick="setPerPage(<?php echo e($pp); ?>)"><?php echo e($pp); ?></button>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        </div>
                     </div>
-                    <button type="submit">Filter</button>
-                    <?php if(request()->hasAny(['search', 'role']) && (request('search') != '' || request('role') != '')): ?>
-                        <a href="<?php echo e(route('admin.users.index')); ?>" class="users-button-secondary">Reset</a>
+                </div>
+
+                <div class="filter-buttons">
+                    <button type="submit" class="filter-btn filter-btn-submit">🔍 Terapkan</button>
+                    <a href="<?php echo e(route('admin.users.index')); ?>" class="filter-btn filter-btn-reset">✕ Reset</a>
+                </div>
+            </form>
+
+            <?php if($filters['search'] || $filters['role']): ?>
+                <div class="filter-chips" style="margin-top:14px;">
+                    <?php if($filters['search']): ?>
+                        <span class="filter-chip">
+                            Pencarian: "<?php echo e($filters['search']); ?>"
+                            <button type="button" onclick="removeFilter('search')" aria-label="Hapus filter pencarian">×</button>
+                        </span>
                     <?php endif; ?>
-                </form>
-            </div>
-        </details>
-    </div>
+                    <?php if($filters['role']): ?>
+                        <?php $activeRole = $roles->firstWhere('id_role', $filters['role']); ?>
+                        <span class="filter-chip">
+                            Role: <?php echo e($activeRole->nama_role ?? '—'); ?>
+
+                            <button type="button" onclick="removeFilter('role')" aria-label="Hapus filter role">×</button>
+                        </span>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    </details>
 
     <div class="users-bulkbar">
         <form method="POST" action="<?php echo e(route('admin.users.bulk-delete')); ?>" id="bulkDeleteForm" class="users-bulk-form">
@@ -505,6 +981,8 @@
                         <th style="min-width:300px;">Akun</th>
                         <th style="min-width:190px;">Role</th>
                         <th style="min-width:220px;">Tempat Tugas</th>
+                        <th style="min-width:260px;">Regu / Shift / Status</th>
+                        <th style="min-width:260px;">Data Diri</th>
                         <th style="min-width:170px;">Aksi</th>
                     </tr>
                 </thead>
@@ -563,6 +1041,31 @@
                             </td>
 
                             <td>
+                                <div class="users-info-grid">
+                                    <input type="text" name="regu_<?php echo e($item->id_user); ?>" value="<?php echo e($item->regu); ?>" placeholder="Regu">
+                                    <select name="shift_<?php echo e($item->id_user); ?>" class="users-select">
+                                        <option value="">Shift</option>
+                                        <option value="Shift 1" <?php if($item->shift === 'Shift 1'): echo 'selected'; endif; ?>>Shift 1</option>
+                                        <option value="Shift 2" <?php if($item->shift === 'Shift 2'): echo 'selected'; endif; ?>>Shift 2</option>
+                                        <option value="Shift 3" <?php if($item->shift === 'Shift 3'): echo 'selected'; endif; ?>>Shift 3</option>
+                                    </select>
+                                    <select name="status_aktif_<?php echo e($item->id_user); ?>" class="users-select">
+                                        <option value="aktif" <?php if(($item->status_aktif ?? 'aktif') === 'aktif'): echo 'selected'; endif; ?>>Aktif</option>
+                                        <option value="nonaktif" <?php if($item->status_aktif === 'nonaktif'): echo 'selected'; endif; ?>>Nonaktif</option>
+                                    </select>
+                                    <small class="muted"><?php echo e($item->is_ketua_regu ? 'Ketua ditentukan atasan' : 'Anggota regu'); ?></small>
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="users-info-grid">
+                                    <input type="text" name="no_hp_<?php echo e($item->id_user); ?>" value="<?php echo e($item->no_hp); ?>" placeholder="No HP">
+                                    <input type="text" name="jabatan_<?php echo e($item->id_user); ?>" value="<?php echo e($item->jabatan); ?>" placeholder="Jabatan">
+                                    <input type="text" name="alamat_<?php echo e($item->id_user); ?>" value="<?php echo e($item->alamat); ?>" placeholder="Alamat">
+                                </div>
+                            </td>
+
+                            <td>
                                 <div class="users-actions">
                                     <button type="button" onclick="updateUser(<?php echo e($item->id_user); ?>)" class="users-btn users-btn-save">
                                         Simpan
@@ -575,7 +1078,7 @@
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
-                            <td colspan="6">
+                            <td colspan="8">
                                 <div class="users-empty">
                                     <strong>Belum ada user</strong>
                                     Data user akan tampil di sini setelah ditambahkan atau diimport.
@@ -627,6 +1130,12 @@
         if (pass) formData.append('password', pass);
         formData.append('id_role', document.querySelector('[name="id_role_' + id + '"]').value);
         formData.append('id_tempat', document.querySelector('[name="id_tempat_' + id + '"]').value);
+        formData.append('regu', document.querySelector('[name="regu_' + id + '"]').value);
+        formData.append('shift', document.querySelector('[name="shift_' + id + '"]').value);
+        formData.append('status_aktif', document.querySelector('[name="status_aktif_' + id + '"]').value);
+        formData.append('no_hp', document.querySelector('[name="no_hp_' + id + '"]').value);
+        formData.append('jabatan', document.querySelector('[name="jabatan_' + id + '"]').value);
+        formData.append('alamat', document.querySelector('[name="alamat_' + id + '"]').value);
 
         fetch('/admin/users/' + id, { method: 'POST', body: formData })
             .then(res => res.ok ? alert('Berhasil diupdate') : alert('Gagal update'))
@@ -641,6 +1150,85 @@
         fetch('/admin/users/' + id, { method: 'POST', body: formData })
             .then(res => { if (res.ok) location.reload(); else alert('Gagal hapus'); })
             .catch(() => alert('Error'));
+    }
+
+    // Import Excel Drag & Drop Handler
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const selectedFileDiv = document.getElementById('selectedFile');
+    const fileNameSpan = document.getElementById('fileName');
+    const actionButtons = document.getElementById('actionButtons');
+
+    if (dropZone) {
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+        });
+
+        dropZone.addEventListener('drop', handleDrop, false);
+    }
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        fileInput.files = files;
+        handleFileSelect({ target: { files } });
+    }
+
+    function handleFileSelect(event) {
+        const files = event.target.files;
+        if (files && files.length > 0) {
+            const file = files[0];
+            if (file.name.match(/\.(xlsx|xls)$/i)) {
+                fileNameSpan.textContent = file.name;
+                selectedFileDiv.style.display = 'flex';
+                actionButtons.style.display = 'flex';
+            } else {
+                alert('Hanya file Excel (.xlsx, .xls) yang diperbolehkan!');
+                clearFile();
+            }
+        }
+    }
+
+    function clearFile() {
+        fileInput.value = '';
+        selectedFileDiv.style.display = 'none';
+        actionButtons.style.display = 'none';
+        fileNameSpan.textContent = '';
+    }
+
+    // Filter Per-Page Handler
+    function setPerPage(count) {
+        const form = document.getElementById('filterForm');
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'per_page';
+        input.value = count;
+        form.appendChild(input);
+        form.submit();
+    }
+
+    // Remove Filter Chip
+    function removeFilter(filterName) {
+        const form = document.getElementById('filterForm');
+        if (filterName === 'search') {
+            form.querySelector('[name="search"]').value = '';
+        } else if (filterName === 'role') {
+            form.querySelector('[name="role"]').value = '';
+        }
+        form.submit();
     }
 </script>
 <?php $__env->stopSection(); ?>

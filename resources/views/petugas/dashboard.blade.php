@@ -50,13 +50,20 @@
     .card-body { padding: 16px 18px; }
 
     /* â”€â”€ Donut â”€â”€ */
-    .donut-section { display: flex; align-items: center; justify-content: center; gap: 24px; padding: 8px 0; }
-    .donut-wrap { position: relative; width: 100px; height: 100px; flex-shrink: 0; }
-    .donut-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .donut-num { font-size: 20px; font-weight: 700; color: var(--text-color); }
-    .donut-sub { font-size: 10px; color: var(--muted); }
-    .legend-list { display: flex; flex-direction: column; gap: 8px; }
-    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
+    .donut-section { display: grid; grid-template-columns: 150px minmax(0,1fr); align-items: center; gap: 22px; padding: 4px 0; }
+    .donut-wrap { position: relative; width: 142px; height: 142px; border-radius: 50%; flex-shrink: 0; background: var(--bg-color); box-shadow: inset 0 0 0 1px var(--border-color); }
+    .donut-wrap::after { content: ""; position: absolute; inset: 18px; border-radius: 50%; background: var(--panel-bg); box-shadow: 0 0 0 1px var(--border-color); }
+    .donut-label { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    .donut-num { font-size: 28px; font-weight: 700; color: var(--text-color); line-height: 1; }
+    .donut-sub { font-size: 10px; color: var(--muted); margin-top: 5px; text-transform: uppercase; letter-spacing: .04em; }
+    .donut-meta { display: grid; gap: 12px; min-width: 0; }
+    .donut-summary { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+    .donut-summary-item { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 10px; padding: 9px 10px; min-width: 0; }
+    .donut-summary-label { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .donut-summary-value { font-size: 17px; font-weight: 700; color: var(--text-color); margin-top: 2px; }
+    .legend-list { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px 12px; }
+    .legend-item { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 12px; color: var(--muted); }
+    .legend-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
 
     /* â”€â”€ Feed â”€â”€ */
@@ -84,11 +91,12 @@
     .cal-day-labels { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; margin-bottom: 4px; }
     .cal-day-lbl { text-align: center; font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; padding: 4px 0; }
     .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
-    .cal-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 7px; color: var(--text-color); position: relative; cursor: pointer; border: 1px solid transparent; background: transparent; font-family: inherit; }
-    .cal-cell.other { color: var(--border2); }
+    .cal-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 7px; color: var(--text-color); position: relative; cursor: pointer; border: 1px solid transparent; background: var(--bg-color); font-family: inherit; }
+    .cal-cell.other { color: var(--border2); opacity: .65; }
     .cal-cell.today { background: var(--primary-soft); color: var(--primary); font-weight: 700; border: 1px solid var(--primary-border); }
     .cal-cell.selected { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
-    .cal-cell .cal-dot { position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; }
+    .cal-dot-stack { position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 2px; }
+    .cal-cell .cal-dot { width: 4px; height: 4px; border-radius: 50%; }
     .cal-detail { margin: 10px 16px 14px; padding: 12px 14px; border-radius: 10px; background: var(--bg-color); border: 1px solid var(--border-color); }
     .cal-detail-title { font-size: 12px; font-weight: 600; color: var(--text-color); margin-bottom: 8px; }
     .cal-detail-list { display: flex; flex-direction: column; gap: 8px; }
@@ -97,7 +105,7 @@
     .cal-detail-text { min-width: 0; flex: 1; }
     .cal-detail-main { font-size: 12px; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cal-detail-sub { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
-    .cal-legend { display: flex; gap: 12px; padding: 10px 16px 14px; border-top: 1px solid var(--border-color); }
+    .cal-legend { display: flex; flex-wrap: wrap; gap: 12px; padding: 10px 16px 14px; border-top: 1px solid var(--border-color); }
     .cal-leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
     .cal-leg-dot { width: 7px; height: 7px; border-radius: 50%; }
 
@@ -118,7 +126,12 @@
 
     @media (max-width: 991px) { .stat-grid { grid-template-columns: repeat(2,1fr); } }
     @media (max-width: 860px) { .mid-grid, .bot-grid { grid-template-columns: 1fr; } }
-    @media (max-width: 600px) { .stat-grid { grid-template-columns: repeat(2,1fr); gap: 8px; } main { padding: 16px !important; } }
+    @media (max-width: 600px) {
+        .stat-grid { grid-template-columns: repeat(2,1fr); gap: 8px; }
+        .donut-section { grid-template-columns: 1fr; justify-items: center; }
+        .donut-meta { width: 100%; }
+        main { padding: 16px !important; }
+    }
 </style>
 
 <div class="dash-wrap">
@@ -145,8 +158,10 @@
         $totalHadir = $rekapBulan['hadir'] ?? 0;
         $totalTelat = $rekapBulan['telat'] ?? 0;
         $totalAbsen = $rekapBulan['tidak_hadir'] ?? 0;
+        $totalCuti = $rekapBulan['cuti'] ?? 0;
         $totalHariKerja = $rekapBulan['hari_kerja'] ?? 1;
         $totalKehadiran = $totalHadir + $totalTelat;
+        $totalCatatanAbsensi = $totalHadir + $totalTelat + $totalAbsen + $totalCuti;
     @endphp
     <div class="stat-grid">
         <div class="stat-card">
@@ -227,29 +242,36 @@
             <div class="card-body">
                 <div class="donut-section">
                     @php
-                        $totalAll = max($totalHadir + $totalTelat + $totalAbsen, 1);
-                        $pctHadir = ($totalHadir / $totalAll) * 188;
-                        $pctTelat = ($totalTelat / $totalAll) * 188;
-                        $pctAbsen = ($totalAbsen / $totalAll) * 188;
+                        $chartTotal = max($totalCatatanAbsensi, 1);
+                        $hadirEnd = round(($totalHadir / $chartTotal) * 360, 2);
+                        $telatEnd = round((($totalHadir + $totalTelat) / $chartTotal) * 360, 2);
+                        $absenEnd = round((($totalHadir + $totalTelat + $totalAbsen) / $chartTotal) * 360, 2);
+                        $donutStyle = $totalCatatanAbsensi > 0
+                            ? "background: conic-gradient(var(--green) 0 {$hadirEnd}deg, var(--amber) {$hadirEnd}deg {$telatEnd}deg, var(--red) {$telatEnd}deg {$absenEnd}deg, #EC4899 {$absenEnd}deg 360deg);"
+                            : 'background: var(--bg-color);';
                     @endphp
-                    <div class="donut-wrap">
-                        <svg width="100" height="100" viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r="30" fill="none" stroke="var(--border-color)" stroke-width="12"/>
-                            <circle cx="50" cy="50" r="30" fill="none" stroke="var(--green)" stroke-width="12" stroke-dasharray="{{ $pctHadir }} {{ 188 - $pctHadir }}" stroke-dashoffset="25" stroke-linecap="round"/>
-                            @if($totalTelat > 0)
-                            <circle cx="50" cy="50" r="30" fill="none" stroke="var(--amber)" stroke-width="12" stroke-dasharray="{{ $pctTelat }} {{ 188 - $pctTelat }}" stroke-dashoffset="{{ 25 - $pctHadir }}" stroke-linecap="round"/>
-                            @endif
-                            @if($totalAbsen > 0)
-                            <circle cx="50" cy="50" r="30" fill="none" stroke="var(--red)" stroke-width="12" stroke-dasharray="{{ $pctAbsen }} {{ 188 - $pctAbsen }}" stroke-dashoffset="{{ 25 - $pctHadir - $pctTelat }}" stroke-linecap="round"/>
-                            @endif
-                        </svg>
-                        <div class="donut-label"><div class="donut-num">{{ $totalKehadiran }}</div><div class="donut-sub">hari</div></div>
+                    <div class="donut-wrap" style="{{ $donutStyle }}">
+                        <div class="donut-label"><div class="donut-num">{{ $totalCatatanAbsensi }}</div><div class="donut-sub">catatan</div></div>
                     </div>
-                    <div class="legend-list">
-                        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Tepat waktu ({{ $totalHadir }})</div>
-                        <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Telat ({{ $totalTelat }})</div>
-                        <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Tidak hadir ({{ $totalAbsen }})</div>
-                        <div class="legend-item"><div class="legend-dot" style="background:var(--border-color)"></div>Libur / Weekend</div>
+                    <div class="donut-meta">
+                        <div class="donut-summary">
+                            <div class="donut-summary-item">
+                                <div class="donut-summary-label">Masuk tercatat</div>
+                                <div class="donut-summary-value">{{ $totalKehadiran }}</div>
+                            </div>
+                            <div class="donut-summary-item">
+                                <div class="donut-summary-label">Hari kerja</div>
+                                <div class="donut-summary-value">{{ $totalHariKerja }}</div>
+                            </div>
+                        </div>
+                        <div class="legend-list">
+                            <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div><span class="legend-text">Tepat waktu ({{ $totalHadir }})</span></div>
+                            <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div><span class="legend-text">Telat ({{ $totalTelat }})</span></div>
+                            <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div><span class="legend-text">Tidak absen ({{ $totalAbsen }})</span></div>
+                            @if($totalCuti > 0)
+                                <div class="legend-item"><div class="legend-dot" style="background:#EC4899"></div><span class="legend-text">Cuti ({{ $totalCuti }})</span></div>
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
@@ -259,36 +281,57 @@
         <div class="card-box">
             <div class="card-head">
                 <span class="card-title"><svg fill="none" viewBox="0 0 16 16"><path d="M2 4h12M2 8h9M2 12h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Aktivitas terbaru</span>
-                <a href="{{ route('petugas.absensi.index') }}" class="card-link">Semua</a>
+                <a href="{{ route('petugas.tugas.kalender') }}" class="card-link">Lihat kalender</a>
             </div>
             <div class="card-body">
                 <div class="feed-list">
-                    @forelse(($aktivitasTerbaru ?? collect()) as $act)
+                    @php
+                        $aktivitasFeed = collect($aktivitasTerbaru ?? collect())->map(function ($act) {
+                            $actStatus = $act->status ?? $act->modul ?? '-';
+                            $badgeClass = match($actStatus) {
+                                'hadir' => 'fb-ok',
+                                'terlambat', 'telat' => 'fb-late',
+                                default => 'fb-info',
+                            };
+
+                            return [
+                                'type' => 'activity',
+                                'title' => $act->aktivitas ?? ucfirst($act->modul ?? 'Aktivitas'),
+                                'desc' => ($act->created_at?->format('H:i') ?? '--:--') . ' - ' . ($act->created_at?->translatedFormat('l, d M') ?? '-'),
+                                'badge' => ucfirst(str_replace('_', ' ', $actStatus)),
+                                'badge_class' => $badgeClass,
+                            ];
+                        });
+
+                        $eventFeed = collect($kalender ?? collect())->map(fn ($event) => [
+                            'type' => 'event',
+                            'title' => $event->nama_event,
+                            'desc' => 'Event - ' . ($event->tanggal?->translatedFormat('l, d M Y') ?? '-'),
+                            'badge' => ucfirst(str_replace('_', ' ', $event->jenis_event ?? 'Event')),
+                            'badge_class' => 'fb-info',
+                        ]);
+
+                        $feedItems = $aktivitasFeed->concat($eventFeed);
+                    @endphp
+
+                    @forelse($feedItems as $feed)
                         <div class="feed-item">
-                            <div class="feed-ava">{{ strtoupper(substr(auth()->user()->nama ?? 'U', 0, 2)) }}</div>
+                            @if($feed['type'] === 'event')
+                                <div class="feed-ava" style="background:var(--primary-soft);color:var(--primary);"><svg fill="none" viewBox="0 0 16 16" width="14" height="14"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+                            @else
+                                <div class="feed-ava">{{ strtoupper(substr(auth()->user()->nama ?? 'U', 0, 2)) }}</div>
+                            @endif
                             <div class="feed-info">
-                                <div class="feed-name">{{ $act->aktivitas ?? ucfirst($act->modul ?? 'Aktivitas') }}</div>
-                                <div class="feed-desc">
-                                    {{ $act->created_at?->format('H:i') ?? '--:--' }}
-                                    -
-                                    {{ $act->created_at?->translatedFormat('l, d M') ?? '-' }}
-                                </div>
+                                <div class="feed-name">{{ $feed['title'] }}</div>
+                                <div class="feed-desc">{{ $feed['desc'] }}</div>
                             </div>
-                            @php
-    $actStatus = $act->status ?? $act->modul ?? '-';
-    $fb = match($actStatus) {
-        'hadir' => 'fb-ok',
-        'terlambat', 'telat' => 'fb-late',
-        default => 'fb-info',
-    };
-@endphp
-<span class="feed-badge {{ $fb }}">{{ ucfirst($actStatus) }}</span>
+                            <span class="feed-badge {{ $feed['badge_class'] }}">{{ $feed['badge'] }}</span>
                         </div>
                     @empty
                         <div class="empty-state" style="padding:24px 12px;">
                             <div class="empty-ico"><svg fill="none" viewBox="0 0 16 16"><path d="M2 4h12M2 8h9M2 12h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></div>
                             <div class="empty-title">Belum ada aktivitas</div>
-                            <div class="empty-sub">Aktivitas kehadiran akan muncul di sini</div>
+                            <div class="empty-sub">Aktivitas dan event akan muncul di sini</div>
                         </div>
                     @endforelse
                 </div>
@@ -315,10 +358,12 @@
             </div>
             <div class="cal-detail" id="cal-detail"></div>
             <div class="cal-legend">
-                <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--primary)"></div>Hari ini</div>
                 <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--green)"></div>Hadir</div>
                 <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--amber)"></div>Telat</div>
                 <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--red)"></div>Tidak Absen</div>
+                <div class="cal-leg-item"><div class="cal-leg-dot" style="background:#EC4899"></div>Cuti</div>
+                <div class="cal-leg-item"><div class="cal-leg-dot" style="background:#8B5CF6"></div>Tugas</div>
+                <div class="cal-leg-item"><div class="cal-leg-dot" style="background:#0EA5E9"></div>Event</div>
             </div>
         </div>
 
@@ -366,31 +411,6 @@
         </div>
     </div>
 
-    {{-- â•â•â• KALENDER EVENT â•â•â• --}}
-    <div class="card-box">
-        <div class="card-head">
-            <span class="card-title"><svg fill="none" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Kalender Terdekat</span>
-            <span style="font-size:11px;color:var(--muted)">{{ $kalender->count() }} event</span>
-        </div>
-        <div class="card-body">
-            @forelse($kalender as $item)
-                <div class="feed-item">
-                    <div class="feed-ava" style="background:var(--primary-soft);color:var(--primary);"><svg fill="none" viewBox="0 0 16 16" width="14" height="14"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></div>
-                    <div class="feed-info">
-                        <div class="feed-name">{{ $item->nama_event }}</div>
-                        <div class="feed-desc">{{ $item->tanggal->format('d/m/Y') }}</div>
-                    </div>
-                    <span class="feed-badge fb-info">{{ $item->jenis_event }}</span>
-                </div>
-            @empty
-                <div class="empty-state" style="padding:24px 12px;">
-                    <div class="empty-ico"><svg fill="none" viewBox="0 0 20 20"><rect x="2" y="3" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M6 1v3M14 1v3M2 8h16" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
-                    <div class="empty-title">Belum ada event kalender</div>
-                    <div class="empty-sub">Event dan jadwal akan muncul di sini</div>
-                </div>
-            @endforelse
-        </div>
-    </div>
 </div>
 
 <script>
@@ -400,6 +420,7 @@
     var hadirDays = {!! json_encode($kalenderHadir ?? []) !!};
     var telatDays = {!! json_encode($kalenderTelat ?? []) !!};
     var absenDays = {!! json_encode($kalenderAbsen ?? []) !!};
+    var cutiDays = {!! json_encode($kalenderCuti ?? []) !!};
     var absensiDetails = @json($absensiCalendarDetails ?? []);
     var tugasDetails = @json($tugasCalendarDetails ?? []);
     var eventDetails = @json($eventCalendarDetails ?? []);
@@ -419,18 +440,50 @@
         });
     }
 
+    function absensiColor(status) {
+        var normalized = String(status || '').toLowerCase();
+        if (normalized.indexOf('telat') !== -1 || normalized.indexOf('terlambat') !== -1) return 'var(--amber)';
+        if (normalized.indexOf('tidak') !== -1 || normalized.indexOf('absen') !== -1) return 'var(--red)';
+        if (normalized.indexOf('cuti') !== -1) return '#EC4899';
+        return 'var(--green)';
+    }
+
     function detailRows(key) {
         var rows = [];
         (absensiDetails[key] || []).forEach(function(item) {
-            rows.push({ color: 'var(--green)', title: item.nama, meta: item.waktu + ' - ' + item.status });
+            rows.push({ color: absensiColor(item.nama), title: item.nama, meta: item.waktu + ' - ' + item.status });
         });
         (tugasDetails[key] || []).forEach(function(item) {
-            rows.push({ color: 'var(--amber)', title: item.nama, meta: item.waktu + ' - ' + item.status });
+            rows.push({ color: '#8B5CF6', title: item.nama, meta: item.waktu + ' - ' + item.status });
         });
         (eventDetails[key] || []).forEach(function(item) {
-            rows.push({ color: 'var(--red)', title: item.nama, meta: item.status });
+            rows.push({ color: '#0EA5E9', title: item.nama, meta: item.status });
         });
         return rows;
+    }
+
+    function colorsForDate(key, dayNumber) {
+        var colors = [];
+        if (hadirDays.indexOf(dayNumber) !== -1) colors.push('var(--green)');
+        if (telatDays.indexOf(dayNumber) !== -1) colors.push('var(--amber)');
+        if (absenDays.indexOf(dayNumber) !== -1) colors.push('var(--red)');
+        if (cutiDays.indexOf(dayNumber) !== -1) colors.push('#EC4899');
+        if ((tugasDetails[key] || []).length) colors.push('#8B5CF6');
+        if ((eventDetails[key] || []).length) colors.push('#0EA5E9');
+        return colors.slice(0, 5);
+    }
+
+    function appendDots(cell, colors) {
+        if (!colors.length) return;
+        var stack = document.createElement('div');
+        stack.className = 'cal-dot-stack';
+        colors.forEach(function(color) {
+            var dot = document.createElement('div');
+            dot.className = 'cal-dot';
+            dot.style.background = color;
+            stack.appendChild(dot);
+        });
+        cell.appendChild(stack);
     }
 
     function renderDetail(key, date) {
@@ -498,12 +551,7 @@
             var date = new Date(curDate.getFullYear(), curDate.getMonth(), n);
             var c=makeCell(n, 'cal-cell', date);
             if(isCurM&&n===today.getDate())c.classList.add('today');
-            if(isCurM){var dot=null;
-                if(hadirDays.indexOf(n)!==-1){dot=document.createElement('div');dot.className='cal-dot';dot.style.background='var(--green)';}
-                else if(telatDays.indexOf(n)!==-1){dot=document.createElement('div');dot.className='cal-dot';dot.style.background='var(--amber)';}
-                else if(absenDays.indexOf(n)!==-1){dot=document.createElement('div');dot.className='cal-dot';dot.style.background='var(--red)';}
-                if(dot)c.appendChild(dot);
-            }
+            if(isCurM) appendDots(c, colorsForDate(keyFromDate(date), n));
             g.appendChild(c);
         }
         var remain=7-((first+daysInM)%7);if(remain<7)for(var j=1;j<=remain;j++){

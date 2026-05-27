@@ -8,8 +8,8 @@
             <div class="form-grid">
                 <div><label>Nama Tempat</label><input name="nama_tempat" required></div>
                 <div><label>Alamat</label><input name="alamat"></div>
-                <div><label>Latitude</label><input name="latitude"></div>
-                <div><label>Longitude</label><input name="longitude"></div>
+                <div><label>Latitude</label><input type="number" step="0.000001" min="-90" max="90" name="latitude" placeholder="-6.209286"></div>
+                <div><label>Longitude</label><input type="number" step="0.000001" min="-180" max="180" name="longitude" placeholder="106.871253"></div>
                 <button type="submit">Tambah</button>
             </div>
         </form>
@@ -24,8 +24,8 @@
                         <?php echo method_field('PUT'); ?>
                         <td><input name="nama_tempat" value="<?php echo e($item->nama_tempat); ?>" required></td>
                         <td><input name="alamat" value="<?php echo e($item->alamat); ?>"></td>
-                        <td><input name="latitude" value="<?php echo e($item->latitude); ?>"></td>
-                        <td><input name="longitude" value="<?php echo e($item->longitude); ?>"></td>
+                        <td><input type="number" step="0.000001" min="-90" max="90" name="latitude" value="<?php echo e($item->latitude); ?>"></td>
+                        <td><input type="number" step="0.000001" min="-180" max="180" name="longitude" value="<?php echo e($item->longitude); ?>"></td>
                         <td><button type="submit">Simpan</button></td>
                     </form>
                     <td><form method="POST" action="<?php echo e(route('admin.tempat.delete', $item->id_tempat)); ?>"><?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?><button class="danger">Hapus</button></form></td>
