@@ -15,8 +15,8 @@ class ShiftSeeder extends Seeder
         $shifts = [
             [
                 'nama_shift' => 'Shift 1',
-                'jam_masuk' => '07:00',
-                'jam_pulang' => '15:00',
+                'jam_masuk' => '05:00',
+                'jam_pulang' => '13:00',
                 'durasi_jam' => 8,
                 'warna' => '#3B82F6', // Blue
                 'status' => true,
@@ -24,8 +24,8 @@ class ShiftSeeder extends Seeder
             ],
             [
                 'nama_shift' => 'Shift 2',
-                'jam_masuk' => '15:00',
-                'jam_pulang' => '23:00',
+                'jam_masuk' => '07:00',
+                'jam_pulang' => '15:00',
                 'durasi_jam' => 8,
                 'warna' => '#10B981', // Green
                 'status' => true,
@@ -33,9 +33,9 @@ class ShiftSeeder extends Seeder
             ],
             [
                 'nama_shift' => 'Shift 3',
-                'jam_masuk' => '23:00',
+                'jam_masuk' => '17:00',
                 'jam_pulang' => '07:00',
-                'durasi_jam' => 8,
+                'durasi_jam' => 14,
                 'warna' => '#8B5CF6', // Purple
                 'status' => true,
                 'urutan' => 3,

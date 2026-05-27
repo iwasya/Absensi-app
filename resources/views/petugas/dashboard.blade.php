@@ -21,7 +21,6 @@
         display: flex; align-items: center; gap: 6px; white-space: nowrap;
     }
     .dash-date-pill svg { width: 13px; height: 13px; }
-
     /* â”€â”€ Stat Cards â”€â”€ */
     .stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
     .stat-card { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 16px; transition: box-shadow .2s; }
@@ -130,8 +129,8 @@
             <h1>Halo, {{ auth()->user()->nama ?? 'Petugas' }}</h1>
             <div class="dash-header-sub">
                 {{ now()->translatedFormat('l, d F Y') }}
-                @if(auth()->user()->tempat_tugas)
-                    - {{ auth()->user()->tempat_tugas->nama_tempat ?? '' }}
+                @if($user?->tempatTugas)
+                    - {{ $user->tempatTugas->nama_tempat ?? '' }}
                 @endif
             </div>
         </div>

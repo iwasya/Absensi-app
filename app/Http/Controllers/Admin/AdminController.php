@@ -152,12 +152,7 @@ class AdminController extends Controller
 
     public function storeTempat(Request $request): RedirectResponse
     {
-        $tempat = TempatTugas::create($request->validate([
-            'nama_tempat' => ['required', 'string', 'max:150'],
-            'alamat' => ['nullable', 'string'],
-            'latitude' => ['nullable', 'numeric'],
-            'longitude' => ['nullable', 'numeric'],
-        ]));
+        $tempat = TempatTugas::create($this->validateTempat($request));
 
         ActivityLogger::log($request, 'Membuat tempat tugas', 'tempat_tugas', $tempat->id_tempat, TempatTugas::class);
 
@@ -167,16 +162,24 @@ class AdminController extends Controller
     public function updateTempat(Request $request, int $id): RedirectResponse
     {
         $tempat = TempatTugas::findOrFail($id);
-        $tempat->update($request->validate([
-            'nama_tempat' => ['required', 'string', 'max:150'],
-            'alamat' => ['nullable', 'string'],
-            'latitude' => ['nullable', 'numeric'],
-            'longitude' => ['nullable', 'numeric'],
-        ]));
+        $tempat->update($this->validateTempat($request));
 
         ActivityLogger::log($request, 'Mengubah tempat tugas', 'tempat_tugas', $tempat->id_tempat, TempatTugas::class);
 
         return back()->with('success', 'Tempat tugas berhasil diperbarui.');
+    }
+
+    private function validateTempat(Request $request): array
+    {
+        return $request->validate([
+            'nama_tempat' => ['required', 'string', 'max:150'],
+            'alamat' => ['nullable', 'string'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+        ], [
+            'latitude.between' => 'Latitude harus di antara -90 sampai 90. Contoh Jakarta: -6.209286.',
+            'longitude.between' => 'Longitude harus di antara -180 sampai 180. Gunakan titik desimal, contoh: 106.871253.',
+        ]);
     }
 
     public function deleteTempat(Request $request, int $id): RedirectResponse
@@ -635,10 +638,23 @@ class AdminController extends Controller
             'id_user' => ['required', 'exists:users,id_user'],
         ]);
 
+        $user = User::findOrFail($validated['id_user']);
+        if (! $user->isPetugas()) {
+            return back()->with('error', 'Akses absen telat hanya bisa diberikan kepada petugas.');
+        }
+
         $absensi = \App\Models\Absensi::firstOrNew([
             'id_user' => $validated['id_user'],
             'tanggal' => today()->toDateString(),
         ]);
+
+        if ($absensi->exists && $absensi->jam_masuk) {
+            return back()->with('error', 'Petugas ini sudah absen masuk hari ini.');
+        }
+
+        if ($absensi->exists && $absensi->status === 'cuti') {
+            return back()->with('error', 'Petugas ini sedang cuti hari ini, akses absen tidak bisa dibuka.');
+        }
 
         $absensi->id_periode = optional(Periode::aktif())->id_periode;
         $absensi->status = 'akses_dibuka';

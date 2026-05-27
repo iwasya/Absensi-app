@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Absensi;
 use App\Models\Notifikasi;
 use App\Models\Periode;
+use App\Models\Shift;
 use App\Models\User;
 use App\Services\AbsensiTidakAbsenService;
 use App\Support\ActivityLogger;
 use App\Support\ImageOptimizer;
 use App\Support\QueryFilters;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -57,8 +59,11 @@ class AbsensiController extends Controller
             }
         }
 
+        $today = $this->activeAbsensiForUser($user);
+        $shiftWindow = $this->shiftWindow($user, $today?->tanggal ?? today());
+
         return view('petugas.absensi', [
-            'today' => Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first(),
+            'today' => $today,
             'items' => $items
                 ->latest('tanggal')
                 ->latest('id_absensi')
@@ -66,10 +71,10 @@ class AbsensiController extends Controller
                 ->withQueryString(),
             'periodeAktif' => Periode::aktif(),
             'tempatTugas' => $user->tempatTugas,
-            'jamMasukBuka' => config('absensi.jam_masuk_buka', '06:00:00'),
-            'jamMasukTutup' => config('absensi.jam_masuk_tutup', '07:15:00'),
-            'jamPulangBuka' => config('absensi.jam_pulang_buka', '16:00:00'),
-            'jamPulangTutup' => config('absensi.jam_pulang_tutup', '23:59:59'),
+            'jamMasukBuka' => $shiftWindow['jam_masuk_buka'],
+            'jamMasukTutup' => $shiftWindow['jam_masuk_tutup'],
+            'jamPulangBuka' => $shiftWindow['jam_pulang_buka'],
+            'jamPulangTutup' => $shiftWindow['jam_pulang_tutup'],
             'jarakMaksMeter' => config('absensi.jarak_maks_meter', 100),
             'holidayInfo' => $holidayInfo,
             'leaveInfo' => $leaveInfo,
@@ -206,6 +211,88 @@ class AbsensiController extends Controller
         return null;
     }
 
+    private function shiftForUser(User $user): ?Shift
+    {
+        if (! $user->shift) {
+            return null;
+        }
+
+        return Shift::aktif()->where('nama_shift', $user->shift)->first();
+    }
+
+    private function shiftWindow(User $user, Carbon|string $date): array
+    {
+        $targetDate = $date instanceof Carbon
+            ? $date->copy()->startOfDay()
+            : Carbon::parse($date)->startOfDay();
+
+        $shift = $this->shiftForUser($user);
+        if (! $shift) {
+            $masukBuka = $targetDate->copy()->setTimeFromTimeString(config('absensi.jam_masuk_buka', '06:00:00'));
+            $masukTutup = $targetDate->copy()->setTimeFromTimeString(config('absensi.jam_masuk_tutup', '07:15:00'));
+            $jamMasukBatasTelat = $targetDate->copy()->setTimeFromTimeString(config('absensi.jam_masuk_batas_telat', '07:00:00'));
+            $pulangBuka = $targetDate->copy()->setTimeFromTimeString(config('absensi.jam_pulang_buka', '16:00:00'));
+            $pulangTutup = $targetDate->copy()->setTimeFromTimeString(config('absensi.jam_pulang_tutup', '23:59:59'));
+        } else {
+            $masukBuka = $targetDate->copy()->setTimeFromTimeString(Carbon::parse($shift->jam_masuk)->format('H:i:s'));
+            $masukTutup = $masukBuka->copy()->addMinutes(15);
+            $jamMasukBatasTelat = $masukBuka;
+            $pulangBuka = $targetDate->copy()->setTimeFromTimeString(Carbon::parse($shift->jam_pulang)->format('H:i:s'));
+
+            if ($pulangBuka->lessThanOrEqualTo($masukBuka)) {
+                $pulangBuka->addDay();
+            }
+
+            $pulangTutup = $pulangBuka->copy()->addHours(4);
+        }
+
+        return [
+            'jam_masuk_buka' => $masukBuka->format('H:i:s'),
+            'jam_masuk_tutup' => $masukTutup->format('H:i:s'),
+            'jam_masuk_batas_telat' => $jamMasukBatasTelat->format('H:i:s'),
+            'jam_pulang_buka' => $pulangBuka->format('H:i:s'),
+            'jam_pulang_tutup' => $pulangTutup->format('H:i:s'),
+            'masuk_buka_at' => $masukBuka,
+            'masuk_tutup_at' => $masukTutup,
+            'masuk_batas_telat_at' => $jamMasukBatasTelat,
+            'pulang_buka_at' => $pulangBuka,
+            'pulang_tutup_at' => $pulangTutup,
+            'is_overnight' => $pulangBuka->toDateString() !== $targetDate->toDateString(),
+        ];
+    }
+
+    private function activeAbsensiForUser(User $user): ?Absensi
+    {
+        $todayAbsensi = Absensi::where('id_user', $user->id_user)
+            ->whereDate('tanggal', today())
+            ->first();
+
+        if ($todayAbsensi?->jam_masuk) {
+            return $todayAbsensi;
+        }
+
+        $yesterday = today()->subDay();
+        $yesterdayWindow = $this->shiftWindow($user, $yesterday);
+
+        if ($yesterdayWindow['is_overnight'] && now()->lessThanOrEqualTo($yesterdayWindow['pulang_tutup_at'])) {
+            $overnightAbsensi = Absensi::where('id_user', $user->id_user)
+                ->whereDate('tanggal', $yesterday)
+                ->whereNotNull('jam_masuk')
+                ->whereNull('jam_pulang')
+                ->first();
+
+            if ($overnightAbsensi) {
+                return $overnightAbsensi;
+            }
+        }
+
+        if ($todayAbsensi?->status === 'akses_dibuka') {
+            return $todayAbsensi;
+        }
+
+        return $todayAbsensi;
+    }
+
     public function masuk(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -232,12 +319,21 @@ class AbsensiController extends Controller
             return back()->with('error', 'Hari ini kamu sedang cuti (' . $leaveInfo['reason'] . '), absensi tidak dibuka.');
         }
 
-        $now = now()->format('H:i:s');
+        $now = now();
+        $shiftWindow = $this->shiftWindow($user, today());
         $existing = Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first();
-        $isLateAccess = $existing && $existing->status === 'akses_dibuka';
+        $isLateAccess = $existing && $existing->status === 'akses_dibuka' && ! $existing->jam_masuk;
 
-        if ($existing && $existing->jam_masuk && ! in_array($existing->status, ['akses_dibuka', 'tidak_absen'], true)) {
+        if ($existing && $existing->jam_masuk) {
             return back()->with('error', 'Kamu sudah absen masuk hari ini.');
+        }
+
+        if ($now->lt($shiftWindow['masuk_buka_at'])) {
+            return back()->with('error', 'Absen masuk belum dibuka untuk shift kamu.');
+        }
+
+        if ($now->gt($shiftWindow['masuk_tutup_at']) && ! $isLateAccess) {
+            return back()->with('error', 'Absen masuk sudah terkunci karena melewati batas waktu. Hubungi admin untuk membuka akses absen telat.');
         }
 
         if (! empty($validated['jam_istirahat_mulai']) && ! empty($validated['jam_istirahat_selesai'])) {
@@ -266,8 +362,7 @@ class AbsensiController extends Controller
         }
 
         // Tentukan status berdasarkan waktu absen masuk
-        $jamBatasTelat = config('absensi.jam_masuk_batas_telat', '07:00:00');
-        $isTelat = $now > $jamBatasTelat;
+        $isTelat = $now->gt($shiftWindow['masuk_batas_telat_at']);
         
         if ($isLateAccess) {
             $status = 'telat';
@@ -283,7 +378,7 @@ class AbsensiController extends Controller
             $keteranganOtomatis .= ' | ' . $validated['keterangan'];
         }
 
-        if ($existing && in_array($existing->status, ['akses_dibuka', 'tidak_absen'], true) && ! $existing->jam_masuk) {
+        if ($existing && $existing->status === 'akses_dibuka' && ! $existing->jam_masuk) {
             $existing->update([
                 'jam_masuk' => now()->format('H:i:s'),
                 'shift' => $validated['shift'] ?? $user->shift,
@@ -334,19 +429,25 @@ class AbsensiController extends Controller
 
         $user = $request->user();
         $absensiTidakAbsen = app(AbsensiTidakAbsenService::class);
+        $targetAbsensi = null;
         $targetDate = today();
         if (! empty($validated['id_absensi'])) {
             $targetAbsensi = Absensi::where('id_user', $user->id_user)
                 ->where('id_absensi', $validated['id_absensi'])
                 ->firstOrFail();
             $targetDate = $targetAbsensi->tanggal;
+        } else {
+            $targetAbsensi = $this->activeAbsensiForUser($user);
+            if ($targetAbsensi) {
+                $targetDate = $targetAbsensi->tanggal;
+            }
         }
 
         $holidayInfo = $absensiTidakAbsen->holidayInfo($targetDate);
         if ($holidayInfo['is_holiday']) {
             return back()->with('error', 'Hari ini libur (' . $holidayInfo['reason'] . '), absensi pulang tidak dibuka.');
         }
-        $leaveInfo = $absensiTidakAbsen->leaveInfo($user, today());
+        $leaveInfo = $absensiTidakAbsen->leaveInfo($user, $targetDate);
         if ($leaveInfo['is_leave']) {
             $absensiTidakAbsen->generateForDate($targetDate, $user);
 
@@ -356,6 +457,10 @@ class AbsensiController extends Controller
         $absensi = $targetAbsensi ?? Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first();
 
         if (! $absensi) {
+            return back()->with('error', 'Absen masuk dulu sebelum absen pulang.');
+        }
+
+        if (! $absensi->jam_masuk) {
             return back()->with('error', 'Absen masuk dulu sebelum absen pulang.');
         }
 
