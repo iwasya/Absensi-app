@@ -77,7 +77,9 @@ CREATE TABLE `users` (
   UNIQUE KEY `users_email_unique` (`email`),
   KEY `users_role_idx` (`id_role`),
   KEY `users_tempat_idx` (`id_tempat`),
-  KEY `users_created_at_idx` (`created_at`)
+  KEY `users_created_at_idx` (`created_at`),
+  KEY `users_regu_ketua_idx` (`regu`, `is_ketua_regu`),
+  KEY `users_status_role_idx` (`status_aktif`, `id_role`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `periode` (
@@ -130,6 +132,8 @@ CREATE TABLE `absensi` (
   KEY `absensi_user_tanggal_latest_idx` (`id_user`, `tanggal`, `id_absensi`),
   KEY `absensi_tanggal_latest_idx` (`tanggal`, `id_absensi`),
   KEY `absensi_status_idx` (`status`),
+  KEY `absensi_approval_masuk_status_idx` (`approval_masuk_status`, `approval_masuk_requested_at`),
+  KEY `absensi_approval_pulang_status_idx` (`approval_pulang_status`, `approval_pulang_requested_at`),
   KEY `absensi_id_periode_foreign` (`id_periode`),
   CONSTRAINT `absensi_id_user_foreign` FOREIGN KEY (`id_user`) REFERENCES `users` (`id_user`) ON DELETE CASCADE,
   CONSTRAINT `absensi_id_periode_foreign` FOREIGN KEY (`id_periode`) REFERENCES `periode` (`id_periode`) ON DELETE SET NULL
@@ -181,6 +185,8 @@ CREATE TABLE `tugas` (
   KEY `tugas_user_tanggal_status_idx` (`id_user`, `tanggal_mulai`, `status`),
   KEY `tugas_status_latest_idx` (`status`, `id_tugas`),
   KEY `tugas_periode_idx` (`id_periode`),
+  KEY `tugas_periode_latest_idx` (`id_periode`, `id_tugas`),
+  KEY `tugas_tanggal_latest_idx` (`tanggal_mulai`, `id_tugas`),
   CONSTRAINT `tugas_id_user_foreign` FOREIGN KEY (`id_user`) REFERENCES `users` (`id_user`) ON DELETE CASCADE,
   CONSTRAINT `tugas_id_periode_foreign` FOREIGN KEY (`id_periode`) REFERENCES `periode` (`id_periode`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -248,10 +254,13 @@ CREATE TABLE `user_sensitive` (
   `id_user` bigint unsigned NOT NULL,
   `nik_encrypted` text NULL,
   `nik_hash` varchar(64) NULL,
+  `no_hp_encrypted` text NULL,
+  `no_hp_hash` varchar(64) NULL,
   `created_at` timestamp NULL,
   PRIMARY KEY (`id_sensitive`),
   UNIQUE KEY `user_sensitive_id_user_unique` (`id_user`),
   KEY `user_sensitive_nik_hash_index` (`nik_hash`),
+  KEY `user_sensitive_no_hp_hash_index` (`no_hp_hash`),
   CONSTRAINT `user_sensitive_id_user_foreign` FOREIGN KEY (`id_user`) REFERENCES `users` (`id_user`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -335,6 +344,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
   (15, '2026_05_21_000002_add_ketua_regu_workflow', 1),
   (16, '2026_05_22_004436_create_shifts_table', 1),
   (17, '2026_05_28_232707_add_approval_masuk_to_absensi_table', 1),
-  (18, '2026_05_29_000501_add_late_input_fields_to_tugas_table', 1);
+  (18, '2026_05_29_000501_add_late_input_fields_to_tugas_table', 1),
+  (19, '2026_05_29_120000_add_approval_performance_indexes', 1),
+  (20, '2026_05_29_121000_add_phone_to_user_sensitive_table', 1);
 
 SET FOREIGN_KEY_CHECKS=1;

@@ -14,6 +14,8 @@ class UserSensitive extends Model
         'id_user',
         'nik_encrypted',
         'nik_hash',
+        'no_hp_encrypted',
+        'no_hp_hash',
     ];
 
     /**
@@ -36,6 +38,36 @@ class UserSensitive extends Model
             return false;
         }
         return hash_equals($this->nik_hash, hash('sha256', $rawNik));
+    }
+
+    public function clearNik(): self
+    {
+        $this->nik_encrypted = null;
+        $this->nik_hash = null;
+        return $this;
+    }
+
+    /**
+     * Store the raw phone number encrypted and searchable by hash.
+     */
+    public function setNoHp(string $rawNoHp): self
+    {
+        $normalized = $this->normalizePhone($rawNoHp);
+        $this->no_hp_encrypted = \Illuminate\Support\Facades\Crypt::encryptString($rawNoHp);
+        $this->no_hp_hash = hash('sha256', $normalized);
+        return $this;
+    }
+
+    public function clearNoHp(): self
+    {
+        $this->no_hp_encrypted = null;
+        $this->no_hp_hash = null;
+        return $this;
+    }
+
+    private function normalizePhone(string $rawNoHp): string
+    {
+        return preg_replace('/[^0-9+]/', '', $rawNoHp) ?? '';
     }
 
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo

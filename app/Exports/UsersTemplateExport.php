@@ -62,7 +62,7 @@ class UsersTemplateExport implements FromCollection, WithHeadings, WithStyles, W
             'Role',
             'Status Akun',
             'Tempat Tugas',
-            'No Telepon',
+            'No Telepon (Sensitif)',
             'Jabatan',
             'Regu (Opsional)',
             'Shift (Opsional)',

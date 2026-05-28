@@ -68,6 +68,46 @@
         color: var(--text-color);
     }
 
+    .period-collapse-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        border: 1px solid var(--border-color);
+        border-radius: 50%;
+        background: var(--bg-color);
+        color: var(--text-color);
+        cursor: pointer;
+        font-size: 22px;
+        font-weight: 700;
+        line-height: 1;
+        transition: background .18s, border-color .18s, color .18s;
+    }
+
+    .period-collapse-toggle:hover {
+        border-color: var(--primary-border);
+        background: var(--primary-soft);
+        color: var(--primary);
+    }
+
+    .period-collapse-icon {
+        display: inline-block;
+        transform: translateY(-1px);
+    }
+
+    .period-user-status-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height .28s ease;
+    }
+
+    .period-user-status-body.is-open {
+        max-height: 620px;
+        overflow-y: auto;
+    }
+
     .period-card-body {
         padding: 16px;
     }
@@ -330,38 +370,6 @@
         </div>
     </div>
 
-    <div class="period-card" style="margin-bottom:16px;">
-        <div class="period-card-head">
-            <h2 class="period-card-title">Status Semua User</h2>
-        </div>
-        <div class="period-table-scroll">
-            <table class="period-table">
-                <thead>
-                    <tr>
-                        <th>Nama</th>
-                        <th>Role</th>
-                        <th>Regu</th>
-                        <th>Shift</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($users ?? [] as $user)
-                        <tr>
-                            <td>{{ $user->nama }}</td>
-                            <td>{{ $user->role->nama_role ?? '-' }}</td>
-                            <td>{{ $user->regu ?? '-' }}</td>
-                            <td>{{ $user->shift ?? '-' }}</td>
-                            <td><span class="badge {{ $user->status_aktif ?? 'aktif' }}">{{ $user->status_aktif ?? 'aktif' }}</span></td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="5" class="period-empty">Belum ada user.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-
     <div class="period-card">
         <div class="period-table-scroll">
             <table class="period-table">
@@ -427,5 +435,58 @@
             {{ $items->links('pagination.simple') }}
         </div>
     </div>
+
+    <div class="period-card">
+        <div class="period-card-head">
+            <h2 class="period-card-title">Status Semua User</h2>
+            <button type="button" class="period-collapse-toggle" id="periodUserStatusToggle" aria-expanded="false" aria-controls="periodUserStatusBody" aria-label="Tampilkan status semua user" title="Tampilkan status semua user">
+                <span class="period-collapse-icon" id="periodUserStatusToggleIcon">+</span>
+            </button>
+        </div>
+        <div class="period-user-status-body" id="periodUserStatusBody">
+            <div class="period-table-scroll">
+                <table class="period-table">
+                    <thead>
+                        <tr>
+                            <th>Nama</th>
+                            <th>Role</th>
+                            <th>Regu</th>
+                            <th>Shift</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($users ?? [] as $user)
+                            <tr>
+                                <td>{{ $user->nama }}</td>
+                                <td>{{ $user->role->nama_role ?? '-' }}</td>
+                                <td>{{ $user->regu ?? '-' }}</td>
+                                <td>{{ $user->shift ?? '-' }}</td>
+                                <td><span class="badge {{ $user->status_aktif ?? 'aktif' }}">{{ $user->status_aktif ?? 'aktif' }}</span></td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="5" class="period-empty">Belum ada user.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+    const userStatusToggle = document.getElementById('periodUserStatusToggle');
+    const userStatusToggleIcon = document.getElementById('periodUserStatusToggleIcon');
+    const userStatusBody = document.getElementById('periodUserStatusBody');
+
+    if (userStatusToggle && userStatusToggleIcon && userStatusBody) {
+        userStatusToggle.addEventListener('click', () => {
+            const isOpen = userStatusBody.classList.toggle('is-open');
+            userStatusToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            userStatusToggle.setAttribute('aria-label', isOpen ? 'Sembunyikan status semua user' : 'Tampilkan status semua user');
+            userStatusToggle.setAttribute('title', isOpen ? 'Sembunyikan status semua user' : 'Tampilkan status semua user');
+            userStatusToggleIcon.textContent = isOpen ? '-' : '+';
+        });
+    }
+</script>
 @endsection

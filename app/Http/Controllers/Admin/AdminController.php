@@ -110,19 +110,12 @@ class AdminController extends Controller
             'is_ketua_regu' => (bool) ($validated['is_ketua_regu'] ?? false),
             'shift' => $validated['shift'] ?? null,
             'status_aktif' => $validated['status_aktif'] ?? 'aktif',
-            'no_hp' => $validated['no_hp'] ?? null,
+            'no_hp' => null,
             'alamat' => $validated['alamat'] ?? null,
             'jabatan' => $validated['jabatan'] ?? null,
         ]);
 
-
-        // Simpan NIK ke data sensitif (encrypted)
-        if (!empty($validated['nik'])) {
-            $sensitive = new UserSensitive();
-            $sensitive->id_user = $user->id_user;
-            $sensitive->setNik($validated['nik']);
-            $sensitive->save();
-        }
+        $this->saveUserSensitiveFields($user, $validated);
 
         ActivityLogger::log($request, 'Membuat user', 'users', $user->id_user, User::class);
 
@@ -155,7 +148,14 @@ class AdminController extends Controller
             unset($validated['password']);
         }
 
+        $sensitiveFields = [
+            'nik' => $validated['nik'] ?? null,
+            'no_hp' => $validated['no_hp'] ?? null,
+        ];
+        unset($validated['nik'], $validated['no_hp']);
+
         $user->update($validated);
+        $this->saveUserSensitiveFields($user, $sensitiveFields, true);
 
         ActivityLogger::log($request, 'Mengubah user', 'users', $user->id_user, User::class);
 
@@ -174,6 +174,34 @@ class AdminController extends Controller
         ActivityLogger::log($request, 'Menghapus user', 'users', $id, User::class);
 
         return back()->with('success', 'User berhasil dihapus.');
+    }
+
+    private function saveUserSensitiveFields(User $user, array $fields, bool $clearBlankPhone = false): void
+    {
+        $hasNik = ! empty($fields['nik']);
+        $hasPhone = ! empty($fields['no_hp']);
+
+        if (! $hasNik && ! $hasPhone && ! $clearBlankPhone) {
+            return;
+        }
+
+        $sensitive = UserSensitive::firstOrNew(['id_user' => $user->id_user]);
+
+        if ($hasNik) {
+            $sensitive->setNik($fields['nik']);
+        }
+
+        if ($hasPhone) {
+            $sensitive->setNoHp($fields['no_hp']);
+        } elseif ($clearBlankPhone && $sensitive->exists) {
+            $sensitive->clearNoHp();
+        }
+
+        if ($sensitive->nik_encrypted || $sensitive->no_hp_encrypted) {
+            $sensitive->save();
+        } elseif ($sensitive->exists) {
+            $sensitive->delete();
+        }
     }
 
     public function tempat(Request $request): View
@@ -729,7 +757,13 @@ class AdminController extends Controller
             $userSensitive->save();
         } else {
             if ($userSensitive->exists) {
-                $userSensitive->delete();
+                $userSensitive->clearNik();
+
+                if ($userSensitive->no_hp_encrypted) {
+                    $userSensitive->save();
+                } else {
+                    $userSensitive->delete();
+                }
             }
         }
 

@@ -275,7 +275,7 @@
             @endif
 
             <div class="import-container">
-                <p style="margin: 0; color: var(--muted);">📊 Import data user secara massal menggunakan file Excel. NIK akan di-encrypt otomatis untuk keamanan data.</p>
+                <p style="margin: 0; color: var(--muted);">📊 Import data user secara massal menggunakan file Excel. NIK dan No Telepon akan di-encrypt otomatis untuk keamanan data.</p>
 
                 <div class="import-note">
                     <strong>Kolom wajib diisi:</strong> Nama, NIK, Username, Email, Password, Role, dan Status Akun.

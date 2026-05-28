@@ -37,6 +37,7 @@ class UsersImport implements ToCollection, WithHeadingRow, WithBatchInserts, Wit
     {
         $usersToInsert = [];
         $nikData = [];
+        $phoneData = [];
 
         foreach ($rows as $row) {
             $nama = trim((string) ($row['nama'] ?? ''));
@@ -46,6 +47,7 @@ class UsersImport implements ToCollection, WithHeadingRow, WithBatchInserts, Wit
             $password = (string) ($row['password'] ?? '');
             $roleInput = trim((string) ($row['role'] ?? 'Petugas PPSU'));
             $statusAktif = strtolower(trim((string) ($row['status_akun'] ?? 'aktif')));
+            $noHp = trim((string) ($row['no_telepon_sensitif'] ?? $row['no_telepon'] ?? ''));
 
             if ($nama === '' || $nik === '' || $username === '' || $email === '' || $password === '' || $roleInput === '') {
                 continue;
@@ -87,7 +89,7 @@ class UsersImport implements ToCollection, WithHeadingRow, WithBatchInserts, Wit
                 'regu' => $row['regu'] ?? $row['regu_opsional'] ?? null,
                 'shift' => $row['shift'] ?? $row['shift_opsional'] ?? null,
                 'status_aktif' => $statusAktif,
-                'no_hp' => $row['no_telepon'] ?? null,
+                'no_hp' => null,
                 'alamat' => $row['alamat'] ?? null,
                 'jabatan' => $row['jabatan'] ?? null,
                 'created_at' => now(),
@@ -95,6 +97,7 @@ class UsersImport implements ToCollection, WithHeadingRow, WithBatchInserts, Wit
             ];
 
             $nikData[$username] = $nik;
+            $phoneData[$username] = $noHp;
         }
 
         if (!empty($usersToInsert)) {
@@ -106,11 +109,19 @@ class UsersImport implements ToCollection, WithHeadingRow, WithBatchInserts, Wit
             $sensitiveToInsert = [];
             foreach ($nikData as $username => $nik) {
                 if (isset($insertedUsers[$username])) {
-                    $sensitiveToInsert[] = [
+                    $row = [
                         'id_user' => $insertedUsers[$username]->id_user,
                         'nik_encrypted' => Crypt::encryptString($nik),
                         'nik_hash' => hash('sha256', $nik),
+                        'created_at' => now(),
                     ];
+
+                    if (! empty($phoneData[$username])) {
+                        $row['no_hp_encrypted'] = Crypt::encryptString($phoneData[$username]);
+                        $row['no_hp_hash'] = hash('sha256', preg_replace('/[^0-9+]/', '', $phoneData[$username]) ?? '');
+                    }
+
+                    $sensitiveToInsert[] = $row;
                 }
             }
 

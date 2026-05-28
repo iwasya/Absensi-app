@@ -155,8 +155,7 @@ class ApprovalController extends Controller
     {
         $selectedPeriode = Periode::find((int) $request->query('id_periode'));
         $items = $this->queryTugasApproval($selectedPeriode)
-            ->latest('id_tugas')
-            ->get();
+            ->latest('id_tugas');
 
         $headers = [
             'Content-type'        => 'text/csv',
@@ -180,7 +179,7 @@ class ApprovalController extends Controller
                 'Waktu Submit',
             ]);
 
-            foreach ($items as $item) {
+            foreach ($items->lazy(500) as $item) {
                 fputcsv($file, [
                     $item->id_tugas,
                     $item->user->nama ?? '-',

@@ -402,7 +402,7 @@
                     <div class="form-control">
                         <label for="no_hp">No Telepon</label>
                         <input id="no_hp" name="no_hp" type="tel" pattern="[0-9+\- ]*" placeholder="+62 812 3456 7890" value="{{ old('no_hp') }}" aria-describedby="hpHelp">
-                        <div id="hpHelp" class="help-text">✓ Nomor yang dapat dihubungi sewaktu-waktu</div>
+                        <div id="hpHelp" class="help-text">✓ Disimpan terenkripsi sebagai data sensitif</div>
                     </div>
 
                     <div class="form-control">

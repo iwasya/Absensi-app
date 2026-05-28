@@ -34,32 +34,37 @@ class RemindTugasHarian extends Command
             ->orderBy('nama')
             ->get();
 
+        $petugasIds = $petugas->pluck('id_user');
+        $reportedUserIds = Tugas::whereIn('id_user', $petugasIds)
+            ->whereDate('tanggal_mulai', $targetDate->toDateString())
+            ->pluck('id_user')
+            ->all();
+
+        $pesan = 'Kamu belum mengisi laporan tugas harian tanggal ' . $dateLabel . '. Silakan isi laporan sebelum hari berganti.';
+        $alreadyRemindedUserIds = Notifikasi::whereIn('id_user', $petugasIds)
+            ->where('judul', $judul)
+            ->where('pesan', $pesan)
+            ->pluck('id_user')
+            ->all();
+
+        $reportedLookup = array_fill_keys($reportedUserIds, true);
+        $remindedLookup = array_fill_keys($alreadyRemindedUserIds, true);
+        $notifications = [];
         $created = 0;
         $skipped = 0;
 
         foreach ($petugas as $user) {
-            $hasReport = Tugas::where('id_user', $user->id_user)
-                ->whereDate('tanggal_mulai', $targetDate->toDateString())
-                ->exists();
-
-            if ($hasReport) {
+            if (isset($reportedLookup[$user->id_user])) {
                 $skipped++;
                 continue;
             }
 
-            $pesan = 'Kamu belum mengisi laporan tugas harian tanggal ' . $dateLabel . '. Silakan isi laporan sebelum hari berganti.';
-
-            $alreadyReminded = Notifikasi::where('id_user', $user->id_user)
-                ->where('judul', $judul)
-                ->where('pesan', $pesan)
-                ->exists();
-
-            if ($alreadyReminded && ! $this->option('force')) {
+            if (isset($remindedLookup[$user->id_user]) && ! $this->option('force')) {
                 $skipped++;
                 continue;
             }
 
-            Notifikasi::create([
+            $notifications[] = [
                 'id_user' => $user->id_user,
                 'judul' => $judul,
                 'pesan' => $pesan,
@@ -67,9 +72,14 @@ class RemindTugasHarian extends Command
                 'status_baca' => false,
                 'reference_id' => $user->id_user,
                 'reference_type' => User::class,
-            ]);
+                'created_at' => now(),
+            ];
 
             $created++;
+        }
+
+        if ($notifications !== []) {
+            Notifikasi::insert($notifications);
         }
 
         $this->info("Pengingat laporan tugas {$dateLabel} selesai. Dikirim: {$created}, dilewati: {$skipped}.");
