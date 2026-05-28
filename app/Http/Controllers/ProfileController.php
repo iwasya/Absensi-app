@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
+/**
+ * Mengelola halaman profil user, pembaruan data dasar akun,
+ * foto profil, dan penggantian password.
+ */
 class ProfileController extends Controller
 {
     public function index(Request $request): View

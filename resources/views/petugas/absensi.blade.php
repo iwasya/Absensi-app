@@ -384,8 +384,19 @@
             @elseif($isMasukLocked)
                 <div class="abs-info" style="margin:0;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
                     <svg fill="none" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 7V5.5a3 3 0 016 0V7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                    Absen masuk sudah terkunci karena melewati batas waktu. Hubungi admin untuk membuka akses absen telat.
+                    Absen masuk sudah terkunci karena melewati batas waktu. Ajukan absen masuk terlewat dengan alasan.
                 </div>
+                @if($today?->approval_masuk_status)
+                    <div style="margin-top:12px;">
+                        <span class="badge {{ $today->approval_masuk_status }}">{{ str_replace('_', ' ', $today->approval_masuk_status) }}</span>
+                    </div>
+                @else
+                    <form method="POST" action="{{ route('petugas.absensi.request-masuk-today') }}" style="display:grid;gap:8px;margin-top:12px;">
+                        @csrf
+                        <input name="approval_masuk_reason" placeholder="Alasan absen masuk terlewat" required>
+                        <button type="submit" style="width:100%;padding:11px;">Ajukan Absen Masuk</button>
+                    </form>
+                @endif
             @else
                 @if(now()->format('H:i:s') > $jamMasukTutup)
                     <div class="abs-info" style="margin-bottom:16px;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
@@ -597,7 +608,7 @@
                     <th>Jam Pulang</th>
                     <th>Shift</th>
                     <th>Status</th>
-                    <th>Approval</th>
+                        <th>Approval</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -625,7 +636,20 @@
                         <td>{{ $item->shift ?? '-' }}</td>
                         <td><span class="badge {{ $item->status }}">{{ $item->status }}</span></td>
                         <td>
-                            @if($item->approval_pulang_status)
+                            @if($item->approval_masuk_status)
+                                <div style="display:grid;gap:6px;min-width:190px;">
+                                    <span class="badge {{ $item->approval_masuk_status }}">Masuk: {{ str_replace('_', ' ', $item->approval_masuk_status) }}</span>
+                                    @if($item->approval_masuk_reason)
+                                        <small class="muted">{{ $item->approval_masuk_reason }}</small>
+                                    @endif
+                                </div>
+                            @elseif(!$item->jam_masuk && $item->tanggal->lt(today()) && ! in_array($item->status, ['cuti'], true))
+                                <form method="POST" action="{{ route('petugas.absensi.request-masuk', $item->id_absensi) }}" style="display:grid;gap:6px;min-width:190px;">
+                                    @csrf
+                                    <input name="approval_masuk_reason" placeholder="Alasan absen masuk terlewat" required>
+                                    <button type="submit" class="btn-detail">Ajukan Masuk</button>
+                                </form>
+                            @elseif($item->approval_pulang_status)
                                 <span class="badge {{ $item->approval_pulang_status }}">{{ str_replace('_', ' ', $item->approval_pulang_status) }}</span>
                             @elseif($item->jam_masuk && !$item->jam_pulang && $item->tanggal->lt(today()))
                                 <form method="POST" action="{{ route('petugas.absensi.request-pulang', $item->id_absensi) }}" style="display:grid;gap:6px;min-width:190px;">
@@ -716,10 +740,15 @@
 
             if (!inRange) {
                 alert('Anda berada di luar area kantor! Jarak Anda terlalu jauh dari lokasi yang diizinkan.');
-                document.querySelectorAll('button[type="submit"]').forEach(function (btn) {
-                    btn.disabled       = true;
-                    btn.style.opacity  = '0.5';
-                    btn.style.cursor   = 'not-allowed';
+                ['form_masuk', 'form_pulang'].forEach(function (formId) {
+                    var form = document.getElementById(formId);
+                    if (!form) return;
+
+                    form.querySelectorAll('button[type="submit"]').forEach(function (btn) {
+                        btn.disabled       = true;
+                        btn.style.opacity  = '0.5';
+                        btn.style.cursor   = 'not-allowed';
+                    });
                 });
             }
         }, function () {

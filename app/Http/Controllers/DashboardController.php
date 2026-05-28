@@ -17,6 +17,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
+/**
+ * Menyiapkan data dashboard sesuai role user yang login,
+ * termasuk ringkasan absensi, tugas, cuti, kalender, dan aktivitas terbaru.
+ */
 class DashboardController extends Controller
 {
     public function __invoke(Request $request): View

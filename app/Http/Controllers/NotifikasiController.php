@@ -9,6 +9,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
+/**
+ * Mengelola daftar notifikasi user serta aksi menandai notifikasi
+ * sebagai sudah dibaca, baik satuan maupun massal.
+ */
 class NotifikasiController extends Controller
 {
     public function index(Request $request): View

@@ -13,6 +13,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
+/**
+ * Mengelola pengajuan cuti petugas, validasi kuota cuti,
+ * pengiriman notifikasi, riwayat cuti, dan cetak dokumen cuti.
+ */
 class CutiController extends Controller
 {
     public function index(Request $request): View

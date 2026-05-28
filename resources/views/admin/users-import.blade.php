@@ -203,6 +203,20 @@
         color: var(--muted);
     }
 
+    .import-note {
+        padding: 14px 16px;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--bg-color);
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .import-note strong {
+        color: var(--text-color);
+    }
+
     .import-file-input {
         display: none;
     }
@@ -262,6 +276,11 @@
 
             <div class="import-container">
                 <p style="margin: 0; color: var(--muted);">📊 Import data user secara massal menggunakan file Excel. NIK akan di-encrypt otomatis untuk keamanan data.</p>
+
+                <div class="import-note">
+                    <strong>Kolom wajib diisi:</strong> Nama, NIK, Username, Email, Password, Role, dan Status Akun.
+                    Kolom No tersedia untuk penomoran data. Tempat Tugas, No Telepon, Jabatan, Regu, Shift, dan Alamat boleh dikosongkan jika belum dibutuhkan.
+                </div>
 
                 <a href="{{ route('admin.users.template') }}" class="import-template-btn">📥 Download Template Excel</a>
 

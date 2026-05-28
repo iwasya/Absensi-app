@@ -498,7 +498,6 @@
         </div>
 
         <div class="calendar-footer">
-            <div class="calendar-result">Menampilkan {{ $items->count() }} dari {{ $items->total() }} data</div>
             {{ $items->links('pagination.simple') }}
         </div>
     </div>

@@ -7,6 +7,41 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Setup Database MySQL
+
+Project ini tetap bisa memakai PostgreSQL atau MySQL lewat migration Laravel. Untuk developer yang ingin langsung memakai MySQL tanpa convert SQL PostgreSQL:
+
+1. Buat database MySQL:
+
+```bash
+mysql -u root -p -e "CREATE DATABASE absensi_app CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```
+
+2. Pakai contoh environment MySQL:
+
+```bash
+cp .env.mysql.example .env
+php artisan key:generate
+```
+
+3. Pilih salah satu cara setup tabel:
+
+```bash
+php artisan migrate
+```
+
+atau import baseline schema:
+
+```bash
+mysql -u root -p absensi_app < database/schema/mysql-schema.sql
+```
+
+4. Isi data shift awal bila diperlukan:
+
+```bash
+php artisan db:seed --class=ShiftSeeder
+```
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

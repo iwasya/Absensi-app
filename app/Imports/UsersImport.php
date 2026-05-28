@@ -16,49 +16,21 @@ use Maatwebsite\Excel\Concerns\WithChunkReading;
 
 class UsersImport implements ToCollection, WithHeadingRow, WithBatchInserts, WithChunkReading
 {
-    private $rolePetugas;
+    private array $roles = [];
     private $tempatTugasCache = [];
     private $existingUsernames = [];
+    private $existingEmails = [];
 
     public function __construct()
     {
-        $this->rolePetugas = Role::where('nama_role', 'Petugas PPSU')->first();
+        $this->roles = Role::all()
+            ->flatMap(fn (Role $role) => [
+                (string) $role->id_role => $role->id_role,
+                strtolower($role->nama_role) => $role->id_role,
+            ])
+            ->toArray();
         $this->existingUsernames = User::pluck('username', 'username')->map(fn () => true)->toArray();
-    }
-
-    /**
-     * Generate unique username from nama.
-     * Format: lowercase nama (slug) + optional suffix if already exists.
-     */
-    private function generateUsername(string $nama, string $nik): string
-    {
-        // Generate base username from nama (slug format)
-        $parts = explode(' ', trim($nama));
-        $firstName = strtolower($parts[0]);
-        $lastNameInitial = isset($parts[1]) ? strtolower(substr(end($parts), 0, 1)) : '';
-
-        $baseUsername = $firstName . $lastNameInitial;
-
-        // Ensure minimum 3 characters
-        if (strlen($baseUsername) < 3) {
-            $baseUsername = strtolower(preg_replace('/[^a-zA-Z]/', '', $nama));
-            if (strlen($baseUsername) < 3) {
-                // Fallback: use first 6 chars of NIK
-                $baseUsername = substr($nik, 0, 6);
-            }
-        }
-
-        // Check if base username exists
-        $username = $baseUsername;
-        $counter = 1;
-
-        while (isset($this->existingUsernames[$username])) {
-            $username = $baseUsername . $counter;
-            $counter++;
-        }
-
-        $this->existingUsernames[$username] = true;
-        return $username;
+        $this->existingEmails = User::pluck('email', 'email')->map(fn () => true)->toArray();
     }
 
     public function collection(Collection $rows)
@@ -67,39 +39,57 @@ class UsersImport implements ToCollection, WithHeadingRow, WithBatchInserts, Wit
         $nikData = [];
 
         foreach ($rows as $row) {
-            if (empty($row['nama']) || empty($row['nik']) || empty($row['tempat_tugas'])) {
+            $nama = trim((string) ($row['nama'] ?? ''));
+            $nik = trim((string) ($row['nik'] ?? ''));
+            $username = trim((string) ($row['username'] ?? ''));
+            $email = trim((string) ($row['email'] ?? $row['email_opsional'] ?? ''));
+            $password = (string) ($row['password'] ?? '');
+            $roleInput = trim((string) ($row['role'] ?? 'Petugas PPSU'));
+            $statusAktif = strtolower(trim((string) ($row['status_akun'] ?? 'aktif')));
+
+            if ($nama === '' || $nik === '' || $username === '' || $email === '' || $password === '' || $roleInput === '') {
                 continue;
             }
 
-            if (!isset($this->tempatTugasCache[$row['tempat_tugas']])) {
-                $tempat = TempatTugas::where('nama_tempat', $row['tempat_tugas'])->first();
-                if (!$tempat) {
-                    continue;
+            if (strlen($password) < 8 || isset($this->existingUsernames[$username]) || isset($this->existingEmails[$email])) {
+                continue;
+            }
+
+            $roleKey = is_numeric($roleInput) ? $roleInput : strtolower($roleInput);
+            if (! isset($this->roles[$roleKey])) {
+                continue;
+            }
+
+            if (! in_array($statusAktif, ['aktif', 'nonaktif'], true)) {
+                $statusAktif = 'aktif';
+            }
+
+            $tempatTugas = trim((string) ($row['tempat_tugas'] ?? ''));
+            $idTempat = null;
+            if ($tempatTugas !== '') {
+                if (!isset($this->tempatTugasCache[$tempatTugas])) {
+                    $tempat = TempatTugas::where('nama_tempat', $tempatTugas)->first();
+                    $this->tempatTugasCache[$tempatTugas] = $tempat?->id_tempat;
                 }
-                $this->tempatTugasCache[$row['tempat_tugas']] = $tempat->id_tempat;
+                $idTempat = $this->tempatTugasCache[$tempatTugas];
             }
 
-            $nik = trim($row['nik']);
-            $nama = trim($row['nama']);
-
-            // Generate unique username from nama (not NIK) - FIRST
-            $username = $this->generateUsername($nama, $nik);
-
-            // Generate email from username (not NIK)
-            $email = !empty($row['email']) ? $row['email'] : strtolower($username) . '@petugas.local';
-
-            // Skip if email already exists
-            if (User::where('email', $email)->exists()) {
-                continue;
-            }
+            $this->existingUsernames[$username] = true;
+            $this->existingEmails[$email] = true;
 
             $usersToInsert[] = [
                 'nama' => $nama,
                 'username' => $username,
                 'email' => $email,
-                'password' => Hash::make('petugas12345'),
-                'id_role' => $this->rolePetugas->id_role,
-                'id_tempat' => $this->tempatTugasCache[$row['tempat_tugas']],
+                'password' => Hash::make($password),
+                'id_role' => $this->roles[$roleKey],
+                'id_tempat' => $idTempat,
+                'regu' => $row['regu'] ?? $row['regu_opsional'] ?? null,
+                'shift' => $row['shift'] ?? $row['shift_opsional'] ?? null,
+                'status_aktif' => $statusAktif,
+                'no_hp' => $row['no_telepon'] ?? null,
+                'alamat' => $row['alamat'] ?? null,
+                'jabatan' => $row['jabatan'] ?? null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];

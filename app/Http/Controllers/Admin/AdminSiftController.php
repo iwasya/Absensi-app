@@ -10,6 +10,10 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
+/**
+ * Mengelola master shift dan penempatan shift petugas,
+ * termasuk tambah/edit shift, aktivasi, assignment, bulk assignment, dan export.
+ */
 class AdminSiftController extends Controller
 {
     /**

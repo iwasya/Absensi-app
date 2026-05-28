@@ -120,7 +120,11 @@
                                     {{-- Edit --}}
                                     <button type="button"
                                         class="sift-btn sift-btn-edit"
-                                        onclick="editShift({{ $shift->id }}, '{{ $shift->nama_shift }}', '{{ $shift->jam_masuk ? \Carbon\Carbon::parse($shift->jam_masuk)->format('H:i') : '' }}', {{ $shift->durasi_jam }}, '{{ $shift->warna }}')">
+                                        data-shift-id="{{ $shift->id }}"
+                                        data-shift-nama="{{ $shift->nama_shift }}"
+                                        data-shift-jam-masuk="{{ $shift->jam_masuk ? \Carbon\Carbon::parse($shift->jam_masuk)->format('H:i') : '' }}"
+                                        data-shift-durasi="{{ $shift->durasi_jam }}"
+                                        data-shift-warna="{{ $shift->warna }}">
                                         <svg fill="none" viewBox="0 0 14 14" style="width:12px;height:12px;flex-shrink:0"><path d="M9.5 1.5l3 3L5 12l-3 .5.5-3L9.5 1.5z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                         Edit
                                     </button>
@@ -434,9 +438,23 @@
         document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = this.checked);
     });
 
+    const editShiftUrl = @json(route('admin.sift.update-shift', ['id' => '__SHIFT_ID__']));
+
+    document.querySelectorAll('.sift-btn-edit').forEach(button => {
+        button.addEventListener('click', function() {
+            editShift(
+                this.dataset.shiftId,
+                this.dataset.shiftNama,
+                this.dataset.shiftJamMasuk,
+                this.dataset.shiftDurasi,
+                this.dataset.shiftWarna
+            );
+        });
+    });
+
     // Edit Shift Modal
     function editShift(id, nama, jamMasuk, durasi, warna) {
-        document.getElementById('editShiftForm').action = '/admin/sift/shift/' + id;
+        document.getElementById('editShiftForm').action = editShiftUrl.replace('__SHIFT_ID__', encodeURIComponent(id));
         document.getElementById('edit_nama_shift').value = nama;
         document.getElementById('edit_jam_masuk').value = jamMasuk;
         document.getElementById('edit_durasi_jam').value = durasi;

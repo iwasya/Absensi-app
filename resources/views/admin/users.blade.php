@@ -964,9 +964,6 @@
             </label>
         </form>
 
-        <div class="users-result-text">
-            Menampilkan {{ $items->count() }} dari {{ $items->total() }} data
-        </div>
     </div>
 
     <div class="users-table-card">
@@ -1089,9 +1086,6 @@
         </div>
 
         <div class="users-footer">
-            <div class="users-result-text">
-                Menampilkan {{ $items->count() }} dari {{ $items->total() }} data
-            </div>
             {{ $items->links('pagination.simple') }}
         </div>
     </div>

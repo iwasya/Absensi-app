@@ -18,6 +18,12 @@ class Kernel extends ConsoleKernel
             ->dailyAt('08:00')
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/tidak-absen.log'));
+
+        // Ingatkan petugas mengisi laporan tugas harian menjelang akhir hari kerja.
+        $schedule->command('tugas:remind-harian')
+            ->dailyAt('17:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/tugas-reminder.log'));
     }
 
     /**

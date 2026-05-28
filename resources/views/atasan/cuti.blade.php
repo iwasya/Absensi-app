@@ -537,7 +537,6 @@
         </div>
 
         <div class="leave-footer">
-            <div class="leave-result">Menampilkan {{ $items->count() }} dari {{ $items->total() }} data</div>
             {{ $items->links('pagination.simple') }}
         </div>
     </div>

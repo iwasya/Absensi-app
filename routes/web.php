@@ -59,8 +59,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/absensi/print', [AbsensiController::class, 'print'])->name('absensi.print');
         Route::post('/absensi/masuk', [AbsensiController::class, 'masuk'])->middleware('throttle:10,1')->name('absensi.masuk');
         Route::post('/absensi/pulang', [AbsensiController::class, 'pulang'])->middleware('throttle:10,1')->name('absensi.pulang');
+        Route::post('/absensi/request-masuk', [AbsensiController::class, 'requestMasukApprovalHariIni'])->middleware('throttle:5,1')->name('absensi.request-masuk-today');
+        Route::post('/absensi/{id}/request-masuk', [AbsensiController::class, 'requestMasukApproval'])->middleware('throttle:5,1')->name('absensi.request-masuk');
         Route::post('/absensi/{id}/request-pulang', [AbsensiController::class, 'requestPulangApproval'])->middleware('throttle:5,1')->name('absensi.request-pulang');
         Route::get('/approval-regu', [AbsensiController::class, 'approvalRegu'])->name('approval-regu.index');
+        Route::post('/approval-regu/{id}/forward-masuk', [AbsensiController::class, 'forwardMasukApproval'])->middleware('throttle:30,1')->name('approval-regu.forward-masuk');
+        Route::post('/approval-regu/{id}/reject-masuk', [AbsensiController::class, 'rejectMasukApprovalByKetua'])->middleware('throttle:30,1')->name('approval-regu.reject-masuk');
         Route::post('/approval-regu/{id}/forward', [AbsensiController::class, 'forwardPulangApproval'])->middleware('throttle:30,1')->name('approval-regu.forward');
         Route::post('/approval-regu/{id}/reject', [AbsensiController::class, 'rejectPulangApprovalByKetua'])->middleware('throttle:30,1')->name('approval-regu.reject');
 
@@ -82,12 +86,15 @@ Route::middleware('auth')->group(function () {
     Route::prefix('atasan')->name('atasan.')->middleware('role:atasan')->group(function () {
         Route::get('/absensi', [ApprovalController::class, 'absensi'])->name('absensi.index');
         Route::get('/absensi/print', [ApprovalController::class, 'printAbsensi'])->name('absensi.print');
+        Route::post('/absensi/{id}/approve-masuk', [ApprovalController::class, 'approveMasuk'])->middleware('throttle:30,1')->name('absensi.approve-masuk');
+        Route::post('/absensi/{id}/reject-masuk', [ApprovalController::class, 'rejectMasuk'])->middleware('throttle:30,1')->name('absensi.reject-masuk');
         Route::post('/absensi/{id}/approve-pulang', [ApprovalController::class, 'approvePulang'])->middleware('throttle:30,1')->name('absensi.approve-pulang');
         Route::post('/absensi/{id}/reject-pulang', [ApprovalController::class, 'rejectPulang'])->middleware('throttle:30,1')->name('absensi.reject-pulang');
         Route::get('/cuti', [ApprovalController::class, 'cuti'])->name('cuti.index');
         Route::post('/cuti/{id}/approve', [ApprovalController::class, 'approveCuti'])->middleware('throttle:30,1')->name('cuti.approve');
         Route::post('/cuti/{id}/reject', [ApprovalController::class, 'rejectCuti'])->middleware('throttle:30,1')->name('cuti.reject');
         Route::get('/tugas', [ApprovalController::class, 'tugas'])->name('tugas.index');
+        Route::get('/tugas/export', [ApprovalController::class, 'exportTugas'])->name('tugas.export');
         Route::post('/tugas/{id}/approve', [ApprovalController::class, 'approveTugas'])->middleware('throttle:30,1')->name('tugas.approve');
         Route::post('/tugas/{id}/reject', [ApprovalController::class, 'rejectTugas'])->middleware('throttle:30,1')->name('tugas.reject');
         Route::post('/tugas/{id}/remind', [ApprovalController::class, 'remindTugas'])->middleware('throttle:30,1')->name('tugas.remind');

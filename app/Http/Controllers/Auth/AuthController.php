@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
+/**
+ * Mengelola proses autentikasi: login, registrasi akun awal/petugas,
+ * dan logout user dari aplikasi.
+ */
 class AuthController extends Controller
 {
     public function showLogin(): View

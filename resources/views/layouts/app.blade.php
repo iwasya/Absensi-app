@@ -161,10 +161,10 @@
             width: min(160px, 100%);
             height: 64px;
             max-width: 150px;
-            padding: 8px 12px;
-            border: 1px solid rgba(255,255,255,.12);
-            border-radius: 12px;
-            background: rgba(255,255,255,.08);
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
             box-sizing: border-box;
             display: block;
             object-fit: contain;
@@ -1328,5 +1328,6 @@
         setInterval(tickClock, 1000);
     })();
 </script>
+@yield('scripts')
 </body>
 </html>

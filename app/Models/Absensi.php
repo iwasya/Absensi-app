@@ -30,6 +30,12 @@ class Absensi extends Model
         'lokasi_pulang',
         'status',
         'keterangan',
+        'approval_masuk_status',
+        'approval_masuk_requested_at',
+        'approval_masuk_forwarded_by',
+        'approval_masuk_forwarded_at',
+        'approval_masuk_approved_by',
+        'approval_masuk_reason',
         'approval_pulang_status',
         'approval_pulang_requested_at',
         'approval_pulang_forwarded_by',
@@ -40,6 +46,8 @@ class Absensi extends Model
 
     protected $casts = [
         'tanggal' => 'date',
+        'approval_masuk_requested_at' => 'datetime',
+        'approval_masuk_forwarded_at' => 'datetime',
         'approval_pulang_requested_at' => 'datetime',
         'approval_pulang_forwarded_at' => 'datetime',
     ];
@@ -57,6 +65,16 @@ class Absensi extends Model
     public function approvalPulangApprover(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approval_pulang_approved_by', 'id_user');
+    }
+
+    public function approvalMasukApprover(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approval_masuk_approved_by', 'id_user');
+    }
+
+    public function approvalMasukForwarder(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approval_masuk_forwarded_by', 'id_user');
     }
 
     public function approvalPulangForwarder(): BelongsTo

@@ -23,6 +23,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
+/**
+ * Mengelola fitur administrasi utama: user, tempat tugas, periode,
+ * kalender, cuti, absensi telat, pengaturan aplikasi, log, dan data sensitif.
+ */
 class AdminController extends Controller
 {
     public function users(Request $request): View
@@ -797,4 +801,3 @@ class AdminController extends Controller
         return back()->with('success', $message);
     }
 }
-

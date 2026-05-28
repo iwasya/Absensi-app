@@ -18,6 +18,12 @@
 
         <button type="submit">Tampilkan</button>
 
+        @if(isset($exportUrl))
+            <button type="submit" formaction="{{ $exportUrl }}" formmethod="GET">
+                {{ $exportLabel ?? 'Download CSV' }}
+            </button>
+        @endif
+
         @if(isset($selectedPeriode) && $selectedPeriode)
             <a href="{{ url()->current() }}">Reset</a>
         @endif

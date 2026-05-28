@@ -9,6 +9,10 @@ use App\Support\QueryFilters;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
+/**
+ * Menampilkan informasi regu petugas, ketua regu,
+ * anggota regu, shift, dan tempat tugas user yang sedang login.
+ */
 class ReguController extends Controller
 {
     public function index(Request $request): View

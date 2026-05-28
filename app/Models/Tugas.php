@@ -18,11 +18,15 @@ class Tugas extends Model
         'tanggal_selesai',
         'uraian',
         'status',
+        'submitted_at',
+        'is_late_input',
     ];
 
     protected $casts = [
         'tanggal_mulai' => 'datetime',
         'tanggal_selesai' => 'datetime',
+        'submitted_at' => 'datetime',
+        'is_late_input' => 'boolean',
     ];
 
     public function user(): BelongsTo

@@ -13,6 +13,10 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
+/**
+ * Mengelola laporan tugas harian petugas: input laporan,
+ * riwayat laporan, kalender tugas, cetak laporan, dan penanda input telat.
+ */
 class TugasController extends Controller
 {
     public function index(): RedirectResponse
@@ -171,17 +175,25 @@ class TugasController extends Controller
             'uraian' => ['required', 'string'],
         ]);
 
+        $tanggalMulai = Carbon::parse($validated['tanggal_mulai']);
+        $submittedAt = now();
+        $isLateInput = $tanggalMulai->toDateString() < $submittedAt->toDateString();
+
         $tugas = Tugas::create([
             'id_user' => $request->user()->id_user,
             'id_periode' => optional(Periode::aktif())->id_periode,
-            'tanggal_mulai' => $validated['tanggal_mulai'],
+            'tanggal_mulai' => $tanggalMulai,
             'tanggal_selesai' => $validated['tanggal_selesai'] ?? null,
             'uraian' => $validated['uraian'],
             'status' => 'pending',
+            'submitted_at' => $submittedAt,
+            'is_late_input' => $isLateInput,
         ]);
 
-        ActivityLogger::log($request, 'Mengirim laporan tugas', 'tugas', $tugas->id_tugas, Tugas::class);
+        ActivityLogger::log($request, $isLateInput ? 'Mengirim laporan tugas terlambat' : 'Mengirim laporan tugas', 'tugas', $tugas->id_tugas, Tugas::class);
 
-        return back()->with('success', 'Laporan tugas berhasil dikirim.');
+        return back()->with('success', $isLateInput
+            ? 'Laporan tugas berhasil dikirim dan ditandai telat input.'
+            : 'Laporan tugas berhasil dikirim.');
     }
 }

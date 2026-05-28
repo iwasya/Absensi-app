@@ -158,7 +158,7 @@
 
     .monitor-table {
         width: 100%;
-        min-width: 980px;
+        min-width: 1120px;
         border-collapse: separate;
         border-spacing: 0;
         font-size: 13px;
@@ -425,6 +425,7 @@
                         <th style="width:110px;">Masuk</th>
                         <th style="width:110px;">Pulang</th>
                         <th style="width:150px;">Status</th>
+                        <th style="width:180px;">Approval Masuk</th>
                         <th style="width:170px;">Approval Pulang</th>
                         <th style="width:110px;">Aksi</th>
                     </tr>
@@ -462,6 +463,25 @@
                                 <span class="badge status-badge {{ $item->status }}">{{ ucfirst(str_replace('_', ' ', $item->status)) }}</span>
                             </td>
                             <td>
+                                @if($item->approval_masuk_status === 'pending_atasan')
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                        <form method="POST" action="{{ route('atasan.absensi.approve-masuk', $item->id_absensi) }}" style="margin:0;">
+                                            @csrf
+                                            <button type="submit" class="monitor-link monitor-link-print" style="border:0;">Approve</button>
+                                        </form>
+                                        <form method="POST" action="{{ route('atasan.absensi.reject-masuk', $item->id_absensi) }}" style="margin:0;">
+                                            @csrf
+                                            <button type="submit" class="monitor-link monitor-link-secondary" style="border-color:var(--red);color:var(--red);">Reject</button>
+                                        </form>
+                                    </div>
+                                    <small class="place-text">{{ $item->approval_masuk_reason }}</small>
+                                @elseif($item->approval_masuk_status)
+                                    <span class="badge {{ $item->approval_masuk_status }}">{{ ucfirst(str_replace('_', ' ', $item->approval_masuk_status)) }}</span>
+                                @else
+                                    <span class="time-empty">-</span>
+                                @endif
+                            </td>
+                            <td>
                                 @if($item->approval_pulang_status === 'pending_atasan')
                                     <div style="display:flex;gap:6px;flex-wrap:wrap;">
                                         <form method="POST" action="{{ route('atasan.absensi.approve-pulang', $item->id_absensi) }}" style="margin:0;">
@@ -486,7 +506,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8">
+                            <td colspan="9">
                                 <div class="monitor-empty">
                                     <div class="monitor-empty-icon" aria-hidden="true">
                                         <svg fill="none" viewBox="0 0 20 20">
@@ -505,7 +525,6 @@
         </div>
 
         <div class="monitor-footer">
-            <div class="monitor-result">Menampilkan {{ $items->count() }} dari {{ $items->total() }} data</div>
             {{ $items->links('pagination.simple') }}
         </div>
     </div>

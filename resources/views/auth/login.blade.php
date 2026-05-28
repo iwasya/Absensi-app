@@ -110,12 +110,23 @@
 
         /* ── HEADER STRIP ── */
         .panel-header {
-            background: var(--accent);
-            padding: 25px 32px 22px;
+            background:
+                linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,0) 42%),
+                var(--accent);
+            padding: 30px 32px 28px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 9px;
+            gap: 14px;
+            position: relative;
+            isolation: isolate;
+        }
+        .panel-header::after {
+            content: "";
+            position: absolute;
+            inset: auto 32px 0;
+            height: 1px;
+            background: rgba(255,255,255,.18);
         }
         .logo-box {
             width: 56px;
@@ -128,8 +139,8 @@
             flex-shrink: 0;
         }
         .logo-box.logo-image {
-            width: 132px;
-            height: 58px;
+            width: min(190px, 78%);
+            height: 74px;
             background: transparent;
             border: 0;
             border-radius: 0;
@@ -149,17 +160,34 @@
         }
         .header-text {
             text-align: center;
+            display: grid;
+            gap: 5px;
         }
         .header-text h1 {
-            font-size: 15px;
-            font-weight: 600;
+            font-size: 19px;
+            font-weight: 700;
             color: #ffffff;
-            line-height: 1.4;
+            line-height: 1.25;
+            letter-spacing: .01em;
         }
         .header-text p {
-            font-size: 13px;
+            font-size: 13.5px;
             color: rgba(255, 255, 255, 0.78);
-            margin-top: 4px;
+            margin-top: 0;
+        }
+        .header-text .header-subtitle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: fit-content;
+            margin: 5px auto 0;
+            padding: 5px 10px;
+            border: 1px solid rgba(255,255,255,.22);
+            border-radius: 99px;
+            background: rgba(255,255,255,.10);
+            color: rgba(255,255,255,.9);
+            font-size: 11px;
+            font-weight: 600;
         }
 
         /* ── BODY ── */
@@ -382,9 +410,10 @@
         @endif
         <div class="header-text">
             @if($app_brand_display !== 'logo_only' || ! $app_logo)
-                <h1>{{ $app_name }}</h1>
+                <h1>Kelurahan Pisangan Baru</h1>
             @endif
-            <p>Kelurahan Pisangan Baru</p>
+            <p>{{ $app_name }}</p>
+            <div class="header-subtitle">Sistem Absensi & Laporan Petugas</div>
         </div>
     </div>
 

@@ -7,6 +7,7 @@ use App\Models\Absensi;
 use App\Models\Cuti;
 use App\Models\Notifikasi;
 use App\Models\Periode;
+use App\Models\Shift;
 use App\Models\TempatTugas;
 use App\Models\Tugas;
 use App\Models\User;
@@ -17,6 +18,10 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
+/**
+ * Mengelola workflow atasan: pemantauan absensi, approval cuti/tugas,
+ * approval pengajuan absen masuk/pulang, pengaturan regu, dan kalender atasan.
+ */
 class ApprovalController extends Controller
 {
     public function absensi(Request $request): View
@@ -134,23 +139,67 @@ class ApprovalController extends Controller
     {
         $periodes = Periode::orderByDesc('tanggal_mulai')->get();
         $selectedPeriode = $periodes->firstWhere('id_periode', (int) $request->query('id_periode'));
-        $items = Tugas::with(['user', 'periode']);
-
-        if ($selectedPeriode) {
-            $items->where(function ($query) use ($selectedPeriode) {
-                $query->where('id_periode', $selectedPeriode->id_periode)
-                    ->orWhereBetween('tanggal_mulai', [
-                        $selectedPeriode->tanggal_mulai->toDateString(),
-                        $selectedPeriode->tanggal_selesai->toDateString(),
-                    ]);
-            });
-        }
+        $items = $this->queryTugasApproval($selectedPeriode);
 
         return view('atasan.tugas', [
             'items' => $items->latest('id_tugas')->paginate($request->get("per_page", 25))->withQueryString(),
             'periodes' => $periodes,
             'selectedPeriode' => $selectedPeriode,
         ]);
+    }
+
+    /**
+     * Mengekspor data approval tugas ke CSV sesuai periode yang sedang difilter.
+     */
+    public function exportTugas(Request $request)
+    {
+        $selectedPeriode = Periode::find((int) $request->query('id_periode'));
+        $items = $this->queryTugasApproval($selectedPeriode)
+            ->latest('id_tugas')
+            ->get();
+
+        $headers = [
+            'Content-type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename=tugas_atasan_' . date('Ymd_His') . '.csv',
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        $callback = function () use ($items) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, [
+                'ID',
+                'Nama Petugas',
+                'Periode',
+                'Tanggal Mulai',
+                'Tanggal Selesai',
+                'Uraian',
+                'Status',
+                'Status Input',
+                'Waktu Submit',
+            ]);
+
+            foreach ($items as $item) {
+                fputcsv($file, [
+                    $item->id_tugas,
+                    $item->user->nama ?? '-',
+                    $item->periode->nama_periode ?? '-',
+                    $item->tanggal_mulai?->format('Y-m-d H:i:s') ?? '-',
+                    $item->tanggal_selesai?->format('Y-m-d H:i:s') ?? '-',
+                    $item->uraian,
+                    $item->status,
+                    $item->is_late_input ? 'Telat input' : 'Tepat waktu',
+                    $item->submitted_at?->format('Y-m-d H:i:s') ?? $item->created_at?->format('Y-m-d H:i:s') ?? '-',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        ActivityLogger::log($request, 'Export tugas atasan ke CSV', 'tugas', null, Tugas::class);
+
+        return response()->stream($callback, 200, $headers);
     }
 
     public function regu(Request $request): View
@@ -341,9 +390,85 @@ class ApprovalController extends Controller
         return $this->updatePulangApproval($request, $id, 'approved');
     }
 
+    /**
+     * Query dasar laporan tugas untuk halaman approval dan export CSV.
+     */
+    private function queryTugasApproval(?Periode $selectedPeriode)
+    {
+        $items = Tugas::with(['user', 'periode']);
+
+        if ($selectedPeriode) {
+            $items->where(function ($query) use ($selectedPeriode) {
+                $query->where('id_periode', $selectedPeriode->id_periode)
+                    ->orWhereBetween('tanggal_mulai', [
+                        $selectedPeriode->tanggal_mulai->toDateString(),
+                        $selectedPeriode->tanggal_selesai->toDateString(),
+                    ]);
+            });
+        }
+
+        return $items;
+    }
+
     public function rejectPulang(Request $request, int $id): RedirectResponse
     {
         return $this->updatePulangApproval($request, $id, 'rejected');
+    }
+
+    public function approveMasuk(Request $request, int $id): RedirectResponse
+    {
+        return $this->updateMasukApproval($request, $id, 'approved');
+    }
+
+    public function rejectMasuk(Request $request, int $id): RedirectResponse
+    {
+        return $this->updateMasukApproval($request, $id, 'rejected');
+    }
+
+    private function updateMasukApproval(Request $request, int $id, string $status): RedirectResponse
+    {
+        $absensi = Absensi::with('user')->findOrFail($id);
+
+        if (! $absensi->user?->isPetugas()) {
+            abort(403, 'Approval absen hanya untuk petugas.');
+        }
+
+        if ($absensi->approval_masuk_status !== 'pending_atasan') {
+            return back()->with('error', 'Pengajuan absen masuk ini belum diteruskan ketua regu atau sudah diproses.');
+        }
+
+        $updates = [
+            'approval_masuk_status' => $status,
+            'approval_masuk_approved_by' => $request->user()->id_user,
+        ];
+
+        if ($status === 'approved') {
+            $jamMasuk = $this->jamMasukUntukAbsensi($absensi);
+            $updates = array_merge($updates, [
+                'jam_masuk' => $jamMasuk,
+                'status' => 'telat',
+                'shift' => $absensi->shift ?: $absensi->user->shift,
+                'keterangan' => trim(($absensi->keterangan ? $absensi->keterangan . ' | ' : '') . 'Absen masuk terlewat disetujui atasan. Alasan: ' . $absensi->approval_masuk_reason),
+            ]);
+        }
+
+        $absensi->update($updates);
+
+        Notifikasi::create([
+            'id_user' => $absensi->id_user,
+            'judul' => $status === 'approved' ? 'Pengajuan Absen Masuk Disetujui' : 'Pengajuan Absen Masuk Ditolak',
+            'pesan' => $status === 'approved'
+                ? 'Atasan menyetujui pengajuan absen masuk tanggal ' . $absensi->tanggal->format('d/m/Y') . '.'
+                : 'Pengajuan absen masuk tanggal ' . $absensi->tanggal->format('d/m/Y') . ' ditolak.',
+            'tipe' => 'absensi',
+            'status_baca' => false,
+            'reference_id' => $absensi->id_absensi,
+            'reference_type' => Absensi::class,
+        ]);
+
+        ActivityLogger::log($request, ucfirst($status) . ' pengajuan absen masuk', 'absensi', $absensi->id_absensi, Absensi::class);
+
+        return back()->with('success', 'Status pengajuan absen masuk berhasil diperbarui.');
     }
 
     private function updatePulangApproval(Request $request, int $id, string $status): RedirectResponse
@@ -378,6 +503,20 @@ class ApprovalController extends Controller
         ActivityLogger::log($request, ucfirst($status) . ' request absen pulang', 'absensi', $absensi->id_absensi, Absensi::class);
 
         return back()->with('success', 'Status request absen pulang berhasil diperbarui.');
+    }
+
+    private function jamMasukUntukAbsensi(Absensi $absensi): string
+    {
+        $shiftName = $absensi->shift ?: $absensi->user?->shift;
+
+        if ($shiftName) {
+            $shift = Shift::where('nama_shift', $shiftName)->first();
+            if ($shift?->jam_masuk) {
+                return \Carbon\Carbon::parse($shift->jam_masuk)->format('H:i:s');
+            }
+        }
+
+        return config('absensi.jam_masuk_buka', '06:00:00');
     }
 
     private function updateCuti(Request $request, int $id, string $status): RedirectResponse

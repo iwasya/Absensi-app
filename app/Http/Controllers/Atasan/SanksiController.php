@@ -11,8 +11,15 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
+/**
+ * Mengelola sanksi dari sisi atasan: melihat, mencetak,
+ * membuat sanksi untuk petugas, dan menghapus sanksi yang masih boleh dihapus.
+ */
 class SanksiController extends Controller
 {
+    /**
+     * Menampilkan daftar sanksi dengan filter bulan, petugas, dan pencarian.
+     */
     public function index(Request $request): View
     {
         $items = Sanksi::with('user');
@@ -42,6 +49,9 @@ class SanksiController extends Controller
         ]);
     }
 
+    /**
+     * Menyiapkan data sanksi untuk halaman cetak sesuai filter yang dipilih.
+     */
     public function print(Request $request): View
     {
         $items = Sanksi::with('user');
@@ -74,6 +84,9 @@ class SanksiController extends Controller
         ]);
     }
 
+    /**
+     * Membuat sanksi baru untuk petugas dan mengirim notifikasi ke petugas terkait.
+     */
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -106,6 +119,9 @@ class SanksiController extends Controller
         return back()->with('success', 'Sanksi berhasil dibuat dan notifikasi telah dikirim.');
     }
 
+    /**
+     * Menghapus sanksi yang masih berada dalam batas waktu penghapusan.
+     */
     public function delete(Request $request, int $id): RedirectResponse
     {
         $sanksi = Sanksi::findOrFail($id);

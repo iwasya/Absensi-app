@@ -17,6 +17,10 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
+/**
+ * Mengelola absensi petugas: absen masuk/pulang, validasi lokasi,
+ * riwayat/print absensi, dan alur pengajuan absensi terlewat lewat ketua regu.
+ */
 class AbsensiController extends Controller
 {
     public function index(Request $request): View
@@ -533,6 +537,11 @@ class AbsensiController extends Controller
             $ketuaRegu = User::whereHas('role', function ($query) {
                 QueryFilters::whereRoleAlias($query, ['atasan', 'manager', 'menejer']);
             })->get();
+
+            $absensi->update([
+                'approval_pulang_status' => 'pending_atasan',
+                'approval_pulang_forwarded_at' => now(),
+            ]);
         }
 
         foreach ($ketuaRegu as $ketua) {
@@ -552,6 +561,159 @@ class AbsensiController extends Controller
         return back()->with('success', 'Request dikirim ke ketua regu/atasan untuk approval.');
     }
 
+    public function requestMasukApproval(Request $request, int $id): RedirectResponse
+    {
+        $validated = $request->validate([
+            'approval_masuk_reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        $absensi = Absensi::where('id_user', $request->user()->id_user)->findOrFail($id);
+
+        if ($absensi->jam_masuk || ! $absensi->tanggal->lt(today())) {
+            return back()->with('error', 'Pengajuan hanya untuk absen masuk yang terlewat pada tanggal sebelumnya.');
+        }
+
+        if ($absensi->status === 'cuti') {
+            return back()->with('error', 'Tanggal ini tercatat cuti, pengajuan absen masuk tidak dibuka.');
+        }
+
+        $absensiTidakAbsen = app(AbsensiTidakAbsenService::class);
+        $holidayInfo = $absensiTidakAbsen->holidayInfo($absensi->tanggal);
+        if ($holidayInfo['is_holiday']) {
+            return back()->with('error', 'Tanggal ini libur (' . $holidayInfo['reason'] . '), pengajuan absen masuk tidak dibuka.');
+        }
+
+        $leaveInfo = $absensiTidakAbsen->leaveInfo($request->user(), $absensi->tanggal);
+        if ($leaveInfo['is_leave']) {
+            return back()->with('error', 'Tanggal ini tercatat cuti (' . $leaveInfo['reason'] . '), pengajuan absen masuk tidak dibuka.');
+        }
+
+        if (in_array($absensi->approval_masuk_status, ['pending_ketua', 'pending_atasan', 'approved'], true)) {
+            return back()->with('error', 'Pengajuan absen masuk untuk tanggal ini sudah diproses atau masih menunggu.');
+        }
+
+        $absensi->update([
+            'approval_masuk_status' => 'pending_ketua',
+            'approval_masuk_requested_at' => now(),
+            'approval_masuk_reason' => $validated['approval_masuk_reason'],
+        ]);
+
+        $recipients = User::where('is_ketua_regu', true)
+            ->where('regu', $request->user()->regu)
+            ->where('id_user', '!=', $request->user()->id_user)
+            ->get();
+
+        if ($recipients->isEmpty()) {
+            $recipients = User::whereHas('role', function ($query) {
+                QueryFilters::whereRoleAlias($query, ['atasan', 'manager', 'menejer']);
+            })->get();
+
+            $absensi->update([
+                'approval_masuk_status' => 'pending_atasan',
+                'approval_masuk_forwarded_at' => now(),
+            ]);
+        }
+
+        foreach ($recipients as $recipient) {
+            Notifikasi::create([
+                'id_user' => $recipient->id_user,
+                'judul' => 'Pengajuan Absen Masuk Terlewat',
+                'pesan' => $request->user()->nama . ' dari ' . ($request->user()->regu ?: 'regu belum diisi') . ' mengajukan absen masuk tanggal ' . $absensi->tanggal->format('d/m/Y') . '.',
+                'tipe' => 'absensi',
+                'status_baca' => false,
+                'reference_id' => $absensi->id_absensi,
+                'reference_type' => Absensi::class,
+            ]);
+        }
+
+        ActivityLogger::log($request, 'Pengajuan absen masuk terlewat', 'absensi', $absensi->id_absensi, Absensi::class);
+
+        return back()->with('success', 'Pengajuan absen masuk dikirim ke ketua regu/atasan.');
+    }
+
+    public function requestMasukApprovalHariIni(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'approval_masuk_reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        $user = $request->user();
+        $absensiTidakAbsen = app(AbsensiTidakAbsenService::class);
+        $holidayInfo = $absensiTidakAbsen->holidayInfo(today());
+        if ($holidayInfo['is_holiday']) {
+            return back()->with('error', 'Hari ini libur (' . $holidayInfo['reason'] . '), pengajuan absen masuk tidak dibuka.');
+        }
+
+        $leaveInfo = $absensiTidakAbsen->leaveInfo($user, today());
+        if ($leaveInfo['is_leave']) {
+            return back()->with('error', 'Hari ini kamu sedang cuti (' . $leaveInfo['reason'] . '), pengajuan absen masuk tidak dibuka.');
+        }
+
+        $shiftWindow = $this->shiftWindow($user, today());
+        if (now()->lessThanOrEqualTo($shiftWindow['masuk_tutup_at'])) {
+            return back()->with('error', 'Absen masuk masih bisa dilakukan. Gunakan form absen masuk biasa.');
+        }
+
+        $absensi = Absensi::firstOrCreate(
+            [
+                'id_user' => $user->id_user,
+                'tanggal' => today()->toDateString(),
+            ],
+            [
+                'id_periode' => optional(Periode::aktif())->id_periode,
+                'shift' => $user->shift,
+                'status' => 'tidak_absen',
+                'keterangan' => 'Menunggu pengajuan absen masuk terlewat',
+            ]
+        );
+
+        if ($absensi->jam_masuk) {
+            return back()->with('error', 'Kamu sudah absen masuk hari ini.');
+        }
+
+        if (in_array($absensi->approval_masuk_status, ['pending_ketua', 'pending_atasan', 'approved'], true)) {
+            return back()->with('error', 'Pengajuan absen masuk untuk tanggal ini sudah diproses atau masih menunggu.');
+        }
+
+        $absensi->update([
+            'approval_masuk_status' => 'pending_ketua',
+            'approval_masuk_requested_at' => now(),
+            'approval_masuk_reason' => $validated['approval_masuk_reason'],
+        ]);
+
+        $recipients = User::where('is_ketua_regu', true)
+            ->where('regu', $user->regu)
+            ->where('id_user', '!=', $user->id_user)
+            ->get();
+
+        if ($recipients->isEmpty()) {
+            $recipients = User::whereHas('role', function ($query) {
+                QueryFilters::whereRoleAlias($query, ['atasan', 'manager', 'menejer']);
+            })->get();
+
+            $absensi->update([
+                'approval_masuk_status' => 'pending_atasan',
+                'approval_masuk_forwarded_at' => now(),
+            ]);
+        }
+
+        foreach ($recipients as $recipient) {
+            Notifikasi::create([
+                'id_user' => $recipient->id_user,
+                'judul' => 'Pengajuan Absen Masuk Terlewat',
+                'pesan' => $user->nama . ' dari ' . ($user->regu ?: 'regu belum diisi') . ' mengajukan absen masuk tanggal ' . $absensi->tanggal->format('d/m/Y') . '.',
+                'tipe' => 'absensi',
+                'status_baca' => false,
+                'reference_id' => $absensi->id_absensi,
+                'reference_type' => Absensi::class,
+            ]);
+        }
+
+        ActivityLogger::log($request, 'Pengajuan absen masuk terlewat hari ini', 'absensi', $absensi->id_absensi, Absensi::class);
+
+        return back()->with('success', 'Pengajuan absen masuk dikirim ke ketua regu/atasan.');
+    }
+
     public function approvalRegu(Request $request): View
     {
         $user = $request->user();
@@ -560,10 +722,14 @@ class AbsensiController extends Controller
         }
 
         $items = Absensi::with('user')
-            ->where('approval_pulang_status', 'pending_ketua')
+            ->where(function ($query) {
+                $query->where('approval_masuk_status', 'pending_ketua')
+                    ->orWhere('approval_pulang_status', 'pending_ketua');
+            })
             ->whereHas('user', function ($query) use ($user) {
                 $query->where('regu', $user->regu);
             })
+            ->latest('approval_masuk_requested_at')
             ->latest('approval_pulang_requested_at')
             ->paginate($request->get('per_page', 20))
             ->withQueryString();
@@ -602,6 +768,37 @@ class AbsensiController extends Controller
         return back()->with('success', 'Request diteruskan ke atasan.');
     }
 
+    public function forwardMasukApproval(Request $request, int $id): RedirectResponse
+    {
+        $absensi = $this->ketuaReguAbsensi($request, $id, 'masuk');
+
+        $absensi->update([
+            'approval_masuk_status' => 'pending_atasan',
+            'approval_masuk_forwarded_by' => $request->user()->id_user,
+            'approval_masuk_forwarded_at' => now(),
+        ]);
+
+        $atasans = User::whereHas('role', function ($query) {
+            QueryFilters::whereRoleAlias($query, ['atasan', 'manager', 'menejer']);
+        })->get();
+
+        foreach ($atasans as $atasan) {
+            Notifikasi::create([
+                'id_user' => $atasan->id_user,
+                'judul' => 'Pengajuan Absen Masuk Diteruskan',
+                'pesan' => $request->user()->nama . ' meneruskan pengajuan absen masuk ' . ($absensi->user->nama ?? '-') . ' tanggal ' . $absensi->tanggal->format('d/m/Y') . '.',
+                'tipe' => 'absensi',
+                'status_baca' => false,
+                'reference_id' => $absensi->id_absensi,
+                'reference_type' => Absensi::class,
+            ]);
+        }
+
+        ActivityLogger::log($request, 'Ketua regu meneruskan pengajuan absen masuk', 'absensi', $absensi->id_absensi, Absensi::class);
+
+        return back()->with('success', 'Pengajuan absen masuk diteruskan ke atasan.');
+    }
+
     public function rejectPulangApprovalByKetua(Request $request, int $id): RedirectResponse
     {
         $absensi = $this->ketuaReguAbsensi($request, $id);
@@ -627,15 +824,42 @@ class AbsensiController extends Controller
         return back()->with('success', 'Request ditolak.');
     }
 
-    private function ketuaReguAbsensi(Request $request, int $id): Absensi
+    public function rejectMasukApprovalByKetua(Request $request, int $id): RedirectResponse
+    {
+        $absensi = $this->ketuaReguAbsensi($request, $id, 'masuk');
+
+        $absensi->update([
+            'approval_masuk_status' => 'rejected_ketua',
+            'approval_masuk_forwarded_by' => $request->user()->id_user,
+            'approval_masuk_forwarded_at' => now(),
+        ]);
+
+        Notifikasi::create([
+            'id_user' => $absensi->id_user,
+            'judul' => 'Pengajuan Absen Masuk Ditolak Ketua Regu',
+            'pesan' => 'Pengajuan absen masuk tanggal ' . $absensi->tanggal->format('d/m/Y') . ' ditolak ketua regu.',
+            'tipe' => 'absensi',
+            'status_baca' => false,
+            'reference_id' => $absensi->id_absensi,
+            'reference_type' => Absensi::class,
+        ]);
+
+        ActivityLogger::log($request, 'Ketua regu menolak pengajuan absen masuk', 'absensi', $absensi->id_absensi, Absensi::class);
+
+        return back()->with('success', 'Pengajuan absen masuk ditolak.');
+    }
+
+    private function ketuaReguAbsensi(Request $request, int $id, string $jenis = 'pulang'): Absensi
     {
         $user = $request->user();
         if (! $user->isKetuaRegu()) {
             abort(403);
         }
 
+        $statusColumn = $jenis === 'masuk' ? 'approval_masuk_status' : 'approval_pulang_status';
+
         return Absensi::with('user')
-            ->where('approval_pulang_status', 'pending_ketua')
+            ->where($statusColumn, 'pending_ketua')
             ->whereHas('user', function ($query) use ($user) {
                 $query->where('regu', $user->regu);
             })

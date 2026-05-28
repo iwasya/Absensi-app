@@ -431,7 +431,6 @@
         </div>
 
         <div class="late-footer">
-            <div class="late-result">Menampilkan {{ $items->count() }} dari {{ $items->total() }} data</div>
             {{ $items->links('pagination.simple') }}
         </div>
     </div>
