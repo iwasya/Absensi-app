@@ -7,11 +7,11 @@ use App\Models\Absensi;
 use App\Models\Cuti;
 use App\Models\Notifikasi;
 use App\Models\Periode;
-use App\Models\Shift;
 use App\Models\TempatTugas;
 use App\Models\Tugas;
 use App\Models\User;
 use App\Services\AbsensiTidakAbsenService;
+use App\Services\CutiReplacementService;
 use App\Support\ActivityLogger;
 use App\Support\QueryFilters;
 use Illuminate\Http\RedirectResponse;
@@ -286,6 +286,8 @@ class ApprovalController extends Controller
             'id_tempat' => ['nullable', 'exists:tempat_tugas,id_tempat'],
             'shifts' => ['nullable', 'array'],
             'shifts.*' => ['nullable', 'in:Shift 1,Shift 2,Shift 3'],
+            'hari_libur' => ['nullable', 'array'],
+            'hari_libur.*' => ['nullable', 'integer', 'between:0,6'],
         ]);
 
         $anggota = User::where('regu', $validated['nama_regu'])->get();
@@ -303,9 +305,15 @@ class ApprovalController extends Controller
                 ->update(['shift' => $shift ?: null]);
         }
 
-        ActivityLogger::log($request, 'Mengubah tempat kerja dan shift regu', 'users', null, User::class);
+        foreach (($validated['hari_libur'] ?? []) as $userId => $hariLibur) {
+            User::where('regu', $validated['nama_regu'])
+                ->where('id_user', $userId)
+                ->update(['hari_libur' => $hariLibur === null || $hariLibur === '' ? null : (int) $hariLibur]);
+        }
 
-        return back()->with('success', 'Tempat kerja dan shift ' . $validated['nama_regu'] . ' berhasil diperbarui.');
+        ActivityLogger::log($request, 'Mengubah tempat kerja, shift, dan hari libur regu', 'users', null, User::class);
+
+        return back()->with('success', 'Tempat kerja, shift, dan hari libur ' . $validated['nama_regu'] . ' berhasil diperbarui.');
     }
 
     public function setKetuaRegu(Request $request): RedirectResponse
@@ -442,12 +450,10 @@ class ApprovalController extends Controller
         ];
 
         if ($status === 'approved') {
-            $jamMasuk = $this->jamMasukUntukAbsensi($absensi);
             $updates = array_merge($updates, [
-                'jam_masuk' => $jamMasuk,
-                'status' => 'telat',
+                'status' => 'akses_dibuka',
                 'shift' => $absensi->shift ?: $absensi->user->shift,
-                'keterangan' => trim(($absensi->keterangan ? $absensi->keterangan . ' | ' : '') . 'Absen masuk terlewat disetujui atasan. Alasan: ' . $absensi->approval_masuk_reason),
+                'keterangan' => trim(($absensi->keterangan ? $absensi->keterangan . ' | ' : '') . 'Akses absen masuk dibuka oleh atasan. Alasan: ' . $absensi->approval_masuk_reason),
             ]);
         }
 
@@ -455,9 +461,9 @@ class ApprovalController extends Controller
 
         Notifikasi::create([
             'id_user' => $absensi->id_user,
-            'judul' => $status === 'approved' ? 'Pengajuan Absen Masuk Disetujui' : 'Pengajuan Absen Masuk Ditolak',
+            'judul' => $status === 'approved' ? 'Absen Masuk Dibuka' : 'Pengajuan Absen Masuk Ditolak',
             'pesan' => $status === 'approved'
-                ? 'Atasan menyetujui pengajuan absen masuk tanggal ' . $absensi->tanggal->format('d/m/Y') . '.'
+                ? 'Atasan membuka absen masuk tanggal ' . $absensi->tanggal->format('d/m/Y') . '. Silakan isi form absen masuk.'
                 : 'Pengajuan absen masuk tanggal ' . $absensi->tanggal->format('d/m/Y') . ' ditolak.',
             'tipe' => 'absensi',
             'status_baca' => false,
@@ -504,23 +510,9 @@ class ApprovalController extends Controller
         return back()->with('success', 'Status request absen pulang berhasil diperbarui.');
     }
 
-    private function jamMasukUntukAbsensi(Absensi $absensi): string
-    {
-        $shiftName = $absensi->shift ?: $absensi->user?->shift;
-
-        if ($shiftName) {
-            $shift = Shift::where('nama_shift', $shiftName)->first();
-            if ($shift?->jam_masuk) {
-                return \Carbon\Carbon::parse($shift->jam_masuk)->format('H:i:s');
-            }
-        }
-
-        return config('absensi.jam_masuk_buka', '06:00:00');
-    }
-
     private function updateCuti(Request $request, int $id, string $status): RedirectResponse
     {
-        $cuti = Cuti::with('user')->findOrFail($id);
+        $cuti = Cuti::with(['user', 'pengganti'])->findOrFail($id);
         
         // Authorization: Verify the user is petugas (atasan should only approve petugas cuti)
         if (!$cuti->user->isPetugas()) {
@@ -535,6 +527,11 @@ class ApprovalController extends Controller
         if ($cuti->status !== 'pending') {
             return back()->with('error', 'Cuti ini sudah diproses sebelumnya.');
         }
+
+        $replacementService = app(CutiReplacementService::class);
+        if ($error = $replacementService->approvalBlocker($cuti, $status)) {
+            return back()->with('error', $error);
+        }
         
         $cuti->update([
             'status' => $status,
@@ -542,8 +539,9 @@ class ApprovalController extends Controller
         ]);
 
         if ($status === 'approve') {
-            $cuti->refresh()->load('user');
+            $cuti->refresh()->load(['user', 'pengganti']);
             app(AbsensiTidakAbsenService::class)->syncApprovedLeave($cuti);
+            $replacementService->afterApproved($cuti);
         }
 
         Notifikasi::create([
@@ -555,6 +553,20 @@ class ApprovalController extends Controller
             'reference_id' => $cuti->id_cuti,
             'reference_type' => Cuti::class,
         ]);
+
+        if ($cuti->pengganti) {
+            Notifikasi::create([
+                'id_user' => $cuti->pengganti->id_user,
+                'judul' => $status === 'approve' ? 'Jadwal Pengganti Cuti Aktif' : 'Jadwal Pengganti Cuti Dibatalkan',
+                'pesan' => $status === 'approve'
+                    ? 'Kamu menjadi pengganti cuti ' . ($cuti->user->nama ?? 'petugas') . ' tanggal ' . $cuti->tanggal_mulai->translatedFormat('d F Y') . ' sampai ' . $cuti->tanggal_selesai->translatedFormat('d F Y') . '.'
+                    : 'Pengajuan cuti ' . ($cuti->user->nama ?? 'petugas') . ' ditolak, jadwal pengganti dibatalkan.',
+                'tipe' => 'cuti',
+                'status_baca' => false,
+                'reference_id' => $cuti->id_cuti,
+                'reference_type' => Cuti::class,
+            ]);
+        }
 
         ActivityLogger::log($request, ucfirst($status) . ' cuti', 'cuti', $cuti->id_cuti, Cuti::class);
 

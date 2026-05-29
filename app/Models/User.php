@@ -32,6 +32,7 @@ class User extends Authenticatable
         'regu',
         'is_ketua_regu',
         'shift',
+        'hari_libur',
         'status_aktif',
         'no_hp',
         'alamat',
@@ -54,6 +55,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'is_ketua_regu' => 'boolean',
+        'hari_libur' => 'integer',
     ];
 
     public function role(): BelongsTo
@@ -112,6 +114,19 @@ class User extends Authenticatable
     public function isKetuaRegu(): bool
     {
         return $this->isPetugas() && (bool) $this->is_ketua_regu;
+    }
+
+    public function hariLiburLabel(): string
+    {
+        return [
+            0 => 'Minggu',
+            1 => 'Senin',
+            2 => 'Selasa',
+            3 => 'Rabu',
+            4 => 'Kamis',
+            5 => 'Jumat',
+            6 => 'Sabtu',
+        ][$this->hari_libur] ?? '-';
     }
 
     public function hasRoleAlias(array $aliases): bool

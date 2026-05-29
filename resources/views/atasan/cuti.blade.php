@@ -430,6 +430,7 @@
                         <th style="width:160px;">Jenis</th>
                         <th>Alasan & Alamat</th>
                         <th style="width:170px;">Pengganti</th>
+                        <th style="width:130px;">Konfirmasi</th>
                         <th style="width:120px;">Dokumen</th>
                         <th style="width:130px;">Admin</th>
                         <th style="width:130px;">Status</th>
@@ -482,6 +483,11 @@
                                 <span class="leave-muted">{{ $item->pengganti->nama ?? '-' }}</span>
                             </td>
                             <td>
+                                <span class="badge {{ $item->replacement_status ?? 'pending' }}">
+                                    {{ $item->replacement_status === 'accepted' ? 'Diterima' : ($item->replacement_status === 'rejected' ? 'Ditolak' : 'Pending') }}
+                                </span>
+                            </td>
+                            <td>
                                 @if($item->dokumen_path)
                                     <a class="leave-link" href="{{ asset('storage/' . $item->dokumen_path) }}" target="_blank">Lihat</a>
                                 @else
@@ -518,7 +524,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10">
+                            <td colspan="11">
                                 <div class="leave-empty">
                                     <div class="leave-empty-icon" aria-hidden="true">
                                         <svg fill="none" viewBox="0 0 20 20">

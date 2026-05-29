@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Petugas;
 use App\Http\Controllers\Controller;
 use App\Models\Cuti;
 use App\Models\Periode;
+use App\Models\User;
+use App\Services\CutiReplacementService;
 use App\Support\ActivityLogger;
-use App\Support\QueryFilters;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ use Illuminate\View\View;
  */
 class CutiController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, CutiReplacementService $replacementService): View
     {
         $periodes = Periode::orderByDesc('tanggal_mulai')->get();
         $selectedPeriode = $periodes->firstWhere('id_periode', (int) $request->query('id_periode'));
@@ -36,36 +37,26 @@ class CutiController extends Controller
         }
 
         $user = $request->user();
-        $petugasList = \App\Models\User::whereHas('role', function ($query) {
-                QueryFilters::whereRoleAlias($query, ['petugas', 'karyawan']);
-            })
-            ->where('id_user', '!=', $user->id_user)
-            ->where(function ($query) use ($user) {
-                // Filter: tampilkan hanya user yang sama regunya atau tidak punya regu
-                $query->where('regu', $user->regu)
-                    ->orWhereNull('regu');
-            })
-            ->orderBy('regu')
-            ->orderBy('nama')
-            ->get();
 
         return view('petugas.cuti', [
             'items' => $items->latest('id_cuti')->paginate($request->get("per_page", 15))->withQueryString(),
             'periodeAktif' => Periode::aktif(),
             'periodes' => $periodes,
             'selectedPeriode' => $selectedPeriode,
-            'petugasList' => $petugasList,
+            'petugasList' => $replacementService->replacementCandidatesFor($user),
+            'replacementRequests' => $replacementService->pendingRequestsFor($user),
+            'liburKompensasiTersedia' => $replacementService->availableCreditCountFor($user),
             'cutiTerpakaiTahunIni' => $this->jumlahCutiTahunan($request->user()->id_user, now()->year),
             'batasCutiTahunan' => 12,
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, CutiReplacementService $replacementService): RedirectResponse
     {
         $validated = $request->validate([
             'tanggal_mulai' => ['required', 'date'],
             'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
-            'jenis_cuti' => ['required', 'in:Tahunan,Besar,Sakit'],
+            'jenis_cuti' => ['required', 'in:Tahunan,Besar,Sakit,Kompensasi'],
             'alasan' => ['required', 'string'],
             'alasan_lainnya' => ['nullable', 'string'],
             'alamat_cuti' => ['required', 'string'],
@@ -77,10 +68,19 @@ class CutiController extends Controller
             return back()->withInput()->with('error', 'Cuti sakit wajib melampirkan bukti dokumen.');
         }
 
-        $tahunCuti = Carbon::parse($validated['tanggal_mulai'])->year;
-        $jumlahCutiTahunan = $this->jumlahCutiTahunan($request->user()->id_user, $tahunCuti);
+        $user = $request->user();
+        $startDate = Carbon::parse($validated['tanggal_mulai'])->startOfDay();
+        $endDate = Carbon::parse($validated['tanggal_selesai'])->startOfDay();
+        $pengganti = User::with('role')->findOrFail($validated['id_pengganti']);
 
-        if ($jumlahCutiTahunan >= 12) {
+        if ($error = $replacementService->validateNewRequest($user, $pengganti, $startDate, $endDate, $validated['jenis_cuti'])) {
+            return back()->withInput()->with('error', $error);
+        }
+
+        $tahunCuti = Carbon::parse($validated['tanggal_mulai'])->year;
+        $jumlahCutiTahunan = $this->jumlahCutiTahunan($user->id_user, $tahunCuti);
+
+        if ($validated['jenis_cuti'] !== 'Kompensasi' && $jumlahCutiTahunan >= 12) {
             return back()
                 ->withInput()
                 ->with('error', "Kuota cuti tahun {$tahunCuti} sudah habis. Maksimal 12 kali pengajuan cuti per tahun.");
@@ -91,7 +91,7 @@ class CutiController extends Controller
             : null;
 
         $cuti = Cuti::create([
-            'id_user' => $request->user()->id_user,
+            'id_user' => $user->id_user,
             'id_periode' => optional(Periode::aktif())->id_periode,
             'tanggal_mulai' => $validated['tanggal_mulai'],
             'tanggal_selesai' => $validated['tanggal_selesai'],
@@ -100,30 +100,57 @@ class CutiController extends Controller
             'alasan_lainnya' => $validated['alasan_lainnya'] ?? null,
             'alamat_cuti' => $validated['alamat_cuti'],
             'id_pengganti' => $validated['id_pengganti'],
+            'replacement_status' => 'pending',
             'dokumen_path' => $dokumenPath,
             'admin_status' => 'pending',
             'status' => 'pending',
         ]);
 
-        $admins = \App\Models\User::whereHas('role', function($q) {
-            QueryFilters::whereRoleAlias($q, ['admin']);
-        })->get();
-
-        foreach ($admins as $admin) {
-            \App\Models\Notifikasi::create([
-                'id_user' => $admin->id_user,
-                'judul' => 'Pengajuan Cuti Baru',
-                'pesan' => 'Petugas ' . $request->user()->nama . ' mengajukan cuti. Mohon approval admin sebelum diteruskan ke atasan.',
-                'tipe' => 'cuti',
-                'status_baca' => false,
-                'reference_id' => $cuti->id_cuti,
-                'reference_type' => Cuti::class,
-            ]);
-        }
+        $replacementService->notifyReplacementRequested($cuti);
 
         ActivityLogger::log($request, 'Mengajukan cuti', 'cuti', $cuti->id_cuti, Cuti::class);
 
-        return back()->with('success', 'Pengajuan cuti berhasil dikirim ke admin.');
+        return back()->with('success', 'Pengajuan cuti berhasil dikirim ke petugas pengganti untuk dikonfirmasi.');
+    }
+
+    public function acceptReplacement(Request $request, int $id, CutiReplacementService $replacementService): RedirectResponse
+    {
+        $cuti = Cuti::with(['user', 'pengganti'])->findOrFail($id);
+        $user = $request->user();
+
+        if ((int) $cuti->id_pengganti !== (int) $user->id_user) {
+            abort(403);
+        }
+
+        if ($error = $replacementService->accept($cuti, $user)) {
+            return back()->with('error', $error);
+        }
+
+        ActivityLogger::log($request, 'Menerima sebagai pengganti cuti', 'cuti', $cuti->id_cuti, Cuti::class);
+
+        return back()->with('success', 'Kamu menerima sebagai pengganti cuti. Pengajuan diteruskan ke proses approval.');
+    }
+
+    public function rejectReplacement(Request $request, int $id, CutiReplacementService $replacementService): RedirectResponse
+    {
+        $validated = $request->validate([
+            'replacement_note' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $cuti = Cuti::with('user')->findOrFail($id);
+        $user = $request->user();
+
+        if ((int) $cuti->id_pengganti !== (int) $user->id_user) {
+            abort(403);
+        }
+
+        if ($error = $replacementService->reject($cuti, $user, $validated['replacement_note'] ?? null)) {
+            return back()->with('error', $error);
+        }
+
+        ActivityLogger::log($request, 'Menolak sebagai pengganti cuti', 'cuti', $cuti->id_cuti, Cuti::class);
+
+        return back()->with('success', 'Permintaan pengganti cuti ditolak.');
     }
 
     public function print(int $id): View
@@ -144,6 +171,7 @@ class CutiController extends Controller
         return Cuti::where('id_user', $userId)
             ->whereYear('tanggal_mulai', $year)
             ->whereIn('status', ['pending', 'approve'])
+            ->where('jenis_cuti', '!=', 'Kompensasi')
             ->count();
     }
 }

@@ -34,6 +34,10 @@
     .stat-hint { font-size: 11px; margin-top: 4px; }
     .stat-bar { height: 3px; background: var(--bg-color); border-radius: 99px; margin-top: 8px; overflow: hidden; }
     .stat-bar-fill { height: 100%; border-radius: 99px; }
+    .attention-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .attention-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--panel-bg); }
+    .attention-title { color: var(--text-color); font-size: 13px; font-weight: 600; }
+    .attention-sub { color: var(--muted); font-size: 11px; margin-top: 2px; }
     .bg-green  { background: var(--green-soft); }
     .bg-amber  { background: var(--amber-soft); }
     .bg-red    { background: var(--red-soft); }
@@ -128,6 +132,7 @@
     @media (max-width: 860px) { .mid-grid, .bot-grid { grid-template-columns: 1fr; } }
     @media (max-width: 600px) {
         .stat-grid { grid-template-columns: repeat(2,1fr); gap: 8px; }
+        .attention-strip { grid-template-columns: 1fr; }
         .donut-section { grid-template-columns: 1fr; justify-items: center; }
         .donut-meta { width: 100%; }
         main { padding: 16px !important; }
@@ -196,40 +201,46 @@
         </div>
         <div class="stat-card">
             <div class="stat-card-top">
-                <div class="stat-ico" style="background:rgba(99,102,241,.1)"><svg fill="none" viewBox="0 0 16 16"><path d="M2 4h12M2 8h9M2 12h6" stroke="#6366F1" stroke-width="1.3" stroke-linecap="round"/></svg></div>
-                <span class="stat-badge" style="background:rgba(99,102,241,.1);color:#4338CA">{{ $tugasDisetujui ?? 0 }}/{{ $totalTugas ?? 0 }}</span>
+                <div class="stat-ico bg-amber"><svg fill="none" viewBox="0 0 16 16"><path d="M8 2.5l5.5 10H2.5L8 2.5z" stroke="#F59E0B" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 6v3M8 11.5h.01" stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                <span class="stat-badge" style="background:var(--amber-soft);color:var(--amber-dark)">{{ ($approvalPending ?? 0) > 0 ? 'Pending' : 'Aman' }}</span>
             </div>
-            <div class="stat-lbl">Tugas disetujui</div>
-            <div class="stat-val" style="color:#6366F1">{{ $tugasDisetujui ?? 0 }}</div>
-            <div class="stat-hint" style="color:#4338CA">dari {{ $totalTugas ?? 0 }} tugas</div>
-            @if(($totalTugas ?? 0) > 0)
-            <div class="stat-bar"><div class="stat-bar-fill" style="width:{{ (($tugasDisetujui ?? 0)/($totalTugas ?? 1))*100 }}%;background:#6366F1"></div></div>
-            @endif
-        </div>
-    </div>
-
-    <div class="stat-grid">
-        <div class="stat-card">
-            <div class="stat-lbl">Request approval absen</div>
-            <div class="stat-val" style="color:var(--primary)">{{ $totalApprovalDiminta ?? 0 }}</div>
-            <div class="stat-hint" style="color:var(--primary2)">total pengajuan kamu</div>
-        </div>
-        <div class="stat-card">
             <div class="stat-lbl">Approval pending</div>
             <div class="stat-val" style="color:var(--amber)">{{ $approvalPending ?? 0 }}</div>
             <div class="stat-hint" style="color:var(--amber-dark)">menunggu atasan/admin</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-lbl">Teguran belum diakui</div>
-            <div class="stat-val" style="color:var(--red)">{{ $teguranBelumDiakui ?? 0 }}</div>
-            <div class="stat-hint" style="color:var(--red-dark)">konfirmasi di menu sanksi</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-lbl">Laporan tugas terlambat input</div>
-            <div class="stat-val" style="color:#6366F1">{{ $tugasLupaInput ?? 0 }}</div>
-            <div class="stat-hint" style="color:#4338CA">tetap tercatat di dashboard</div>
-        </div>
     </div>
+
+    @if(($teguranBelumDiakui ?? 0) > 0 || ($tugasLupaInput ?? 0) > 0 || (($totalTugas ?? 0) > 0 && ($tugasDisetujui ?? 0) < ($totalTugas ?? 0)))
+        <div class="attention-strip">
+            @if(($teguranBelumDiakui ?? 0) > 0)
+                <div class="attention-item">
+                    <div>
+                        <div class="attention-title">Teguran belum diakui</div>
+                        <div class="attention-sub">Konfirmasi di menu Sanksi</div>
+                    </div>
+                    <span class="feed-badge fb-late">{{ $teguranBelumDiakui }}</span>
+                </div>
+            @endif
+            @if(($tugasLupaInput ?? 0) > 0)
+                <div class="attention-item">
+                    <div>
+                        <div class="attention-title">Laporan tugas terlambat input</div>
+                        <div class="attention-sub">Cek menu Tugas</div>
+                    </div>
+                    <span class="feed-badge fb-info">{{ $tugasLupaInput }}</span>
+                </div>
+            @endif
+            @if(($totalTugas ?? 0) > 0 && ($tugasDisetujui ?? 0) < ($totalTugas ?? 0))
+                <div class="attention-item">
+                    <div>
+                        <div class="attention-title">Tugas belum selesai approval</div>
+                        <div class="attention-sub">{{ $tugasDisetujui ?? 0 }} dari {{ $totalTugas ?? 0 }} tugas disetujui</div>
+                    </div>
+                    <span class="feed-badge fb-info">{{ ($totalTugas ?? 0) - ($tugasDisetujui ?? 0) }}</span>
+                </div>
+            @endif
+        </div>
+    @endif
 
     {{-- â•â•â• MID ROW â•â•â• --}}
     <div class="mid-grid">
@@ -364,6 +375,7 @@
                 <div class="cal-leg-item"><div class="cal-leg-dot" style="background:#EC4899"></div>Cuti</div>
                 <div class="cal-leg-item"><div class="cal-leg-dot" style="background:#8B5CF6"></div>Tugas</div>
                 <div class="cal-leg-item"><div class="cal-leg-dot" style="background:#0EA5E9"></div>Event</div>
+                <div class="cal-leg-item"><div class="cal-leg-dot" style="background:#14B8A6"></div>Libur Mingguan</div>
             </div>
         </div>
 
@@ -421,9 +433,11 @@
     var telatDays = {!! json_encode($kalenderTelat ?? []) !!};
     var absenDays = {!! json_encode($kalenderAbsen ?? []) !!};
     var cutiDays = {!! json_encode($kalenderCuti ?? []) !!};
+    var weeklyOffDays = {!! json_encode($kalenderLiburMingguan ?? []) !!};
     var absensiDetails = @json($absensiCalendarDetails ?? []);
     var tugasDetails = @json($tugasCalendarDetails ?? []);
     var eventDetails = @json($eventCalendarDetails ?? []);
+    var weeklyOffDetails = @json($weeklyOffCalendarDetails ?? []);
     var selectedKey = keyFromDate(today);
 
     function pad(n) {
@@ -459,6 +473,9 @@
         (eventDetails[key] || []).forEach(function(item) {
             rows.push({ color: '#0EA5E9', title: item.nama, meta: item.status });
         });
+        (weeklyOffDetails[key] || []).forEach(function(item) {
+            rows.push({ color: '#14B8A6', title: item.nama, meta: item.status + ' - ' + item.waktu });
+        });
         return rows;
     }
 
@@ -470,6 +487,7 @@
         if (cutiDays.indexOf(dayNumber) !== -1) colors.push('#EC4899');
         if ((tugasDetails[key] || []).length) colors.push('#8B5CF6');
         if ((eventDetails[key] || []).length) colors.push('#0EA5E9');
+        if (weeklyOffDays.indexOf(dayNumber) !== -1) colors.push('#14B8A6');
         return colors.slice(0, 5);
     }
 

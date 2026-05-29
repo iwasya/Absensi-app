@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Petugas;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cuti;
 use App\Models\Kalender;
+use App\Models\LiburKompensasi;
 use App\Models\Periode;
 use App\Models\Tugas;
 use App\Support\ActivityLogger;
@@ -93,6 +95,7 @@ class TugasController extends Controller
 
     public function kalender(Request $request): View
     {
+        $user = $request->user();
         $month = (int) $request->query('month', now()->month);
         $year = (int) $request->query('year', now()->year);
 
@@ -150,20 +153,74 @@ class TugasController extends Controller
             }
         }
 
+        $replacementCuti = Cuti::with('user')
+            ->where('id_pengganti', $user->id_user)
+            ->where('replacement_status', 'accepted')
+            ->whereIn('status', ['approve', 'approved'])
+            ->whereDate('tanggal_mulai', '<=', $calendarEnd->toDateString())
+            ->whereDate('tanggal_selesai', '>=', $calendarStart->toDateString())
+            ->get();
+
+        $replacementCutiByDate = [];
+        $todayReplacementCuti = collect();
+
+        foreach ($replacementCuti as $cuti) {
+            $start = $cuti->tanggal_mulai->copy()->startOfDay();
+            $end = $cuti->tanggal_selesai->copy()->startOfDay();
+
+            for ($d = $start->copy(); $d->lte($end); $d->addDay()) {
+                $dateKey = $d->format('Y-m-d');
+                if (! isset($replacementCutiByDate[$dateKey])) {
+                    $replacementCutiByDate[$dateKey] = collect();
+                }
+
+                $replacementCutiByDate[$dateKey]->push($cuti);
+
+                if ($dateKey === $todayKey) {
+                    $todayReplacementCuti->push($cuti);
+                }
+            }
+        }
+
+        $liburKompensasi = LiburKompensasi::with('cuti.user')
+            ->where('id_user', $user->id_user)
+            ->where('status', 'tersedia')
+            ->latest('tanggal_kerja')
+            ->get();
+
         $days = collect();
         for ($day = $calendarStart->copy(); $day->lte($calendarEnd); $day->addDay()) {
             $days->push($day->copy());
         }
 
+        $weeklyOffByDate = collect();
+        if ($user->hari_libur !== null) {
+            foreach ($days as $day) {
+                if ((int) $user->hari_libur !== $day->dayOfWeek) {
+                    continue;
+                }
+
+                $weeklyOffByDate->put($day->format('Y-m-d'), [
+                    'title' => 'Libur Mingguan',
+                    'description' => $user->hariLiburLabel() . ' - tidak wajib absen',
+                ]);
+            }
+        }
+
         return view('petugas.kalender', [
             'todayItems' => Kalender::whereDate('tanggal', today())->orderBy('id_kalender')->get(),
             'todayTugas' => $todayTugas,
+            'todayReplacementCuti' => $todayReplacementCuti,
+            'liburKompensasi' => $liburKompensasi,
+            'todayWeeklyOff' => $weeklyOffByDate->get(today()->format('Y-m-d')),
             'currentMonth' => $currentMonth,
             'previousMonth' => $currentMonth->copy()->subMonth(),
             'nextMonth' => $currentMonth->copy()->addMonth(),
             'days' => $days,
             'events' => $events,
             'tugasByDate' => $tugasByDate,
+            'replacementCutiByDate' => $replacementCutiByDate,
+            'weeklyOffByDate' => $weeklyOffByDate,
         ]);
     }
 

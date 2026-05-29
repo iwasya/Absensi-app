@@ -71,6 +71,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/cuti', [CutiController::class, 'index'])->name('cuti.index');
         Route::get('/cuti/{id}/print', [CutiController::class, 'print'])->name('cuti.print');
         Route::post('/cuti', [CutiController::class, 'store'])->middleware('throttle:10,1')->name('cuti.store');
+        Route::post('/cuti/{id}/pengganti/terima', [CutiController::class, 'acceptReplacement'])->middleware('throttle:20,1')->name('cuti.pengganti.terima');
+        Route::post('/cuti/{id}/pengganti/tolak', [CutiController::class, 'rejectReplacement'])->middleware('throttle:20,1')->name('cuti.pengganti.tolak');
 
         Route::get('/tugas', [TugasController::class, 'index'])->name('tugas.index');
         Route::get('/tugas/input', [TugasController::class, 'input'])->name('tugas.input');

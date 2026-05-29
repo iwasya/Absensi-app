@@ -156,6 +156,14 @@ class DashboardController extends Controller
         }
 
         $calendar = $this->dashboardCalendar($request);
+        $weeklyOffDetails = $this->weeklyOffDetails($user, $calendar['calendarStart'], $calendar['calendarEnd']);
+        $kalenderLiburMingguan = $weeklyOffDetails
+            ->keys()
+            ->map(fn (string $date) => Carbon::parse($date))
+            ->filter(fn (Carbon $date) => $date->month === $calendar['currentMonth']->month && $date->year === $calendar['currentMonth']->year)
+            ->map(fn (Carbon $date) => (int) $date->format('d'))
+            ->values()
+            ->all();
         $cutiTerpakaiTahunIni = Cuti::where('id_user', $user->id_user)
             ->whereYear('tanggal_mulai', now()->year)
             ->whereIn('status', ['pending', 'approve'])
@@ -297,9 +305,11 @@ class DashboardController extends Controller
             'kalenderTelat' => $kalenderTelat,
             'kalenderAbsen' => $kalenderAbsen,
             'kalenderCuti' => $kalenderCuti,
+            'kalenderLiburMingguan' => $kalenderLiburMingguan,
             'absensiCalendarDetails' => $absensiCalendarDetails,
             'tugasCalendarDetails' => $tugasCalendarDetails,
             'eventCalendarDetails' => $eventCalendarDetails,
+            'weeklyOffCalendarDetails' => $weeklyOffDetails,
             'totalTugas' => $tugasBulanIni->count(),
             'tugasDisetujui' => $tugasBulanIni->whereIn('status', ['approve', 'approved'])->count(),
         ]);
@@ -367,5 +377,27 @@ class DashboardController extends Controller
         }
 
         return $tugasByDate;
+    }
+
+    private function weeklyOffDetails(User $user, Carbon $start, Carbon $end): Collection
+    {
+        if ($user->hari_libur === null) {
+            return collect();
+        }
+
+        $items = collect();
+        for ($day = $start->copy(); $day->lte($end); $day->addDay()) {
+            if ((int) $user->hari_libur !== $day->dayOfWeek) {
+                continue;
+            }
+
+            $items->put($day->format('Y-m-d'), collect([[
+                'nama' => 'Libur Mingguan',
+                'status' => $user->hariLiburLabel(),
+                'waktu' => 'Tidak wajib absen',
+            ]]));
+        }
+
+        return $items;
     }
 }

@@ -3,6 +3,17 @@
 @section('title', 'Kelola Regu')
 
 @section('content')
+@php
+    $hariOptions = [
+        0 => 'Minggu',
+        1 => 'Senin',
+        2 => 'Selasa',
+        3 => 'Rabu',
+        4 => 'Kamis',
+        5 => 'Jumat',
+        6 => 'Sabtu',
+    ];
+@endphp
 <style>
     .regu-wrap { display: grid; gap: 16px; }
     .regu-card { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 14px; overflow: hidden; }
@@ -29,6 +40,7 @@
     .regu-form-grid { display:grid; grid-template-columns: minmax(180px, .8fr) minmax(220px, 1fr); gap:12px; align-items:end; }
     .regu-member-grid { display:grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); gap:10px; }
     .regu-ops { display:grid; grid-template-columns: minmax(220px, 1fr) auto; gap:12px; align-items:end; padding:14px 16px; border-bottom:1px solid var(--border-color); background:var(--bg-color); }
+    .regu-ops-buttons { display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
     .regu-shift-select { min-width:130px; }
     @media (max-width: 1000px) { .regu-member-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .regu-form-grid { grid-template-columns:1fr; } }
     @media (max-width: 560px) { .regu-member-grid, .regu-ops { grid-template-columns:1fr; } }
@@ -133,7 +145,10 @@
                         <small class="muted">Anggota regu ini masih tersebar di beberapa tempat kerja.</small>
                     @endif
                 </div>
-                <button type="submit" form="{{ $formId }}">Simpan Tempat & Shift</button>
+                <div class="regu-ops-buttons">
+                    <button type="button" class="random-hari-libur" data-form="{{ $formId }}">Random Hari Libur</button>
+                    <button type="submit" form="{{ $formId }}">Simpan Tempat, Shift & Libur</button>
+                </div>
             </div>
             @endif
             <div class="regu-table-wrap">
@@ -143,6 +158,7 @@
                             <th>Petugas</th>
                             <th>Tempat</th>
                             <th>Shift Petugas</th>
+                            <th>Hari Libur</th>
                             <th>Status Ketua</th>
                             <th>Aksi</th>
                         </tr>
@@ -165,6 +181,18 @@
                                     </select>
                                     @else
                                         <span class="muted">{{ $item->shift ?? '-' }}</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($isReguAktif)
+                                    <select class="regu-shift-select hari-libur-select" name="hari_libur[{{ $item->id_user }}]" form="{{ $formId }}">
+                                        <option value="">-</option>
+                                        @foreach($hariOptions as $dayNumber => $dayName)
+                                            <option value="{{ $dayNumber }}" @selected((string) $item->hari_libur === (string) $dayNumber)>{{ $dayName }}</option>
+                                        @endforeach
+                                    </select>
+                                    @else
+                                        <span class="muted">{{ $item->hariLiburLabel() }}</span>
                                     @endif
                                 </td>
                                 <td>
@@ -223,6 +251,25 @@
             event.preventDefault();
             alert('Ketua regu harus salah satu dari 5 anggota yang dipilih.');
         }
+    });
+
+    document.querySelectorAll('.random-hari-libur').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var formId = button.dataset.form;
+            var selects = Array.from(document.querySelectorAll('select.hari-libur-select[form="' + formId + '"]'));
+            var days = ['0', '1', '2', '3', '4', '5', '6'];
+
+            for (var i = days.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var temp = days[i];
+                days[i] = days[j];
+                days[j] = temp;
+            }
+
+            selects.forEach(function (select, index) {
+                select.value = days[index % days.length];
+            });
+        });
     });
 </script>
 @endsection

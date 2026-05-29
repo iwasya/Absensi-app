@@ -13,15 +13,32 @@
     $holidayReason = $holidayInfo['reason'] ?? 'Hari libur';
     $isLeave = $leaveInfo['is_leave'] ?? false;
     $leaveReason = $leaveInfo['reason'] ?? 'Cuti disetujui';
-    $isMasukLocked = ! $isHoliday
+    $hasAssignedShift = $hasAssignedShift ?? (bool) auth()->user()->shift;
+    $shifts = $shifts ?? collect();
+    $hasApprovedMasukAccess = $today?->status === 'akses_dibuka'
+        && $today?->approval_masuk_status === 'approved'
+        && ! $today?->jam_masuk;
+    $hasApprovedPulangAccess = $today?->approval_pulang_status === 'approved'
+        && $today?->jam_masuk
+        && ! $today?->jam_pulang;
+    $requiresPulangApproval = $today?->approval_masuk_status === 'approved'
+        && $today?->jam_masuk
+        && ! $today?->jam_pulang
+        && $today?->approval_pulang_status !== 'approved';
+    $isMasukLocked = ! $hasApprovedMasukAccess
+        && ! $isHoliday
         && ! $isLeave
         && ! $today?->jam_masuk
         && now()->format('H:i:s') > $jamMasukTutup
         && $today?->status !== 'akses_dibuka';
-    $isMasukNotOpen = ! $isHoliday
+    $isMasukNotOpen = ! $hasApprovedMasukAccess
+        && ! $isHoliday
         && ! $isLeave
         && ! $today?->jam_masuk
         && now()->format('H:i:s') < $jamMasukBuka;
+    $activeAbsensiDateLabel = $today?->tanggal
+        ? $today->tanggal->translatedFormat('d F Y')
+        : now()->translatedFormat('d F Y');
 @endphp
 <style>
     main { max-width: 100% !important; margin: 0 !important; padding: 20px !important; }
@@ -337,15 +354,26 @@
     </div>
 </div>
 
-@if($isHoliday)
+@if($isHoliday && ! ($hasApprovedMasukAccess || $hasApprovedPulangAccess))
     <div class="abs-info" style="margin-bottom:20px;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
         <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         Hari ini libur: <strong>{{ $holidayReason }}</strong>. Absensi tidak dibuka dan tidak akan dicatat tidak absen.
     </div>
-@elseif($isLeave)
+@elseif($isLeave && ! ($hasApprovedMasukAccess || $hasApprovedPulangAccess))
     <div class="abs-info" style="margin-bottom:20px;background:var(--primary-soft);border-color:var(--primary-border);color:var(--primary2);">
         <svg fill="none" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7h5M5.5 10h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         Hari ini kamu sedang cuti: <strong>{{ $leaveReason }}</strong>. Absensi tidak dibuka dan tidak akan dicatat tidak absen.
+    </div>
+@elseif(($isHoliday || $isLeave) && ($hasApprovedMasukAccess || $hasApprovedPulangAccess))
+    <div class="abs-info" style="margin-bottom:20px;background:var(--green-soft);border-color:#A7F3D0;color:var(--green-dark);">
+        <svg fill="none" viewBox="0 0 16 16"><path d="M3 8l3 3 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Akses absensi sudah disetujui. Form tetap dibuka untuk tanggal {{ $activeAbsensiDateLabel }}.
+    </div>
+@endif
+@if(! $hasAssignedShift)
+    <div class="abs-info" style="margin-bottom:20px;background:var(--primary-soft);border-color:var(--primary-border);color:var(--primary2);">
+        <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 4.5v4M8 11.5h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Jadwal shift kamu belum diatur. Form absensi tetap dibuka, dan data shift boleh dikosongkan atau dipilih manual.
     </div>
 @endif
 
@@ -366,12 +394,12 @@
                 <div class="success" style="margin:0;">
                     <strong>Sudah absen masuk</strong> — pukul {{ $today->jam_masuk }}
                 </div>
-            @elseif($isHoliday)
+            @elseif($isHoliday && ! $hasApprovedMasukAccess)
                 <div class="abs-info" style="margin:0;">
                     <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     Absen masuk tidak dibuka karena hari libur.
                 </div>
-            @elseif($isLeave || $today?->status === 'cuti')
+            @elseif(($isLeave || $today?->status === 'cuti') && ! $hasApprovedMasukAccess)
                 <div class="abs-info" style="margin:0;">
                     <svg fill="none" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7h5M5.5 10h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     Absen masuk tidak dibuka karena kamu sedang cuti.
@@ -379,7 +407,7 @@
             @elseif($isMasukNotOpen)
                 <div class="abs-info" style="margin:0;">
                     <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                    Absen masuk belum dibuka untuk shift kamu. Mulai pukul <strong>{{ substr($jamMasukBuka, 0, 5) }}</strong>.
+                    Absen masuk belum dibuka. Mulai pukul <strong>{{ substr($jamMasukBuka, 0, 5) }}</strong>.
                 </div>
             @elseif($isMasukLocked)
                 <div class="abs-info" style="margin:0;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
@@ -405,11 +433,14 @@
                 @endif
                 @if($today?->status === 'akses_dibuka')
                     <div style="padding:12px 16px;background:var(--green-soft);border:1px solid #A7F3D0;border-radius:10px;color:var(--green-dark);font-size:13px;font-weight:600;margin-bottom:16px;">
-                        Akses khusus diberikan oleh Admin. Anda dapat melakukan absen telat.
+                        Akses khusus sudah dibuka. Silakan isi absen masuk untuk tanggal {{ $activeAbsensiDateLabel }}.
                     </div>
                 @endif
                 <form id="form_masuk" method="POST" action="{{ route('petugas.absensi.masuk') }}" enctype="multipart/form-data">
                     @csrf
+                    @if($today?->status === 'akses_dibuka' && ! $today?->jam_masuk)
+                        <input type="hidden" name="id_absensi" value="{{ $today->id_absensi }}">
+                    @endif
                     <label style="margin-bottom:8px;">Foto Masuk</label>
                     <div class="camera-container" id="camera_wrap_masuk">
                         <div class="cam-placeholder" id="cam_placeholder_masuk">
@@ -444,10 +475,12 @@
                         <div>
                             <label>Shift</label>
                             <select name="shift">
-                                <option value="">Ikuti data petugas</option>
-                                <option value="Shift 1" @selected(old('shift', auth()->user()->shift) === 'Shift 1')>Shift 1</option>
-                                <option value="Shift 2" @selected(old('shift', auth()->user()->shift) === 'Shift 2')>Shift 2</option>
-                                <option value="Shift 3" @selected(old('shift', auth()->user()->shift) === 'Shift 3')>Shift 3</option>
+                                <option value="">Ikuti data petugas / tanpa shift</option>
+                                @foreach($shifts as $shift)
+                                    <option value="{{ $shift->nama_shift }}" @selected(old('shift', auth()->user()->shift) === $shift->nama_shift)>
+                                        {{ $shift->nama_shift }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
                         <div><label>Mulai Istirahat</label><input type="time" name="jam_istirahat_mulai" value="{{ old('jam_istirahat_mulai', '12:00') }}"></div>
@@ -471,12 +504,12 @@
             <span class="abs-card-time">Terbuka sepanjang hari</span>
         </div>
         <div class="abs-card-body">
-            @if($today?->status === 'cuti' || $isLeave)
+            @if(($today?->status === 'cuti' || $isLeave) && ! $hasApprovedPulangAccess)
                 <div class="abs-info">
                     <svg fill="none" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7h5M5.5 10h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     Absen pulang tidak dibuka karena kamu sedang cuti.
                 </div>
-            @elseif(!$today?->jam_masuk && $today?->status !== 'tidak_absen')
+            @elseif(!$today?->jam_masuk && $today?->status !== 'tidak_absen' && ! $hasApprovedPulangAccess)
                 <div class="abs-info">
                     <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                     {{ $isHoliday ? 'Absen pulang tidak dibuka karena hari libur.' : 'Silakan absen masuk terlebih dahulu.' }}
@@ -485,6 +518,25 @@
                 <div class="success" style="margin:0;">
                     <strong>Sudah absen pulang</strong> — pukul {{ $today->jam_pulang }}
                 </div>
+            @elseif($requiresPulangApproval)
+                @if(in_array($today?->approval_pulang_status, ['pending_ketua', 'pending_atasan'], true))
+                    <div class="abs-info" style="margin:0;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
+                        Request absen pulang sedang menunggu approval: <strong>{{ str_replace('_', ' ', $today->approval_pulang_status) }}</strong>.
+                    </div>
+                @elseif($today?->approval_pulang_status)
+                    <div class="abs-info" style="margin:0;">
+                        Status request absen pulang: <strong>{{ str_replace('_', ' ', $today->approval_pulang_status) }}</strong>.
+                    </div>
+                @else
+                    <div class="abs-info" style="margin-bottom:14px;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
+                        Absen masuk ini dibuka lewat approval. Ajukan approval pulang terlebih dahulu sebelum mengisi form pulang.
+                    </div>
+                    <form method="POST" action="{{ route('petugas.absensi.request-pulang', $today->id_absensi) }}" style="display:grid;gap:8px;">
+                        @csrf
+                        <input name="approval_pulang_reason" placeholder="Alasan absen pulang terlewat" required>
+                        <button type="submit" style="width:100%;padding:11px;">Ajukan Absen Pulang</button>
+                    </form>
+                @endif
             @elseif($today?->approval_pulang_status === 'approved')
                 <div class="success" style="margin-bottom:14px;">
                     <strong>Absen pulang sudah dibuka</strong> — silakan upload foto pulang.
@@ -636,7 +688,20 @@
                         <td>{{ $item->shift ?? '-' }}</td>
                         <td><span class="badge {{ $item->status }}">{{ $item->status }}</span></td>
                         <td>
-                            @if($item->approval_masuk_status)
+                            @if($item->approval_pulang_status === 'approved' && $item->jam_masuk && ! $item->jam_pulang)
+                                <div style="display:grid;gap:6px;min-width:190px;">
+                                    <span class="badge approved">Pulang: approved</span>
+                                    <a href="{{ route('petugas.absensi.index', ['open_absensi' => $item->id_absensi]) }}" class="btn-detail">Isi Pulang</a>
+                                </div>
+                            @elseif($item->approval_pulang_status)
+                                <span class="badge {{ $item->approval_pulang_status }}">{{ str_replace('_', ' ', $item->approval_pulang_status) }}</span>
+                            @elseif($item->jam_masuk && !$item->jam_pulang && $item->tanggal->lt(today()))
+                                <form method="POST" action="{{ route('petugas.absensi.request-pulang', $item->id_absensi) }}" style="display:grid;gap:6px;min-width:190px;">
+                                    @csrf
+                                    <input name="approval_pulang_reason" placeholder="Alasan lupa absen pulang" required>
+                                    <button type="submit" class="btn-detail">Minta Approval</button>
+                                </form>
+                            @elseif($item->approval_masuk_status)
                                 <div style="display:grid;gap:6px;min-width:190px;">
                                     <span class="badge {{ $item->approval_masuk_status }}">Masuk: {{ str_replace('_', ' ', $item->approval_masuk_status) }}</span>
                                     @if($item->approval_masuk_reason)
@@ -648,14 +713,6 @@
                                     @csrf
                                     <input name="approval_masuk_reason" placeholder="Alasan absen masuk terlewat" required>
                                     <button type="submit" class="btn-detail">Ajukan Masuk</button>
-                                </form>
-                            @elseif($item->approval_pulang_status)
-                                <span class="badge {{ $item->approval_pulang_status }}">{{ str_replace('_', ' ', $item->approval_pulang_status) }}</span>
-                            @elseif($item->jam_masuk && !$item->jam_pulang && $item->tanggal->lt(today()))
-                                <form method="POST" action="{{ route('petugas.absensi.request-pulang', $item->id_absensi) }}" style="display:grid;gap:6px;min-width:190px;">
-                                    @csrf
-                                    <input name="approval_pulang_reason" placeholder="Alasan lupa absen pulang" required>
-                                    <button type="submit" class="btn-detail">Minta Approval</button>
                                 </form>
                             @else
                                 <span class="abs-time-nil">-</span>

@@ -174,6 +174,39 @@
         line-height: 1.5;
     }
 
+    .replacement-list {
+        display: grid;
+        gap: 10px;
+    }
+
+    .replacement-item {
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 12px;
+        display: grid;
+        gap: 10px;
+    }
+
+    .replacement-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .replacement-title {
+        color: var(--text-color);
+        font-weight: 700;
+    }
+
+    .replacement-meta {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 3px;
+    }
+
     .cuti-table-wrap {
         overflow-x: auto;
     }
@@ -312,6 +345,7 @@
                             <option value="Tahunan" @selected(old('jenis_cuti') === 'Tahunan')>Tahunan</option>
                             <option value="Besar" @selected(old('jenis_cuti') === 'Besar')>Besar</option>
                             <option value="Sakit" @selected(old('jenis_cuti') === 'Sakit')>Sakit</option>
+                            <option value="Kompensasi" @selected(old('jenis_cuti') === 'Kompensasi')>Kompensasi</option>
                         </select>
                         @error('jenis_cuti')
                             <div class="field-error">{{ $message }}</div>
@@ -409,10 +443,55 @@
                         <div class="cuti-summary-value">{{ $sisaCuti }}</div>
                         <div class="cuti-summary-note">Sisa kesempatan cuti tahun ini.</div>
                     </div>
+                    <div class="cuti-summary-item">
+                        <div class="cuti-summary-label">Libur Kompensasi</div>
+                        <div class="cuti-summary-value">{{ $liburKompensasiTersedia ?? 0 }}</div>
+                        <div class="cuti-summary-note">Hak libur pengganti tersedia.</div>
+                    </div>
                 </div>
             </section>
         </aside>
     </div>
+
+    @if(($replacementRequests ?? collect())->isNotEmpty())
+        <section class="cuti-panel">
+            <div class="cuti-panel-head">
+                <div>
+                    <h2>Permintaan Pengganti Cuti</h2>
+                    <p>Terima jika kamu siap menggantikan jadwal petugas yang cuti.</p>
+                </div>
+                <span class="cuti-panel-badge">{{ $replacementRequests->count() }} Pending</span>
+            </div>
+            <div style="padding:16px;">
+                <div class="replacement-list">
+                    @foreach($replacementRequests as $requestCuti)
+                        <div class="replacement-item">
+                            <div class="replacement-top">
+                                <div>
+                                    <div class="replacement-title">{{ $requestCuti->user->nama ?? '-' }}</div>
+                                    <div class="replacement-meta">
+                                        {{ $requestCuti->tanggal_mulai->format('d/m/Y') }} - {{ $requestCuti->tanggal_selesai->format('d/m/Y') }}
+                                        · {{ $requestCuti->jenis_cuti }}
+                                    </div>
+                                </div>
+                                <span class="badge pending">Menunggu jawabanmu</span>
+                            </div>
+                            <div class="cuti-actions">
+                                <form method="POST" action="{{ route('petugas.cuti.pengganti.terima', $requestCuti->id_cuti) }}" style="margin:0;">
+                                    @csrf
+                                    <button type="submit" class="cuti-submit">Terima</button>
+                                </form>
+                                <form method="POST" action="{{ route('petugas.cuti.pengganti.tolak', $requestCuti->id_cuti) }}" style="margin:0;">
+                                    @csrf
+                                    <button type="submit" class="cuti-action-link" style="border:0;background:var(--red);cursor:pointer;">Tolak</button>
+                                </form>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </section>
+    @endif
 
     <section class="cuti-panel">
         <div class="cuti-panel-head">
@@ -432,6 +511,7 @@
                         <th>Jenis</th>
                         <th>Alasan</th>
                         <th>Pengganti</th>
+                        <th>Konfirmasi</th>
                         <th>Dokumen</th>
                         <th>Admin</th>
                         <th>Status</th>
@@ -452,6 +532,11 @@
                             </td>
                             <td>{{ $item->pengganti->nama ?? '-' }}</td>
                             <td>
+                                <span class="badge {{ $item->replacement_status ?? 'pending' }}">
+                                    {{ $item->replacement_status === 'accepted' ? 'Diterima' : ($item->replacement_status === 'rejected' ? 'Ditolak' : 'Pending') }}
+                                </span>
+                            </td>
+                            <td>
                                 @if($item->dokumen_path)
                                     <a href="{{ asset('storage/' . $item->dokumen_path) }}" target="_blank" class="cuti-action-link">Lihat</a>
                                 @else
@@ -470,7 +555,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="muted cuti-empty">Belum ada pengajuan cuti.</td>
+                            <td colspan="10" class="muted cuti-empty">Belum ada pengajuan cuti.</td>
                         </tr>
                     @endforelse
                 </tbody>

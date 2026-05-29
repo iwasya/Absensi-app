@@ -24,6 +24,8 @@
                     <th>Tanggal</th>
                     <th>Jenis</th>
                     <th>Alasan</th>
+                    <th>Pengganti</th>
+                    <th>Konfirmasi</th>
                     <th>Dokumen</th>
                     <th>Status Admin</th>
                     <th>Status Atasan</th>
@@ -42,6 +44,12 @@
                                 <br><small class="muted">{{ $item->alasan_lainnya }}</small>
                             @endif
                         </td>
+                        <td>{{ $item->pengganti->nama ?? '-' }}</td>
+                        <td>
+                            <span class="badge {{ $item->replacement_status ?? 'pending' }}">
+                                {{ $item->replacement_status === 'accepted' ? 'Diterima' : ($item->replacement_status === 'rejected' ? 'Ditolak' : 'Pending') }}
+                            </span>
+                        </td>
                         <td>
                             @if($item->dokumen_path)
                                 <a href="{{ asset('storage/' . $item->dokumen_path) }}" target="_blank">Lihat dokumen</a>
@@ -56,7 +64,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="muted">Belum ada pengajuan cuti.</td></tr>
+                    <tr><td colspan="10" class="muted">Belum ada pengajuan cuti.</td></tr>
                 @endforelse
             </tbody>
         </table>

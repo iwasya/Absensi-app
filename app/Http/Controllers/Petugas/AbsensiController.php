@@ -55,16 +55,26 @@ class AbsensiController extends Controller
 
         $absensiTidakAbsen = app(AbsensiTidakAbsenService::class);
         $absensiTidakAbsen->backfillForUserUntilYesterday($user);
-        $holidayInfo = $absensiTidakAbsen->holidayInfo(today());
-        $leaveInfo = $absensiTidakAbsen->leaveInfo($user, today());
-        if (! $holidayInfo['is_holiday']) {
-            if ($leaveInfo['is_leave']) {
+        $todayHolidayInfo = $absensiTidakAbsen->holidayInfo(today());
+        $todayWeeklyOffInfo = $absensiTidakAbsen->weeklyOffInfo($user, today());
+        if (! $todayHolidayInfo['is_holiday'] && $todayWeeklyOffInfo['is_holiday']) {
+            $todayHolidayInfo = $todayWeeklyOffInfo + ['event' => null];
+        }
+        if (! $todayHolidayInfo['is_holiday']) {
+            if ($absensiTidakAbsen->leaveInfo($user, today())['is_leave']) {
                 $absensiTidakAbsen->generateForDate(today(), $user);
             }
         }
 
-        $today = $this->activeAbsensiForUser($user);
-        $shiftWindow = $this->shiftWindow($user, $today?->tanggal ?? today());
+        $today = $this->activeAbsensiForUser($user, $request->integer('open_absensi') ?: null);
+        $activeDate = $today?->tanggal ?? today();
+        $shiftWindow = $this->shiftWindow($user, $activeDate);
+        $holidayInfo = $absensiTidakAbsen->holidayInfo($activeDate);
+        $weeklyOffInfo = $absensiTidakAbsen->weeklyOffInfo($user, $activeDate);
+        if (! $holidayInfo['is_holiday'] && $weeklyOffInfo['is_holiday']) {
+            $holidayInfo = $weeklyOffInfo + ['event' => null];
+        }
+        $leaveInfo = $absensiTidakAbsen->leaveInfo($user, $activeDate);
 
         return view('petugas.absensi', [
             'today' => $today,
@@ -82,6 +92,8 @@ class AbsensiController extends Controller
             'jarakMaksMeter' => config('absensi.jarak_maks_meter', 100),
             'holidayInfo' => $holidayInfo,
             'leaveInfo' => $leaveInfo,
+            'shifts' => Shift::aktif()->orderBy('urutan')->orderBy('nama_shift')->get(),
+            'hasAssignedShift' => (bool) $this->shiftForUser($user),
         ]);
     }
 
@@ -232,10 +244,10 @@ class AbsensiController extends Controller
 
         $shift = $this->shiftForUser($user);
         if (! $shift) {
-            $masukBuka = $targetDate->copy()->setTimeFromTimeString(config('absensi.jam_masuk_buka', '06:00:00'));
-            $masukTutup = $targetDate->copy()->setTimeFromTimeString(config('absensi.jam_masuk_tutup', '07:15:00'));
-            $jamMasukBatasTelat = $targetDate->copy()->setTimeFromTimeString(config('absensi.jam_masuk_batas_telat', '07:00:00'));
-            $pulangBuka = $targetDate->copy()->setTimeFromTimeString(config('absensi.jam_pulang_buka', '16:00:00'));
+            $masukBuka = $targetDate->copy()->startOfDay();
+            $masukTutup = $targetDate->copy()->endOfDay();
+            $jamMasukBatasTelat = $targetDate->copy()->endOfDay();
+            $pulangBuka = $targetDate->copy()->startOfDay();
             $pulangTutup = $targetDate->copy()->setTimeFromTimeString(config('absensi.jam_pulang_tutup', '23:59:59'));
         } else {
             $masukBuka = $targetDate->copy()->setTimeFromTimeString(Carbon::parse($shift->jam_masuk)->format('H:i:s'));
@@ -265,8 +277,18 @@ class AbsensiController extends Controller
         ];
     }
 
-    private function activeAbsensiForUser(User $user): ?Absensi
+    private function activeAbsensiForUser(User $user, ?int $preferredAbsensiId = null): ?Absensi
     {
+        if ($preferredAbsensiId) {
+            $preferredAbsensi = Absensi::where('id_user', $user->id_user)
+                ->where('id_absensi', $preferredAbsensiId)
+                ->first();
+
+            if ($preferredAbsensi && $this->isFillableApprovedAbsensi($preferredAbsensi)) {
+                return $preferredAbsensi;
+            }
+        }
+
         $todayAbsensi = Absensi::where('id_user', $user->id_user)
             ->whereDate('tanggal', today())
             ->first();
@@ -294,7 +316,57 @@ class AbsensiController extends Controller
             return $todayAbsensi;
         }
 
+        $openedAbsensi = Absensi::where('id_user', $user->id_user)
+            ->where(function ($query) {
+                $query->where(function ($masukQuery) {
+                    $masukQuery->where('status', 'akses_dibuka')
+                        ->where('approval_masuk_status', 'approved')
+                        ->whereNull('jam_masuk');
+                })->orWhere(function ($pulangQuery) {
+                    $pulangQuery->where('approval_pulang_status', 'approved')
+                        ->whereNotNull('jam_masuk')
+                        ->whereNull('jam_pulang');
+                })->orWhere(function ($approvedMasukQuery) {
+                    $approvedMasukQuery->where('approval_masuk_status', 'approved')
+                        ->whereNotNull('jam_masuk')
+                        ->whereNull('jam_pulang');
+                });
+            })
+            ->latest('tanggal')
+            ->first();
+
+        if ($openedAbsensi) {
+            return $openedAbsensi;
+        }
+
         return $todayAbsensi;
+    }
+
+    private function isFillableApprovedAbsensi(Absensi $absensi): bool
+    {
+        if ($absensi->status === 'akses_dibuka'
+            && $absensi->approval_masuk_status === 'approved'
+            && ! $absensi->jam_masuk) {
+            return true;
+        }
+
+        if ($absensi->approval_masuk_status === 'approved'
+            && (bool) $absensi->jam_masuk
+            && ! $absensi->jam_pulang) {
+            return true;
+        }
+
+        return $absensi->approval_pulang_status === 'approved'
+            && (bool) $absensi->jam_masuk
+            && ! $absensi->jam_pulang;
+    }
+
+    private function requiresPulangApproval(Absensi $absensi): bool
+    {
+        return $absensi->approval_masuk_status === 'approved'
+            && $absensi->approval_pulang_status !== 'approved'
+            && (bool) $absensi->jam_masuk
+            && ! $absensi->jam_pulang;
     }
 
     public function masuk(Request $request): RedirectResponse
@@ -308,31 +380,47 @@ class AbsensiController extends Controller
             'shift' => ['nullable', 'string', 'max:30'],
             'jam_istirahat_mulai' => ['nullable', 'date_format:H:i'],
             'jam_istirahat_selesai' => ['nullable', 'date_format:H:i', 'after:jam_istirahat_mulai'],
+            'id_absensi' => ['nullable', 'exists:absensi,id_absensi'],
         ]);
 
         $user = $request->user();
-        $absensiTidakAbsen = app(AbsensiTidakAbsenService::class);
-        $holidayInfo = $absensiTidakAbsen->holidayInfo(today());
-        if ($holidayInfo['is_holiday']) {
-            return back()->with('error', 'Hari ini libur (' . $holidayInfo['reason'] . '), absensi tidak dibuka.');
-        }
-        $leaveInfo = $absensiTidakAbsen->leaveInfo($user, today());
-        if ($leaveInfo['is_leave']) {
-            $absensiTidakAbsen->generateForDate(today(), $user);
+        $targetAbsensi = null;
+        $targetDate = today();
 
-            return back()->with('error', 'Hari ini kamu sedang cuti (' . $leaveInfo['reason'] . '), absensi tidak dibuka.');
+        if (! empty($validated['id_absensi'])) {
+            $targetAbsensi = Absensi::where('id_user', $user->id_user)
+                ->where('id_absensi', $validated['id_absensi'])
+                ->firstOrFail();
+            $targetDate = $targetAbsensi->tanggal;
+        }
+
+        $existing = $targetAbsensi ?: Absensi::where('id_user', $user->id_user)->whereDate('tanggal', $targetDate)->first();
+        $isLateAccess = $existing && $existing->status === 'akses_dibuka' && ! $existing->jam_masuk;
+
+        $absensiTidakAbsen = app(AbsensiTidakAbsenService::class);
+        $holidayInfo = $absensiTidakAbsen->holidayInfo($targetDate);
+        $weeklyOffInfo = $absensiTidakAbsen->weeklyOffInfo($user, $targetDate);
+        if (! $holidayInfo['is_holiday'] && $weeklyOffInfo['is_holiday']) {
+            $holidayInfo = $weeklyOffInfo + ['event' => null];
+        }
+        if ($holidayInfo['is_holiday'] && ! $isLateAccess) {
+            return back()->with('error', 'Tanggal ini libur (' . $holidayInfo['reason'] . '), absensi tidak dibuka.');
+        }
+        $leaveInfo = $absensiTidakAbsen->leaveInfo($user, $targetDate);
+        if ($leaveInfo['is_leave'] && ! $isLateAccess) {
+            $absensiTidakAbsen->generateForDate($targetDate, $user);
+
+            return back()->with('error', 'Tanggal ini kamu sedang cuti (' . $leaveInfo['reason'] . '), absensi tidak dibuka.');
         }
 
         $now = now();
-        $shiftWindow = $this->shiftWindow($user, today());
-        $existing = Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first();
-        $isLateAccess = $existing && $existing->status === 'akses_dibuka' && ! $existing->jam_masuk;
+        $shiftWindow = $this->shiftWindow($user, $targetDate);
 
         if ($existing && $existing->jam_masuk) {
             return back()->with('error', 'Kamu sudah absen masuk hari ini.');
         }
 
-        if ($now->lt($shiftWindow['masuk_buka_at'])) {
+        if ($now->lt($shiftWindow['masuk_buka_at']) && ! $isLateAccess) {
             return back()->with('error', 'Absen masuk belum dibuka untuk shift kamu.');
         }
 
@@ -402,7 +490,7 @@ class AbsensiController extends Controller
             $absensi = Absensi::create([
                 'id_user' => $user->id_user,
                 'id_periode' => optional(Periode::aktif())->id_periode,
-                'tanggal' => today()->toDateString(),
+                'tanggal' => $targetDate->toDateString(),
                 'shift' => $validated['shift'] ?? $user->shift,
                 'jam_masuk' => now()->format('H:i:s'),
                 'jam_istirahat_mulai' => $validated['jam_istirahat_mulai'] ?? '12:00',
@@ -447,18 +535,23 @@ class AbsensiController extends Controller
             }
         }
 
+        $absensi = $targetAbsensi ?? Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first();
+        $isApprovedForgottenCheckout = $absensi?->approval_pulang_status === 'approved' && ! $absensi?->jam_pulang;
+
         $holidayInfo = $absensiTidakAbsen->holidayInfo($targetDate);
-        if ($holidayInfo['is_holiday']) {
+        $weeklyOffInfo = $absensiTidakAbsen->weeklyOffInfo($user, $targetDate);
+        if (! $holidayInfo['is_holiday'] && $weeklyOffInfo['is_holiday']) {
+            $holidayInfo = $weeklyOffInfo + ['event' => null];
+        }
+        if ($holidayInfo['is_holiday'] && ! $isApprovedForgottenCheckout) {
             return back()->with('error', 'Hari ini libur (' . $holidayInfo['reason'] . '), absensi pulang tidak dibuka.');
         }
         $leaveInfo = $absensiTidakAbsen->leaveInfo($user, $targetDate);
-        if ($leaveInfo['is_leave']) {
+        if ($leaveInfo['is_leave'] && ! $isApprovedForgottenCheckout) {
             $absensiTidakAbsen->generateForDate($targetDate, $user);
 
             return back()->with('error', 'Hari ini kamu sedang cuti (' . $leaveInfo['reason'] . '), absensi pulang tidak dibuka.');
         }
-
-        $absensi = $targetAbsensi ?? Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first();
 
         if (! $absensi) {
             return back()->with('error', 'Absen masuk dulu sebelum absen pulang.');
@@ -468,7 +561,9 @@ class AbsensiController extends Controller
             return back()->with('error', 'Absen masuk dulu sebelum absen pulang.');
         }
 
-        $isApprovedForgottenCheckout = $absensi->approval_pulang_status === 'approved';
+        if ($this->requiresPulangApproval($absensi)) {
+            return back()->with('error', 'Absen pulang untuk absensi ini harus diajukan dan disetujui atasan terlebih dahulu.');
+        }
 
         $areaError = $this->validateAssignedArea(
             $user,
@@ -522,33 +617,42 @@ class AbsensiController extends Controller
             return back()->with('error', 'Request lupa absen pulang untuk tanggal ini sudah diproses atau masih menunggu.');
         }
 
+        $requester = $request->user();
+        $directToAtasan = $requester->isKetuaRegu();
+
         $absensi->update([
-            'approval_pulang_status' => 'pending_ketua',
+            'approval_pulang_status' => $directToAtasan ? 'pending_atasan' : 'pending_ketua',
             'approval_pulang_requested_at' => now(),
+            'approval_pulang_forwarded_by' => $directToAtasan ? $requester->id_user : null,
+            'approval_pulang_forwarded_at' => $directToAtasan ? now() : null,
             'approval_pulang_reason' => $validated['approval_pulang_reason'],
         ]);
 
-        $ketuaRegu = User::where('is_ketua_regu', true)
-            ->where('regu', $request->user()->regu)
-            ->where('id_user', '!=', $request->user()->id_user)
-            ->get();
+        $ketuaRegu = $directToAtasan
+            ? collect()
+            : User::where('is_ketua_regu', true)
+                ->where('regu', $requester->regu)
+                ->where('id_user', '!=', $requester->id_user)
+                ->get();
 
         if ($ketuaRegu->isEmpty()) {
             $ketuaRegu = User::whereHas('role', function ($query) {
                 QueryFilters::whereRoleAlias($query, ['atasan', 'manager', 'menejer']);
             })->get();
 
-            $absensi->update([
-                'approval_pulang_status' => 'pending_atasan',
-                'approval_pulang_forwarded_at' => now(),
-            ]);
+            if (! $directToAtasan) {
+                $absensi->update([
+                    'approval_pulang_status' => 'pending_atasan',
+                    'approval_pulang_forwarded_at' => now(),
+                ]);
+            }
         }
 
         foreach ($ketuaRegu as $ketua) {
             Notifikasi::create([
                 'id_user' => $ketua->id_user,
                 'judul' => 'Request Lupa Absen Pulang',
-                'pesan' => $request->user()->nama . ' dari ' . ($request->user()->regu ?: 'regu belum diisi') . ' meminta pembukaan absen pulang tanggal ' . $absensi->tanggal->format('d/m/Y') . '.',
+                'pesan' => $requester->nama . ' dari ' . ($requester->regu ?: 'regu belum diisi') . ' meminta pembukaan absen pulang tanggal ' . $absensi->tanggal->format('d/m/Y') . '.',
                 'tipe' => 'absensi',
                 'status_baca' => false,
                 'reference_id' => $absensi->id_absensi,
@@ -558,7 +662,9 @@ class AbsensiController extends Controller
 
         ActivityLogger::log($request, 'Request lupa absen pulang', 'absensi', $absensi->id_absensi, Absensi::class);
 
-        return back()->with('success', 'Request dikirim ke ketua regu/atasan untuk approval.');
+        return back()->with('success', $directToAtasan
+            ? 'Request dikirim langsung ke atasan untuk approval.'
+            : 'Request dikirim ke ketua regu/atasan untuk approval.');
     }
 
     public function requestMasukApproval(Request $request, int $id): RedirectResponse
@@ -579,6 +685,10 @@ class AbsensiController extends Controller
 
         $absensiTidakAbsen = app(AbsensiTidakAbsenService::class);
         $holidayInfo = $absensiTidakAbsen->holidayInfo($absensi->tanggal);
+        $weeklyOffInfo = $absensiTidakAbsen->weeklyOffInfo($request->user(), $absensi->tanggal);
+        if (! $holidayInfo['is_holiday'] && $weeklyOffInfo['is_holiday']) {
+            $holidayInfo = $weeklyOffInfo + ['event' => null];
+        }
         if ($holidayInfo['is_holiday']) {
             return back()->with('error', 'Tanggal ini libur (' . $holidayInfo['reason'] . '), pengajuan absen masuk tidak dibuka.');
         }
@@ -592,33 +702,42 @@ class AbsensiController extends Controller
             return back()->with('error', 'Pengajuan absen masuk untuk tanggal ini sudah diproses atau masih menunggu.');
         }
 
+        $requester = $request->user();
+        $directToAtasan = $requester->isKetuaRegu();
+
         $absensi->update([
-            'approval_masuk_status' => 'pending_ketua',
+            'approval_masuk_status' => $directToAtasan ? 'pending_atasan' : 'pending_ketua',
             'approval_masuk_requested_at' => now(),
+            'approval_masuk_forwarded_by' => $directToAtasan ? $requester->id_user : null,
+            'approval_masuk_forwarded_at' => $directToAtasan ? now() : null,
             'approval_masuk_reason' => $validated['approval_masuk_reason'],
         ]);
 
-        $recipients = User::where('is_ketua_regu', true)
-            ->where('regu', $request->user()->regu)
-            ->where('id_user', '!=', $request->user()->id_user)
-            ->get();
+        $recipients = $directToAtasan
+            ? collect()
+            : User::where('is_ketua_regu', true)
+                ->where('regu', $requester->regu)
+                ->where('id_user', '!=', $requester->id_user)
+                ->get();
 
         if ($recipients->isEmpty()) {
             $recipients = User::whereHas('role', function ($query) {
                 QueryFilters::whereRoleAlias($query, ['atasan', 'manager', 'menejer']);
             })->get();
 
-            $absensi->update([
-                'approval_masuk_status' => 'pending_atasan',
-                'approval_masuk_forwarded_at' => now(),
-            ]);
+            if (! $directToAtasan) {
+                $absensi->update([
+                    'approval_masuk_status' => 'pending_atasan',
+                    'approval_masuk_forwarded_at' => now(),
+                ]);
+            }
         }
 
         foreach ($recipients as $recipient) {
             Notifikasi::create([
                 'id_user' => $recipient->id_user,
                 'judul' => 'Pengajuan Absen Masuk Terlewat',
-                'pesan' => $request->user()->nama . ' dari ' . ($request->user()->regu ?: 'regu belum diisi') . ' mengajukan absen masuk tanggal ' . $absensi->tanggal->format('d/m/Y') . '.',
+                'pesan' => $requester->nama . ' dari ' . ($requester->regu ?: 'regu belum diisi') . ' mengajukan absen masuk tanggal ' . $absensi->tanggal->format('d/m/Y') . '.',
                 'tipe' => 'absensi',
                 'status_baca' => false,
                 'reference_id' => $absensi->id_absensi,
@@ -628,7 +747,9 @@ class AbsensiController extends Controller
 
         ActivityLogger::log($request, 'Pengajuan absen masuk terlewat', 'absensi', $absensi->id_absensi, Absensi::class);
 
-        return back()->with('success', 'Pengajuan absen masuk dikirim ke ketua regu/atasan.');
+        return back()->with('success', $directToAtasan
+            ? 'Pengajuan absen masuk dikirim langsung ke atasan.'
+            : 'Pengajuan absen masuk dikirim ke ketua regu/atasan.');
     }
 
     public function requestMasukApprovalHariIni(Request $request): RedirectResponse
@@ -640,6 +761,10 @@ class AbsensiController extends Controller
         $user = $request->user();
         $absensiTidakAbsen = app(AbsensiTidakAbsenService::class);
         $holidayInfo = $absensiTidakAbsen->holidayInfo(today());
+        $weeklyOffInfo = $absensiTidakAbsen->weeklyOffInfo($user, today());
+        if (! $holidayInfo['is_holiday'] && $weeklyOffInfo['is_holiday']) {
+            $holidayInfo = $weeklyOffInfo + ['event' => null];
+        }
         if ($holidayInfo['is_holiday']) {
             return back()->with('error', 'Hari ini libur (' . $holidayInfo['reason'] . '), pengajuan absen masuk tidak dibuka.');
         }
@@ -675,26 +800,34 @@ class AbsensiController extends Controller
             return back()->with('error', 'Pengajuan absen masuk untuk tanggal ini sudah diproses atau masih menunggu.');
         }
 
+        $directToAtasan = $user->isKetuaRegu();
+
         $absensi->update([
-            'approval_masuk_status' => 'pending_ketua',
+            'approval_masuk_status' => $directToAtasan ? 'pending_atasan' : 'pending_ketua',
             'approval_masuk_requested_at' => now(),
+            'approval_masuk_forwarded_by' => $directToAtasan ? $user->id_user : null,
+            'approval_masuk_forwarded_at' => $directToAtasan ? now() : null,
             'approval_masuk_reason' => $validated['approval_masuk_reason'],
         ]);
 
-        $recipients = User::where('is_ketua_regu', true)
-            ->where('regu', $user->regu)
-            ->where('id_user', '!=', $user->id_user)
-            ->get();
+        $recipients = $directToAtasan
+            ? collect()
+            : User::where('is_ketua_regu', true)
+                ->where('regu', $user->regu)
+                ->where('id_user', '!=', $user->id_user)
+                ->get();
 
         if ($recipients->isEmpty()) {
             $recipients = User::whereHas('role', function ($query) {
                 QueryFilters::whereRoleAlias($query, ['atasan', 'manager', 'menejer']);
             })->get();
 
-            $absensi->update([
-                'approval_masuk_status' => 'pending_atasan',
-                'approval_masuk_forwarded_at' => now(),
-            ]);
+            if (! $directToAtasan) {
+                $absensi->update([
+                    'approval_masuk_status' => 'pending_atasan',
+                    'approval_masuk_forwarded_at' => now(),
+                ]);
+            }
         }
 
         foreach ($recipients as $recipient) {
@@ -711,7 +844,9 @@ class AbsensiController extends Controller
 
         ActivityLogger::log($request, 'Pengajuan absen masuk terlewat hari ini', 'absensi', $absensi->id_absensi, Absensi::class);
 
-        return back()->with('success', 'Pengajuan absen masuk dikirim ke ketua regu/atasan.');
+        return back()->with('success', $directToAtasan
+            ? 'Pengajuan absen masuk dikirim langsung ke atasan.'
+            : 'Pengajuan absen masuk dikirim ke ketua regu/atasan.');
     }
 
     public function approvalRegu(Request $request): View

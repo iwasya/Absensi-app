@@ -51,6 +51,12 @@ class AbsensiTidakAbsenService
                 continue;
             }
 
+            $weeklyOff = $this->weeklyOffInfo($petugas, $targetDate);
+            if ($weeklyOff['is_holiday']) {
+                $result['skipped']++;
+                continue;
+            }
+
             $leave = $this->leaveInfo($petugas, $targetDate);
             if ($leave['is_leave']) {
                 $leaveResult = $this->storeLeaveAbsensi($petugas, $targetDate, $activePeriode, $leave['cuti']);
@@ -103,6 +109,11 @@ class AbsensiTidakAbsenService
 
         for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
             if ($this->holidayInfo($date)['is_holiday']) {
+                $total['skipped']++;
+                continue;
+            }
+
+            if ($this->weeklyOffInfo($user, $date)['is_holiday']) {
                 $total['skipped']++;
                 continue;
             }
@@ -243,6 +254,28 @@ class AbsensiTidakAbsenService
                 ? ($event->nama_event ?: ucfirst(str_replace('_', ' ', $event->jenis_event)))
                 : null,
             'event' => $event,
+        ];
+    }
+
+    public function weeklyOffInfo(User|int $user, Carbon|string $date): array
+    {
+        $targetUser = $user instanceof User ? $user : User::find($user);
+        $targetDate = $date instanceof Carbon
+            ? $date->copy()->startOfDay()
+            : Carbon::parse($date)->startOfDay();
+
+        if (! $targetUser || $targetUser->hari_libur === null) {
+            return [
+                'is_holiday' => false,
+                'reason' => null,
+            ];
+        }
+
+        $isHoliday = (int) $targetUser->hari_libur === $targetDate->dayOfWeek;
+
+        return [
+            'is_holiday' => $isHoliday,
+            'reason' => $isHoliday ? 'Hari libur mingguan petugas (' . $targetUser->hariLiburLabel() . ')' : null,
         ];
     }
 

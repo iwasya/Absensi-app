@@ -14,6 +14,9 @@ class Cuti extends Model
     protected $fillable = [
         'id_user',
         'id_pengganti',
+        'replacement_status',
+        'replacement_confirmed_at',
+        'replacement_note',
         'id_periode',
         'tanggal_mulai',
         'tanggal_selesai',
@@ -32,6 +35,7 @@ class Cuti extends Model
     protected $casts = [
         'tanggal_mulai' => 'date',
         'tanggal_selesai' => 'date',
+        'replacement_confirmed_at' => 'datetime',
         'admin_processed_at' => 'datetime',
     ];
 
