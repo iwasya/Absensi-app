@@ -60,9 +60,23 @@ return [
             'strict' => true,
             'engine' => null,
 
-            'options' => extension_loaded('pdo_mysql') && $mysqlSslCaAttribute ? array_filter([
-                $mysqlSslCaAttribute => env('MYSQL_ATTR_SSL_CA') ? base_path(env('MYSQL_ATTR_SSL_CA')) : null,
-            ]) : [],
+            'options' => (function () use ($mysqlSslCaAttribute) {
+                if (! extension_loaded('pdo_mysql') || ! $mysqlSslCaAttribute) {
+                    return [];
+                }
+
+                $sslCaEnv = env('MYSQL_ATTR_SSL_CA');
+                if (! $sslCaEnv) {
+                    return [];
+                }
+
+                $sslCaPath = base_path($sslCaEnv);
+                if (! file_exists($sslCaPath)) {
+                    return [];
+                }
+
+                return [$mysqlSslCaAttribute => $sslCaPath];
+            })(),
         ],
 
         'pgsql' => [
