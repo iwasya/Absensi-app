@@ -89,7 +89,11 @@ class AdminController extends Controller
             'password' => ['required', 'string', 'min:8'],
             'id_role' => ['required', 'exists:roles,id_role'],
             'id_tempat' => ['nullable', 'exists:tempat_tugas,id_tempat'],
-            'nik' => ['nullable', 'string', 'max:20'],
+            'nik' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+$/', function ($attribute, $value, $fail) {
+                if ($this->nikExists($value)) {
+                    $fail('NIK sudah digunakan oleh user lain.');
+                }
+            }],
             'regu' => ['nullable', 'string', 'max:20'],
             'is_ketua_regu' => ['nullable', 'boolean'],
             'shift' => ['nullable', 'string', 'max:30'],
@@ -132,7 +136,11 @@ class AdminController extends Controller
             'password' => ['nullable', 'string', 'min:8'],
             'id_role' => ['required', 'exists:roles,id_role'],
             'id_tempat' => ['nullable', 'exists:tempat_tugas,id_tempat'],
-            'nik' => ['nullable', 'string', 'max:20'],
+            'nik' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+$/', function ($attribute, $value, $fail) use ($user) {
+                if ($this->nikExists($value, $user->id_user)) {
+                    $fail('NIK sudah digunakan oleh user lain.');
+                }
+            }],
             'regu' => ['nullable', 'string', 'max:20'],
             'is_ketua_regu' => ['nullable', 'boolean'],
             'shift' => ['nullable', 'string', 'max:30'],
@@ -202,6 +210,18 @@ class AdminController extends Controller
         } elseif ($sensitive->exists) {
             $sensitive->delete();
         }
+    }
+
+    private function nikExists(?string $nik, ?int $ignoreUserId = null): bool
+    {
+        $nik = trim((string) $nik);
+        if ($nik === '') {
+            return false;
+        }
+
+        return UserSensitive::where('nik_hash', hash('sha256', $nik))
+            ->when($ignoreUserId, fn ($query) => $query->where('id_user', '!=', $ignoreUserId))
+            ->exists();
     }
 
     public function tempat(Request $request): View
@@ -749,7 +769,11 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'id_user' => ['required', 'exists:users,id_user'],
-            'nik' => ['nullable', 'string', 'max:20'],
+            'nik' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+$/', function ($attribute, $value, $fail) use ($request) {
+                if ($this->nikExists($value, (int) $request->input('id_user'))) {
+                    $fail('NIK sudah digunakan oleh user lain.');
+                }
+            }],
         ]);
 
         $userSensitive = UserSensitive::firstOrNew(['id_user' => $validated['id_user']]);

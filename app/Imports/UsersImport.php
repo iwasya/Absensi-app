@@ -20,6 +20,7 @@ class UsersImport implements ToCollection, WithHeadingRow, WithBatchInserts, Wit
     private $tempatTugasCache = [];
     private $existingUsernames = [];
     private $existingEmails = [];
+    private $existingNikHashes = [];
 
     public function __construct()
     {
@@ -31,6 +32,10 @@ class UsersImport implements ToCollection, WithHeadingRow, WithBatchInserts, Wit
             ->toArray();
         $this->existingUsernames = User::pluck('username', 'username')->map(fn () => true)->toArray();
         $this->existingEmails = User::pluck('email', 'email')->map(fn () => true)->toArray();
+        $this->existingNikHashes = UserSensitive::whereNotNull('nik_hash')
+            ->pluck('nik_hash', 'nik_hash')
+            ->map(fn () => true)
+            ->toArray();
     }
 
     public function collection(Collection $rows)
@@ -53,7 +58,11 @@ class UsersImport implements ToCollection, WithHeadingRow, WithBatchInserts, Wit
                 continue;
             }
 
-            if (strlen($password) < 8 || isset($this->existingUsernames[$username]) || isset($this->existingEmails[$email])) {
+            $nikHash = hash('sha256', $nik);
+            if (strlen($password) < 8
+                || isset($this->existingUsernames[$username])
+                || isset($this->existingEmails[$email])
+                || isset($this->existingNikHashes[$nikHash])) {
                 continue;
             }
 
@@ -78,6 +87,7 @@ class UsersImport implements ToCollection, WithHeadingRow, WithBatchInserts, Wit
 
             $this->existingUsernames[$username] = true;
             $this->existingEmails[$email] = true;
+            $this->existingNikHashes[$nikHash] = true;
 
             $usersToInsert[] = [
                 'nama' => $nama,
@@ -96,7 +106,10 @@ class UsersImport implements ToCollection, WithHeadingRow, WithBatchInserts, Wit
                 'updated_at' => now(),
             ];
 
-            $nikData[$username] = $nik;
+            $nikData[$username] = [
+                'value' => $nik,
+                'hash' => $nikHash,
+            ];
             $phoneData[$username] = $noHp;
         }
 
@@ -111,8 +124,8 @@ class UsersImport implements ToCollection, WithHeadingRow, WithBatchInserts, Wit
                 if (isset($insertedUsers[$username])) {
                     $row = [
                         'id_user' => $insertedUsers[$username]->id_user,
-                        'nik_encrypted' => Crypt::encryptString($nik),
-                        'nik_hash' => hash('sha256', $nik),
+                        'nik_encrypted' => Crypt::encryptString($nik['value']),
+                        'nik_hash' => $nik['hash'],
                         'created_at' => now(),
                     ];
 

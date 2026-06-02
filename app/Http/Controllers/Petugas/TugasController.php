@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Petugas;
 
 use App\Http\Controllers\Controller;
+use App\Models\Absensi;
 use App\Models\Cuti;
 use App\Models\Kalender;
 use App\Models\LiburKompensasi;
@@ -122,15 +123,35 @@ class TugasController extends Controller
 
         $userTugas = Tugas::where('id_user', $request->user()->id_user)
             ->where(function($query) use ($calendarStart, $calendarEnd) {
-                $query->whereBetween('tanggal_mulai', [$calendarStart->startOfDay(), $calendarEnd->endOfDay()])
-                      ->orWhereBetween('tanggal_selesai', [$calendarStart->startOfDay(), $calendarEnd->endOfDay()])
+                $query->whereBetween('tanggal_mulai', [$calendarStart->copy()->startOfDay(), $calendarEnd->copy()->endOfDay()])
+                      ->orWhereBetween('tanggal_selesai', [$calendarStart->copy()->startOfDay(), $calendarEnd->copy()->endOfDay()])
                       ->orWhere(function($q) use ($calendarStart, $calendarEnd) {
-                          $q->where('tanggal_mulai', '<=', $calendarStart->startOfDay())
+                          $q->where('tanggal_mulai', '<=', $calendarStart->copy()->startOfDay())
                             ->whereNotNull('tanggal_selesai')
-                            ->where('tanggal_selesai', '>=', $calendarEnd->endOfDay());
+                            ->where('tanggal_selesai', '>=', $calendarEnd->copy()->endOfDay());
                       });
             })
             ->get();
+
+        $absensiUser = Absensi::where('id_user', $user->id_user)
+            ->whereBetween('tanggal', [
+                $currentMonth->copy()->startOfMonth()->toDateString(),
+                $currentMonth->copy()->endOfMonth()->toDateString(),
+            ])
+            ->get();
+
+        $kalenderHadir = $absensiUser->where('status', 'hadir')->pluck('tanggal')->map(fn($date) => (int) $date->format('d'))->values()->all();
+        $kalenderTelat = $absensiUser->where('status', 'telat')->pluck('tanggal')->map(fn($date) => (int) $date->format('d'))->values()->all();
+        $kalenderAbsen = $absensiUser->whereIn('status', ['tidak_hadir', 'tidak_absen'])->pluck('tanggal')->map(fn($date) => (int) $date->format('d'))->values()->all();
+        $kalenderCuti = $absensiUser->where('status', 'cuti')->pluck('tanggal')->map(fn($date) => (int) $date->format('d'))->values()->all();
+
+        $absensiCalendarDetails = $absensiUser
+            ->groupBy(fn (Absensi $item) => $item->tanggal->format('Y-m-d'))
+            ->map(fn ($items) => $items->map(fn (Absensi $item) => [
+                'nama' => ucfirst(str_replace('_', ' ', $item->status)),
+                'status' => $item->keterangan ?: 'Absensi',
+                'waktu' => 'Masuk ' . ($item->jam_masuk ?? '--:--') . ' - Pulang ' . ($item->jam_pulang ?? '--:--'),
+            ])->values());
 
         $tugasByDate = [];
         $todayTugas = collect();
@@ -163,6 +184,7 @@ class TugasController extends Controller
 
         $replacementCutiByDate = [];
         $todayReplacementCuti = collect();
+        $replacementCalendarDetails = collect();
 
         foreach ($replacementCuti as $cuti) {
             $start = $cuti->tanggal_mulai->copy()->startOfDay();
@@ -179,6 +201,12 @@ class TugasController extends Controller
                 if ($dateKey === $todayKey) {
                     $todayReplacementCuti->push($cuti);
                 }
+
+                $replacementCalendarDetails->put($dateKey, $replacementCalendarDetails->get($dateKey, collect())->push([
+                    'nama' => 'Pengganti Cuti',
+                    'status' => ($cuti->user->nama ?? '-') . ' - ' . $cuti->jenis_cuti,
+                    'waktu' => 'Jadwal pengganti',
+                ]));
             }
         }
 
@@ -194,6 +222,7 @@ class TugasController extends Controller
         }
 
         $weeklyOffByDate = collect();
+        $weeklyOffCalendarDetails = collect();
         if ($user->hari_libur !== null) {
             foreach ($days as $day) {
                 if ((int) $user->hari_libur !== $day->dayOfWeek) {
@@ -204,8 +233,35 @@ class TugasController extends Controller
                     'title' => 'Libur Mingguan',
                     'description' => $user->hariLiburLabel() . ' - tidak wajib absen',
                 ]);
+                $weeklyOffCalendarDetails->put($day->format('Y-m-d'), collect([[
+                    'nama' => 'Libur Mingguan',
+                    'status' => $user->hariLiburLabel(),
+                    'waktu' => 'Tidak wajib absen',
+                ]]));
             }
         }
+
+        $tugasCalendarDetails = collect($tugasByDate)
+            ->map(fn ($items) => $items->map(fn (Tugas $item) => [
+                'nama' => $item->uraian,
+                'status' => ucfirst(str_replace('_', ' ', $item->status)),
+                'waktu' => $item->tanggal_mulai?->format('H:i') ?? '--:--',
+            ])->values());
+
+        $eventCalendarDetails = $events
+            ->map(fn ($items) => $items->map(fn (Kalender $item) => [
+                'nama' => $item->nama_event,
+                'status' => ucfirst(str_replace('_', ' ', $item->jenis_event)),
+                'waktu' => 'Kalender',
+            ])->values());
+
+        $kalenderLiburMingguan = $weeklyOffByDate
+            ->keys()
+            ->map(fn (string $date) => Carbon::parse($date))
+            ->filter(fn (Carbon $date) => $date->month === $currentMonth->month && $date->year === $currentMonth->year)
+            ->map(fn (Carbon $date) => (int) $date->format('d'))
+            ->values()
+            ->all();
 
         return view('petugas.kalender', [
             'todayItems' => Kalender::whereDate('tanggal', today())->orderBy('id_kalender')->get(),
@@ -221,6 +277,16 @@ class TugasController extends Controller
             'tugasByDate' => $tugasByDate,
             'replacementCutiByDate' => $replacementCutiByDate,
             'weeklyOffByDate' => $weeklyOffByDate,
+            'kalenderHadir' => $kalenderHadir,
+            'kalenderTelat' => $kalenderTelat,
+            'kalenderAbsen' => $kalenderAbsen,
+            'kalenderCuti' => $kalenderCuti,
+            'kalenderLiburMingguan' => $kalenderLiburMingguan,
+            'absensiCalendarDetails' => $absensiCalendarDetails,
+            'tugasCalendarDetails' => $tugasCalendarDetails,
+            'eventCalendarDetails' => $eventCalendarDetails,
+            'weeklyOffCalendarDetails' => $weeklyOffCalendarDetails,
+            'replacementCalendarDetails' => $replacementCalendarDetails,
         ]);
     }
 
