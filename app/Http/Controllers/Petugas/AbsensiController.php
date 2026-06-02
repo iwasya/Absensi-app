@@ -137,7 +137,10 @@ class AbsensiController extends Controller
 
     private function calculateDistance($lat1, $lon1, $lat2, $lon2)
     {
-        if (!$lat1 || !$lon1 || !$lat2 || !$lon2) return null;
+        if ($lat1 === null || $lon1 === null || $lat2 === null || $lon2 === null) {
+            return null;
+        }
+
         $earthRadius = 6371000; // in meters
         $dLat = deg2rad($lat2 - $lat1);
         $dLon = deg2rad($lon2 - $lon1);
@@ -221,7 +224,9 @@ class AbsensiController extends Controller
 
         $jarakMaks = config('absensi.jarak_maks_meter', 100);
         if ($dist === null || $dist > $jarakMaks) {
-            return 'Anda berada di luar area kantor.';
+            $distanceText = $dist === null ? '' : ' Jarak terbaca sekitar ' . round($dist) . ' meter dari titik kantor.';
+
+            return 'Anda berada di luar area kantor.' . $distanceText;
         }
 
         return null;
@@ -373,8 +378,8 @@ class AbsensiController extends Controller
     {
         $validated = $request->validate([
             'foto_masuk' => ['required', 'string'],
-            'latitude_masuk' => ['nullable', 'numeric'],
-            'longitude_masuk' => ['nullable', 'numeric'],
+            'latitude_masuk' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude_masuk' => ['nullable', 'numeric', 'between:-180,180'],
             'lokasi_masuk' => ['nullable', 'string', 'max:255'],
             'keterangan' => ['nullable', 'string', 'max:500'],
             'shift' => ['nullable', 'string', 'max:30'],
@@ -513,8 +518,8 @@ class AbsensiController extends Controller
     {
         $validated = $request->validate([
             'foto_pulang' => ['required', 'string'],
-            'latitude_pulang' => ['nullable', 'numeric'],
-            'longitude_pulang' => ['nullable', 'numeric'],
+            'latitude_pulang' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude_pulang' => ['nullable', 'numeric', 'between:-180,180'],
             'lokasi_pulang' => ['nullable', 'string', 'max:255'],
             'id_absensi' => ['nullable', 'exists:absensi,id_absensi'],
         ]);

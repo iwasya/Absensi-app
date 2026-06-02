@@ -10,8 +10,8 @@
             <div class="form-grid">
                 <div><label>Nama Tempat</label><input name="nama_tempat" required></div>
                 <div><label>Alamat</label><input name="alamat"></div>
-                <div><label>Latitude</label><input type="number" step="0.000001" min="-90" max="90" name="latitude" placeholder="-6.209286"></div>
-                <div><label>Longitude</label><input type="number" step="0.000001" min="-180" max="180" name="longitude" placeholder="106.871253"></div>
+                <div><label>Latitude</label><input type="number" step="0.0000001" min="-90" max="90" name="latitude" placeholder="-6.2092860"></div>
+                <div><label>Longitude</label><input type="number" step="0.0000001" min="-180" max="180" name="longitude" placeholder="106.8712530"></div>
                 <button type="submit">Tambah</button>
             </div>
         </form>
@@ -26,8 +26,8 @@
                         @method('PUT')
                         <td><input name="nama_tempat" value="{{ $item->nama_tempat }}" required></td>
                         <td><input name="alamat" value="{{ $item->alamat }}"></td>
-                        <td><input type="number" step="0.000001" min="-90" max="90" name="latitude" value="{{ $item->latitude }}"></td>
-                        <td><input type="number" step="0.000001" min="-180" max="180" name="longitude" value="{{ $item->longitude }}"></td>
+                        <td><input type="number" step="0.0000001" min="-90" max="90" name="latitude" value="{{ $item->latitude }}"></td>
+                        <td><input type="number" step="0.0000001" min="-180" max="180" name="longitude" value="{{ $item->longitude }}"></td>
                         <td><button type="submit">Simpan</button></td>
                     </form>
                     <td><form method="POST" action="{{ route('admin.tempat.delete', $item->id_tempat) }}">@csrf @method('DELETE')<button class="danger">Hapus</button></form></td>
@@ -37,4 +37,3 @@
     </table>
     {{ $items->links('pagination.simple') }}
 @endsection
-

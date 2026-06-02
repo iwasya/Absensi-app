@@ -467,9 +467,9 @@
                         </button>
                     </div>
                     <div class="coord-row">
-                        <div><label>Latitude</label><input name="latitude_masuk" id="lat_masuk"></div>
-                        <div><label>Longitude</label><input name="longitude_masuk" id="lng_masuk"></div>
-                        <div><label>Lokasi</label><input name="lokasi_masuk"></div>
+                        <div><label>Latitude</label><input name="latitude_masuk" id="lat_masuk" readonly></div>
+                        <div><label>Longitude</label><input name="longitude_masuk" id="lng_masuk" readonly></div>
+                        <div><label>Lokasi</label><input name="lokasi_masuk" readonly></div>
                     </div>
                     <div class="coord-row" style="margin-top:12px;">
                         <div>
@@ -558,9 +558,9 @@
                         <button type="button" id="btn_retake_pulang" class="btn-cam btn-cam-retake" style="display:none;">Ulangi Foto</button>
                     </div>
                     <div class="coord-row">
-                        <div><label>Latitude</label><input name="latitude_pulang" id="lat_pulang"></div>
-                        <div><label>Longitude</label><input name="longitude_pulang" id="lng_pulang"></div>
-                        <div><label>Lokasi</label><input name="lokasi_pulang"></div>
+                        <div><label>Latitude</label><input name="latitude_pulang" id="lat_pulang" readonly></div>
+                        <div><label>Longitude</label><input name="longitude_pulang" id="lng_pulang" readonly></div>
+                        <div><label>Lokasi</label><input name="lokasi_pulang" readonly></div>
                     </div>
                     <button type="submit" style="margin-top:14px;width:100%;padding:11px;">Simpan Absen Pulang</button>
                 </form>
@@ -600,9 +600,9 @@
                         </button>
                     </div>
                     <div class="coord-row">
-                        <div><label>Latitude</label><input name="latitude_pulang" id="lat_pulang"></div>
-                        <div><label>Longitude</label><input name="longitude_pulang" id="lng_pulang"></div>
-                        <div><label>Lokasi</label><input name="lokasi_pulang"></div>
+                        <div><label>Latitude</label><input name="latitude_pulang" id="lat_pulang" readonly></div>
+                        <div><label>Longitude</label><input name="longitude_pulang" id="lng_pulang" readonly></div>
+                        <div><label>Lokasi</label><input name="lokasi_pulang" readonly></div>
                     </div>
                     <button type="submit" style="margin-top:14px;width:100%;padding:11px;">Simpan Absen Pulang</button>
                 </form>
@@ -762,55 +762,105 @@
     var namaTempat = "{{ isset($tempatTugas) ? $tempatTugas->nama_tempat : '' }}";
     var jarakMaksMeter = {{ (int) $jarakMaksMeter }};
 
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function (position) {
-            var userLat = position.coords.latitude;
-            var userLng = position.coords.longitude;
+    function setSubmitDisabled(disabled) {
+        ['form_masuk', 'form_pulang'].forEach(function (formId) {
+            var form = document.getElementById(formId);
+            if (!form) return;
 
-            var inRange = true;
-            if (tempatLat !== null && tempatLng !== null) {
-                if (calculateDistance(userLat, userLng, tempatLat, tempatLng) > jarakMaksMeter) inRange = false;
+            form.querySelectorAll('button[type="submit"]').forEach(function (btn) {
+                btn.disabled      = disabled;
+                btn.style.opacity = disabled ? '0.5' : '';
+                btn.style.cursor  = disabled ? 'not-allowed' : '';
+            });
+        });
+    }
+
+    function updateLocationFields(position) {
+        var userLat = position.coords.latitude;
+        var userLng = position.coords.longitude;
+        var accuracy = position.coords.accuracy;
+        var distance = null;
+        var inRange = true;
+
+        if (tempatLat !== null && tempatLng !== null) {
+            distance = calculateDistance(userLat, userLng, tempatLat, tempatLng);
+            inRange = distance <= jarakMaksMeter;
+        }
+
+        ['masuk', 'pulang'].forEach(function (type) {
+            var lat = document.getElementById('lat_' + type);
+            var lng = document.getElementById('lng_' + type);
+            var loc = document.querySelector('input[name="lokasi_' + type + '"]');
+
+            if (lat && lng) {
+                lat.value = userLat.toFixed(7);
+                lng.value = userLng.toFixed(7);
+            }
+            if (loc) {
+                var details = [];
+                if (distance !== null) details.push('jarak ' + Math.round(distance) + ' m');
+                if (accuracy) details.push('akurasi +/- ' + Math.round(accuracy) + ' m');
+
+                if (!inRange) {
+                    loc.value = 'Di luar area kantor' + (details.length ? ' (' + details.join(', ') + ')' : '');
+                    loc.style.color = 'red';
+                    loc.style.fontWeight = 'bold';
+                } else {
+                    loc.value = (namaTempat || 'Area Kantor') + (details.length ? ' (' + details.join(', ') + ')' : '');
+                    loc.style.color = 'green';
+                    loc.style.fontWeight = 'bold';
+                }
+            }
+        });
+
+        setSubmitDisabled(!inRange);
+        if (!inRange) {
+            alert('Anda berada di luar area kantor. Jarak Anda sekitar ' + Math.round(distance) + ' meter dari lokasi yang diizinkan.');
+        }
+    }
+
+    function readAccurateLocation() {
+        if (!navigator.geolocation) {
+            alert('Browser tidak mendukung GPS. Gunakan browser terbaru dan izinkan akses lokasi.');
+            return;
+        }
+
+        setSubmitDisabled(true);
+
+        var bestPosition = null;
+        var watchId = null;
+        var startedAt = Date.now();
+        var timeoutMs = 18000;
+        var targetAccuracy = 35;
+
+        function finish(position) {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            updateLocationFields(position || bestPosition);
+        }
+
+        watchId = navigator.geolocation.watchPosition(function (position) {
+            if (!bestPosition || position.coords.accuracy < bestPosition.coords.accuracy) {
+                bestPosition = position;
             }
 
-            ['masuk', 'pulang'].forEach(function (type) {
-                var lat = document.getElementById('lat_' + type);
-                var lng = document.getElementById('lng_' + type);
-                var loc = document.querySelector('input[name="lokasi_' + type + '"]');
-
-                if (lat && lng) {
-                    lat.value = userLat.toFixed(8);
-                    lng.value = userLng.toFixed(8);
-                }
-                if (loc) {
-                    loc.readOnly = true;
-                    if (!inRange) {
-                        loc.value          = 'Di luar area kantor';
-                        loc.style.color    = 'red';
-                        loc.style.fontWeight = 'bold';
-                    } else {
-                        loc.value          = namaTempat || 'Area Kantor';
-                        loc.style.color    = 'green';
-                        loc.style.fontWeight = 'bold';
-                    }
-                }
-            });
-
-            if (!inRange) {
-                alert('Anda berada di luar area kantor! Jarak Anda terlalu jauh dari lokasi yang diizinkan.');
-                ['form_masuk', 'form_pulang'].forEach(function (formId) {
-                    var form = document.getElementById(formId);
-                    if (!form) return;
-
-                    form.querySelectorAll('button[type="submit"]').forEach(function (btn) {
-                        btn.disabled       = true;
-                        btn.style.opacity  = '0.5';
-                        btn.style.cursor   = 'not-allowed';
-                    });
-                });
+            if (position.coords.accuracy <= targetAccuracy || Date.now() - startedAt >= timeoutMs) {
+                finish(bestPosition);
             }
         }, function () {
-            alert('Lokasi GPS belum terbaca. Izinkan akses lokasi agar absensi bisa disimpan.');
-        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+            setSubmitDisabled(false);
+            alert('Lokasi GPS belum terbaca. Izinkan akses lokasi, aktifkan GPS perangkat, lalu coba lagi.');
+        }, {
+            enableHighAccuracy: true,
+            timeout: timeoutMs,
+            maximumAge: 0
+        });
+
+        setTimeout(function () {
+            if (watchId !== null && bestPosition) finish(bestPosition);
+        }, timeoutMs + 500);
     }
 
     function setupCamera(type) {
@@ -870,12 +920,21 @@
                 if (!input.value) {
                     e.preventDefault();
                     alert('Silakan ambil foto terlebih dahulu sebelum menyimpan absensi.');
+                    return;
+                }
+
+                var lat = document.getElementById('lat_' + type);
+                var lng = document.getElementById('lng_' + type);
+                if (lat && lng && (!lat.value || !lng.value)) {
+                    e.preventDefault();
+                    alert('Lokasi GPS belum selesai dibaca. Tunggu sebentar sampai latitude dan longitude terisi.');
                 }
             });
         }
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        readAccurateLocation();
         setupCamera('masuk');
         setupCamera('pulang');
     });
