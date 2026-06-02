@@ -48,8 +48,18 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::composer('layouts.app', function ($view) {
-            $periodes = Periode::latestCached();
-            $activePeriode = Periode::aktif();
+            $periodes = collect();
+            $activePeriode = null;
+
+            try {
+                $periodes = Periode::latestCached();
+                $activePeriode = Periode::aktif();
+            } catch (\Illuminate\Database\QueryException $exception) {
+                // Fallback jika database schema berbeda atau kolom periode belum tersedia.
+                $periodes = collect();
+                $activePeriode = null;
+            }
+
             $activePeriodeId = session('global_periode_id') ?? optional($activePeriode)->id_periode;
             $selectedPeriode = $periodes->firstWhere('id_periode', $activePeriodeId);
 
