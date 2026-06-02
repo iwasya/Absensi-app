@@ -83,7 +83,7 @@
             <tr><td>Sampai Tanggal</td><td>: {{ $cuti->tanggal_selesai->translatedFormat('d F Y') }}</td></tr>
             <tr><td>Lama Cuti</td><td>: {{ $cuti->tanggal_mulai->diffInDays($cuti->tanggal_selesai) + 1 }} Hari Kerja</td></tr>
             <tr><td>Alasan Cuti</td><td>: {{ $cuti->alasan }} {{ $cuti->alasan_lainnya ? '('.$cuti->alasan_lainnya.')' : '' }}</td></tr>
-            <tr><td>Alamat Selama Cuti</td><td>: {{ $cuti->alamat_cuti }}</td></tr>
+            <tr><td>Alamat Selama Cuti</td><td>: {{ $cuti->alamat_cuti ?: '-' }}</td></tr>
             <tr><td>Petugas Pengganti</td><td>: {{ $cuti->pengganti->nama ?? '-' }}</td></tr>
         </table>
 

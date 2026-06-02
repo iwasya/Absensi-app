@@ -8,6 +8,7 @@ use App\Models\Periode;
 use App\Models\User;
 use App\Services\CutiReplacementService;
 use App\Support\ActivityLogger;
+use App\Support\QueryFilters;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,7 +46,6 @@ class CutiController extends Controller
             'selectedPeriode' => $selectedPeriode,
             'petugasList' => $replacementService->replacementCandidatesFor($user),
             'replacementRequests' => $replacementService->pendingRequestsFor($user),
-            'liburKompensasiTersedia' => $replacementService->availableCreditCountFor($user),
             'cutiTerpakaiTahunIni' => $this->jumlahCutiTahunan($request->user()->id_user, now()->year),
             'batasCutiTahunan' => 12,
         ]);
@@ -56,10 +56,10 @@ class CutiController extends Controller
         $validated = $request->validate([
             'tanggal_mulai' => ['required', 'date'],
             'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
-            'jenis_cuti' => ['required', 'in:Tahunan,Besar,Sakit,Kompensasi'],
+            'jenis_cuti' => ['required', 'in:Tahunan,Besar,Sakit'],
             'alasan' => ['required', 'string'],
             'alasan_lainnya' => ['nullable', 'string'],
-            'alamat_cuti' => ['required', 'string'],
+            'alamat_cuti' => ['nullable', 'string'],
             'id_pengganti' => ['required', 'exists:users,id_user'],
             'dokumen' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:4096'],
         ]);
@@ -80,7 +80,7 @@ class CutiController extends Controller
         $tahunCuti = Carbon::parse($validated['tanggal_mulai'])->year;
         $jumlahCutiTahunan = $this->jumlahCutiTahunan($user->id_user, $tahunCuti);
 
-        if ($validated['jenis_cuti'] !== 'Kompensasi' && $jumlahCutiTahunan >= 12) {
+        if ($jumlahCutiTahunan >= 12) {
             return back()
                 ->withInput()
                 ->with('error', "Kuota cuti tahun {$tahunCuti} sudah habis. Maksimal 12 kali pengajuan cuti per tahun.");
@@ -98,19 +98,41 @@ class CutiController extends Controller
             'jenis_cuti' => $validated['jenis_cuti'],
             'alasan' => $validated['alasan'],
             'alasan_lainnya' => $validated['alasan_lainnya'] ?? null,
-            'alamat_cuti' => $validated['alamat_cuti'],
+            'alamat_cuti' => $request->filled('alamat_cuti') ? $validated['alamat_cuti'] : null,
             'id_pengganti' => $validated['id_pengganti'],
             'replacement_status' => 'pending',
             'dokumen_path' => $dokumenPath,
-            'admin_status' => 'pending',
+            'admin_status' => 'notified',
             'status' => 'pending',
         ]);
 
         $replacementService->notifyReplacementRequested($cuti);
+        $this->notifyAdminsCutiSubmitted($cuti);
 
         ActivityLogger::log($request, 'Mengajukan cuti', 'cuti', $cuti->id_cuti, Cuti::class);
 
         return back()->with('success', 'Pengajuan cuti berhasil dikirim ke petugas pengganti untuk dikonfirmasi.');
+    }
+
+    private function notifyAdminsCutiSubmitted(Cuti $cuti): void
+    {
+        $cuti->loadMissing('user');
+
+        $admins = User::whereHas('role', function ($query) {
+            QueryFilters::whereRoleAlias($query, ['admin']);
+        })->get();
+
+        foreach ($admins as $admin) {
+            \App\Models\Notifikasi::create([
+                'id_user' => $admin->id_user,
+                'judul' => 'Pengajuan Cuti Baru',
+                'pesan' => ($cuti->user->nama ?? 'Petugas') . ' mengajukan cuti. Approval dilakukan oleh atasan.',
+                'tipe' => 'cuti',
+                'status_baca' => false,
+                'reference_id' => $cuti->id_cuti,
+                'reference_type' => Cuti::class,
+            ]);
+        }
     }
 
     public function acceptReplacement(Request $request, int $id, CutiReplacementService $replacementService): RedirectResponse

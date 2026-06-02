@@ -279,7 +279,7 @@
                         <label>Mulai</label>
                         <input type="datetime-local"
                                name="tanggal_mulai"
-                               value="{{ now()->format('Y-m-d\TH:i') }}"
+                               value="{{ old('tanggal_mulai', $defaultTanggalMulai) }}"
                                required>
                     </div>
 
@@ -287,7 +287,7 @@
                         <label>Selesai</label>
                         <input type="datetime-local"
                                name="tanggal_selesai"
-                               value="{{ now()->format('Y-m-d\TH:i') }}">
+                               value="{{ old('tanggal_selesai', $defaultTanggalSelesai) }}">
                     </div>
                 </div>
 
@@ -320,6 +320,14 @@
                     <div class="task-summary-item">
                         <div class="task-summary-label">Tanggal</div>
                         <div class="task-summary-value">{{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</div>
+                    </div>
+                    <div class="task-summary-item">
+                        <div class="task-summary-label">Jam Masuk</div>
+                        <div class="task-summary-value">{{ $todayAbsensi?->jam_masuk ? substr($todayAbsensi->jam_masuk, 0, 5) : '-' }}</div>
+                    </div>
+                    <div class="task-summary-item">
+                        <div class="task-summary-label">Jam Pulang</div>
+                        <div class="task-summary-value">{{ $todayAbsensi?->jam_pulang ? substr($todayAbsensi->jam_pulang, 0, 5) : '-' }}</div>
                     </div>
                 </div>
             </section>

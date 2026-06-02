@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Absensi;
 use App\Models\Cuti;
 use App\Models\Kalender;
-use App\Models\LiburKompensasi;
 use App\Models\Periode;
 use App\Models\Tugas;
 use App\Support\ActivityLogger;
@@ -27,11 +26,26 @@ class TugasController extends Controller
         return redirect()->route('petugas.tugas.input');
     }
 
-    public function input(): View
+    public function input(Request $request): View
     {
+        $todayAbsensi = Absensi::where('id_user', $request->user()->id_user)
+            ->whereDate('tanggal', today())
+            ->first();
+
+        $defaultTanggalMulai = $todayAbsensi?->jam_masuk
+            ? today()->setTimeFromTimeString($todayAbsensi->jam_masuk)->format('Y-m-d\TH:i')
+            : now()->format('Y-m-d\TH:i');
+
+        $defaultTanggalSelesai = $todayAbsensi?->jam_pulang
+            ? today()->setTimeFromTimeString($todayAbsensi->jam_pulang)->format('Y-m-d\TH:i')
+            : now()->format('Y-m-d\TH:i');
+
         return view('petugas.tugas-input', [
             'periodeAktif' => Periode::aktif(),
             'jadwalHariIni' => Kalender::whereDate('tanggal', today())->orderBy('id_kalender')->get(),
+            'todayAbsensi' => $todayAbsensi,
+            'defaultTanggalMulai' => $defaultTanggalMulai,
+            'defaultTanggalSelesai' => $defaultTanggalSelesai,
         ]);
     }
 
@@ -210,12 +224,6 @@ class TugasController extends Controller
             }
         }
 
-        $liburKompensasi = LiburKompensasi::with('cuti.user')
-            ->where('id_user', $user->id_user)
-            ->where('status', 'tersedia')
-            ->latest('tanggal_kerja')
-            ->get();
-
         $days = collect();
         for ($day = $calendarStart->copy(); $day->lte($calendarEnd); $day->addDay()) {
             $days->push($day->copy());
@@ -267,7 +275,6 @@ class TugasController extends Controller
             'todayItems' => Kalender::whereDate('tanggal', today())->orderBy('id_kalender')->get(),
             'todayTugas' => $todayTugas,
             'todayReplacementCuti' => $todayReplacementCuti,
-            'liburKompensasi' => $liburKompensasi,
             'todayWeeklyOff' => $weeklyOffByDate->get(today()->format('Y-m-d')),
             'currentMonth' => $currentMonth,
             'previousMonth' => $currentMonth->copy()->subMonth(),
@@ -299,14 +306,37 @@ class TugasController extends Controller
         ]);
 
         $tanggalMulai = Carbon::parse($validated['tanggal_mulai']);
+        $tanggalSelesai = ! empty($validated['tanggal_selesai'])
+            ? Carbon::parse($validated['tanggal_selesai'])
+            : null;
         $submittedAt = now();
         $isLateInput = $tanggalMulai->toDateString() < $submittedAt->toDateString();
+        $absensi = Absensi::where('id_user', $request->user()->id_user)
+            ->whereDate('tanggal', $tanggalMulai->toDateString())
+            ->first();
+
+        if (! $absensi || ! $absensi->jam_masuk) {
+            return back()->withInput()->with('error', 'Laporan tugas hanya bisa dikirim setelah absen masuk.');
+        }
+
+        $batasMulai = $absensi->tanggal->copy()->setTimeFromTimeString($absensi->jam_masuk);
+        $batasSelesai = $absensi->jam_pulang
+            ? $absensi->tanggal->copy()->setTimeFromTimeString($absensi->jam_pulang)
+            : now();
+
+        if ($tanggalMulai->lt($batasMulai)) {
+            return back()->withInput()->with('error', 'Waktu mulai tugas tidak boleh sebelum jam masuk absensi.');
+        }
+
+        if ($tanggalMulai->gt($batasSelesai) || ($tanggalSelesai && $tanggalSelesai->gt($batasSelesai))) {
+            return back()->withInput()->with('error', 'Waktu tugas tidak boleh melewati jam pulang absensi.');
+        }
 
         $tugas = Tugas::create([
             'id_user' => $request->user()->id_user,
             'id_periode' => optional(Periode::aktif())->id_periode,
             'tanggal_mulai' => $tanggalMulai,
-            'tanggal_selesai' => $validated['tanggal_selesai'] ?? null,
+            'tanggal_selesai' => $tanggalSelesai,
             'uraian' => $validated['uraian'],
             'status' => 'pending',
             'submitted_at' => $submittedAt,

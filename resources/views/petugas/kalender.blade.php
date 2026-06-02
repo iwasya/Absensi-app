@@ -153,17 +153,6 @@
             @endif
         </div>
 
-        @if(($liburKompensasi ?? collect())->isNotEmpty())
-            <div class="today-title" style="margin-top:6px;">Libur Kompensasi Tersedia</div>
-            <div class="today-list">
-                @foreach($liburKompensasi->take(3) as $kompensasi)
-                    <div class="today-row">
-                        <span class="badge approve">kompensasi</span>
-                        <div>{{ $kompensasi->tanggal_kerja->translatedFormat('d F Y') }} <span class="muted">{{ $kompensasi->keterangan }}</span></div>
-                    </div>
-                @endforeach
-            </div>
-        @endif
     </div>
 </div>
 

@@ -578,11 +578,6 @@ class ApprovalController extends Controller
             abort(403, 'Anda tidak memiliki akses untuk mengubah cuti ini.');
         }
         
-        // Prevent re-approval of already processed cuti
-        if ($cuti->admin_status !== 'approve') {
-            return back()->with('error', 'Cuti harus disetujui admin terlebih dahulu.');
-        }
-
         if ($cuti->status !== 'pending') {
             return back()->with('error', 'Cuti ini sudah diproses sebelumnya.');
         }

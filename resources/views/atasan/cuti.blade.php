@@ -495,7 +495,7 @@
                                 @endif
                             </td>
                             <td>
-                                <span class="badge {{ $item->admin_status }}">{{ ucfirst($item->admin_status ?? 'pending') }}</span>
+                                <span class="badge {{ $item->admin_status }}">{{ ($item->admin_status ?? 'pending') === 'notified' ? 'Diberitahu' : ucfirst($item->admin_status ?? 'pending') }}</span>
                             </td>
                             <td>
                                 <span class="badge {{ $item->status }}">{{ ucfirst(str_replace('_', ' ', $item->status)) }}</span>
@@ -505,9 +505,7 @@
                             </td>
                             <td>
                                 <div class="leave-actions">
-                                    @if($item->admin_status !== 'approve')
-                                        <span class="leave-muted">Menunggu admin</span>
-                                    @elseif($item->status === 'pending')
+                                    @if($item->status === 'pending')
                                         <form method="POST" action="{{ route('atasan.cuti.approve', $item->id_cuti) }}" style="margin:0;">
                                             @csrf
                                             <button type="submit" class="leave-btn leave-btn-approve">Approve</button>

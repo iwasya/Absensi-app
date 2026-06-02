@@ -315,7 +315,7 @@
             <div class="cuti-panel-head">
                 <div>
                     <h2>Ajukan Cuti</h2>
-                    <p>Isi periode cuti, alasan, petugas pengganti, dan alamat selama cuti.</p>
+                    <p>Isi periode cuti, alasan, dan petugas pengganti.</p>
                 </div>
                 <span class="cuti-panel-badge">Form Baru</span>
             </div>
@@ -345,7 +345,6 @@
                             <option value="Tahunan" @selected(old('jenis_cuti') === 'Tahunan')>Tahunan</option>
                             <option value="Besar" @selected(old('jenis_cuti') === 'Besar')>Besar</option>
                             <option value="Sakit" @selected(old('jenis_cuti') === 'Sakit')>Sakit</option>
-                            <option value="Kompensasi" @selected(old('jenis_cuti') === 'Kompensasi')>Kompensasi</option>
                         </select>
                         @error('jenis_cuti')
                             <div class="field-error">{{ $message }}</div>
@@ -400,7 +399,7 @@
 
                     <div class="cuti-full">
                         <label for="alamat_cuti">Alamat Selama Cuti</label>
-                        <textarea id="alamat_cuti" name="alamat_cuti" class="cuti-textarea" required placeholder="Tuliskan alamat lengkap selama masa cuti...">{{ old('alamat_cuti') }}</textarea>
+                        <textarea id="alamat_cuti" name="alamat_cuti" class="cuti-textarea" placeholder="Opsional, tuliskan alamat selama masa cuti jika diperlukan...">{{ old('alamat_cuti') }}</textarea>
                         @error('alamat_cuti')
                             <div class="field-error">{{ $message }}</div>
                         @enderror
@@ -442,11 +441,6 @@
                         <div class="cuti-summary-label">Sisa</div>
                         <div class="cuti-summary-value">{{ $sisaCuti }}</div>
                         <div class="cuti-summary-note">Sisa kesempatan cuti tahun ini.</div>
-                    </div>
-                    <div class="cuti-summary-item">
-                        <div class="cuti-summary-label">Libur Kompensasi</div>
-                        <div class="cuti-summary-value">{{ $liburKompensasiTersedia ?? 0 }}</div>
-                        <div class="cuti-summary-note">Hak libur pengganti tersedia.</div>
                     </div>
                 </div>
             </section>
@@ -543,7 +537,7 @@
                                     <span class="muted">-</span>
                                 @endif
                             </td>
-                            <td><span class="badge {{ $item->admin_status }}">{{ $item->admin_status ?? 'pending' }}</span></td>
+                            <td><span class="badge {{ $item->admin_status }}">{{ ($item->admin_status ?? 'pending') === 'notified' ? 'diberitahu' : ($item->admin_status ?? 'pending') }}</span></td>
                             <td><span class="badge {{ $item->status }}">{{ $item->status }}</span></td>
                             <td>
                                 @if($item->status === 'approve')

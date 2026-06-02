@@ -57,7 +57,7 @@
                                 <span class="muted">-</span>
                             @endif
                         </td>
-                        <td><span class="badge {{ $item->admin_status }}">{{ $item->admin_status ?? 'pending' }}</span></td>
+                        <td><span class="badge {{ $item->admin_status }}">{{ ($item->admin_status ?? 'pending') === 'notified' ? 'diberitahu' : ($item->admin_status ?? 'pending') }}</span></td>
                         <td><span class="badge {{ $item->status }}">{{ $item->status }}</span></td>
                         <td>
                             <span class="muted">-</span>

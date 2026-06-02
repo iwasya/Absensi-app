@@ -36,7 +36,7 @@ class DashboardController extends Controller
                 })->count(),
                 'totalAbsensiHariIni' => Absensi::whereDate('tanggal', today())->count(),
                 'cutiPending' => Cuti::where('status', 'pending')->count(),
-                'cutiPendingAdmin' => Cuti::where('admin_status', 'pending')->count(),
+                'cutiPendingAdmin' => 0,
                 'approvalPulangPending' => Absensi::whereIn('approval_pulang_status', ['pending_ketua', 'pending_atasan'])->count(),
                 'tugasPending' => Tugas::where('status', 'pending')->count(),
                 'periodeAktif' => Periode::aktif(),

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Cuti;
-use App\Models\LiburKompensasi;
 use App\Models\Notifikasi;
 use App\Models\User;
 use App\Support\QueryFilters;
@@ -39,24 +38,8 @@ class CutiReplacementService
             ->get();
     }
 
-    public function availableCreditCountFor(User $user): int
-    {
-        return LiburKompensasi::where('id_user', $user->id_user)
-            ->where('status', 'tersedia')
-            ->count();
-    }
-
     public function validateNewRequest(User $user, User $pengganti, Carbon $startDate, Carbon $endDate, string $jenisCuti): ?string
     {
-        if ($jenisCuti === 'Kompensasi') {
-            $jumlahHariCuti = $startDate->diffInDays($endDate) + 1;
-            $saldoKompensasi = $this->availableCreditCountFor($user);
-
-            if ($saldoKompensasi < $jumlahHariCuti) {
-                return 'Saldo libur kompensasi tidak cukup. Tersedia ' . $saldoKompensasi . ' hari.';
-            }
-        }
-
         if ($pengganti->id_user === $user->id_user || ! $pengganti->isPetugas()) {
             return 'Petugas pengganti harus dipilih dari petugas lain.';
         }
@@ -138,6 +121,7 @@ class CutiReplacementService
         ]);
 
         $this->notifyAdminsReplacementAccepted($cuti);
+        $this->notifyAtasanReplacementAccepted($cuti);
 
         return null;
     }
@@ -174,19 +158,8 @@ class CutiReplacementService
 
     public function approvalBlocker(Cuti $cuti, string $status): ?string
     {
-        if ($cuti->replacement_status !== 'accepted') {
+        if ($status === 'approve' && $cuti->replacement_status !== 'accepted') {
             return 'Petugas pengganti harus menerima permintaan terlebih dahulu.';
-        }
-
-        if ($status === 'approve' && $cuti->jenis_cuti === 'Kompensasi') {
-            $needed = $cuti->tanggal_mulai->diffInDays($cuti->tanggal_selesai) + 1;
-            $availableCredits = LiburKompensasi::where('id_user', $cuti->id_user)
-                ->where('status', 'tersedia')
-                ->count();
-
-            if ($availableCredits < $needed) {
-                return 'Saldo libur kompensasi petugas tidak cukup untuk menyetujui cuti ini.';
-            }
         }
 
         return null;
@@ -195,9 +168,6 @@ class CutiReplacementService
     public function afterApproved(Cuti $cuti): void
     {
         $cuti->loadMissing(['user', 'pengganti']);
-
-        $this->consumeCredits($cuti);
-        $this->syncReplacementCredits($cuti);
     }
 
     private function notifyAdminsReplacementAccepted(Cuti $cuti): void
@@ -211,8 +181,8 @@ class CutiReplacementService
         foreach ($admins as $admin) {
             Notifikasi::create([
                 'id_user' => $admin->id_user,
-                'judul' => 'Pengajuan Cuti Baru',
-                'pesan' => 'Petugas ' . ($cuti->user->nama ?? '-') . ' mengajukan cuti dan pengganti sudah menerima. Mohon approval admin sebelum diteruskan ke atasan.',
+                'judul' => 'Pengganti Cuti Menerima',
+                'pesan' => 'Petugas ' . ($cuti->user->nama ?? '-') . ' mengajukan cuti dan pengganti sudah menerima. Approval dilakukan oleh atasan.',
                 'tipe' => 'cuti',
                 'status_baca' => false,
                 'reference_id' => $cuti->id_cuti,
@@ -221,68 +191,27 @@ class CutiReplacementService
         }
     }
 
-    private function syncReplacementCredits(Cuti $cuti): void
+    private function notifyAtasanReplacementAccepted(Cuti $cuti): void
     {
-        $pengganti = $cuti->pengganti;
+        $cuti->loadMissing('user');
 
-        if (! $pengganti || $pengganti->hari_libur === null || $cuti->replacement_status !== 'accepted') {
-            return;
-        }
-
-        $created = 0;
-        for ($date = $cuti->tanggal_mulai->copy()->startOfDay(); $date->lte($cuti->tanggal_selesai); $date->addDay()) {
-            if ((int) $pengganti->hari_libur !== $date->dayOfWeek) {
-                continue;
-            }
-
-            $kompensasi = LiburKompensasi::firstOrCreate(
-                [
-                    'id_user' => $pengganti->id_user,
-                    'id_cuti' => $cuti->id_cuti,
-                    'tanggal_kerja' => $date->toDateString(),
-                ],
-                [
-                    'status' => 'tersedia',
-                    'keterangan' => 'Kompensasi karena menggantikan cuti ' . ($cuti->user->nama ?? 'petugas') . ' pada hari libur mingguan.',
-                ]
-            );
-
-            if ($kompensasi->wasRecentlyCreated) {
-                $created++;
-            }
-        }
-
-        if ($created > 0) {
-            Notifikasi::create([
-                'id_user' => $pengganti->id_user,
-                'judul' => 'Libur Kompensasi Ditambahkan',
-                'pesan' => 'Kamu mendapat ' . $created . ' hari libur kompensasi karena menggantikan cuti pada hari libur mingguan.',
-                'tipe' => 'cuti',
-                'status_baca' => false,
-                'reference_id' => $cuti->id_cuti,
-                'reference_type' => Cuti::class,
-            ]);
-        }
-    }
-
-    private function consumeCredits(Cuti $cuti): void
-    {
-        if ($cuti->jenis_cuti !== 'Kompensasi') {
-            return;
-        }
-
-        $needed = $cuti->tanggal_mulai->diffInDays($cuti->tanggal_selesai) + 1;
-        $credits = LiburKompensasi::where('id_user', $cuti->id_user)
-            ->where('status', 'tersedia')
-            ->oldest('tanggal_kerja')
-            ->limit($needed)
+        $atasans = User::whereHas('role', function ($query) {
+                QueryFilters::whereRoleAlias($query, ['atasan', 'manager', 'menejer']);
+            })
+            ->when($cuti->user?->id_tempat, fn ($query) => $query->where('id_tempat', $cuti->user->id_tempat))
             ->get();
 
-        foreach ($credits as $index => $credit) {
-            $credit->update([
-                'status' => 'dipakai',
-                'tanggal_dipakai' => $cuti->tanggal_mulai->copy()->addDays($index)->toDateString(),
+        foreach ($atasans as $atasan) {
+            Notifikasi::create([
+                'id_user' => $atasan->id_user,
+                'judul' => 'Approval Cuti Menunggu',
+                'pesan' => 'Pengajuan cuti ' . ($cuti->user->nama ?? 'petugas') . ' sudah dikonfirmasi pengganti dan menunggu keputusan atasan.',
+                'tipe' => 'cuti',
+                'status_baca' => false,
+                'reference_id' => $cuti->id_cuti,
+                'reference_type' => Cuti::class,
             ]);
         }
     }
+
 }
