@@ -46,7 +46,7 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <div>
                             <label>Jam Masuk</label>
-                            <input type="time" name="jam_masuk" value="07:00" required>
+                            <input type="time" name="jam_masuk" value="07:00" lang="id-ID" required>
                         </div>
                         <div>
                             <label>Durasi (Jam)</label>
@@ -180,7 +180,7 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <div>
                             <label>Jam Masuk</label>
-                            <input type="time" name="jam_masuk" id="edit_jam_masuk" required>
+                            <input type="time" name="jam_masuk" id="edit_jam_masuk" lang="id-ID" required>
                         </div>
                         <div>
                             <label>Durasi (Jam)</label>

@@ -480,8 +480,8 @@
                                 <option>{{ auth()->user()->shift ?: 'Belum ada shift di akun' }}</option>
                             </select>
                         </div>
-                        <div><label>Mulai Istirahat</label><input type="time" name="jam_istirahat_mulai" value="{{ old('jam_istirahat_mulai', '12:00') }}"></div>
-                        <div><label>Selesai Istirahat</label><input type="time" name="jam_istirahat_selesai" value="{{ old('jam_istirahat_selesai', '14:00') }}"></div>
+                        <div><label>Mulai Istirahat</label><input type="time" name="jam_istirahat_mulai" value="{{ old('jam_istirahat_mulai', '12:00') }}" lang="id-ID"></div>
+                        <div><label>Selesai Istirahat</label><input type="time" name="jam_istirahat_selesai" value="{{ old('jam_istirahat_selesai', '14:00') }}" lang="id-ID"></div>
                     </div>
                     <label style="margin-top:14px;">Keterangan</label>
                     <textarea name="keterangan" style="margin-top:6px;" placeholder="Contoh: alasan telat, kendala di lapangan, atau catatan shift.">{{ old('keterangan') }}</textarea>

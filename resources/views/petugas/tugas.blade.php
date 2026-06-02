@@ -9,8 +9,19 @@
         <form method="POST" action="{{ route('petugas.tugas.store') }}">
             @csrf
             <div class="form-grid">
-                <div><label>Mulai</label><input type="datetime-local" name="tanggal_mulai" required></div>
-                <div><label>Selesai</label><input type="datetime-local" name="tanggal_selesai"></div>
+                <div>
+                    <label>Mulai</label>
+                    <input type="datetime-local"
+                           name="tanggal_mulai"
+                           lang="id-ID"
+                           required>
+                </div>
+                <div>
+                    <label>Selesai</label>
+                    <input type="datetime-local"
+                           name="tanggal_selesai"
+                           lang="id-ID">
+                </div>
             </div>
             <label style="margin-top:12px">Uraian</label>
             <textarea name="uraian" required></textarea>

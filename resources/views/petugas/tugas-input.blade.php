@@ -280,6 +280,7 @@
                         <input type="datetime-local"
                                name="tanggal_mulai"
                                value="{{ old('tanggal_mulai', $defaultTanggalMulai) }}"
+                               lang="id-ID"
                                required>
                     </div>
 
@@ -287,7 +288,8 @@
                         <label>Selesai</label>
                         <input type="datetime-local"
                                name="tanggal_selesai"
-                               value="{{ old('tanggal_selesai', $defaultTanggalSelesai) }}">
+                               value="{{ old('tanggal_selesai', $defaultTanggalSelesai) }}"
+                               lang="id-ID">
                     </div>
                 </div>
 
