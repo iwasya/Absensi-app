@@ -802,7 +802,7 @@
                 if (accuracy) details.push('akurasi +/- ' + Math.round(accuracy) + ' m');
 
                 if (!inRange) {
-                    loc.value = 'Di luar area kantor' + (details.length ? ' (' + details.join(', ') + ')' : '');
+                    loc.value = 'Di luar area kantor';
                     loc.style.color = 'red';
                     loc.style.fontWeight = 'bold';
                 } else {
