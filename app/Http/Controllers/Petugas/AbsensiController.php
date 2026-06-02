@@ -395,6 +395,7 @@ class AbsensiController extends Controller
         ]);
 
         $user = $request->user();
+        $assignedShift = $user->shift;
         $targetAbsensi = null;
         $targetDate = today();
 
@@ -485,7 +486,7 @@ class AbsensiController extends Controller
         if ($existing && $existing->status === 'akses_dibuka' && ! $existing->jam_masuk) {
             $existing->update([
                 'jam_masuk' => now()->format('H:i:s'),
-                'shift' => $validated['shift'] ?? $user->shift,
+                'shift' => $assignedShift,
                 'jam_istirahat_mulai' => $validated['jam_istirahat_mulai'] ?? '12:00',
                 'jam_istirahat_selesai' => $validated['jam_istirahat_selesai'] ?? '14:00',
                 'foto_masuk' => $foto,
@@ -503,7 +504,7 @@ class AbsensiController extends Controller
                 'id_user' => $user->id_user,
                 'id_periode' => optional(Periode::aktif())->id_periode,
                 'tanggal' => $targetDate->toDateString(),
-                'shift' => $validated['shift'] ?? $user->shift,
+                'shift' => $assignedShift,
                 'jam_masuk' => now()->format('H:i:s'),
                 'jam_istirahat_mulai' => $validated['jam_istirahat_mulai'] ?? '12:00',
                 'jam_istirahat_selesai' => $validated['jam_istirahat_selesai'] ?? '14:00',

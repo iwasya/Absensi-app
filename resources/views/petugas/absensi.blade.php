@@ -475,13 +475,9 @@
                     <div class="coord-row" style="margin-top:12px;">
                         <div>
                             <label>Shift</label>
-                            <select name="shift">
-                                <option value="">Ikuti data petugas / tanpa shift</option>
-                                @foreach($shifts as $shift)
-                                    <option value="{{ $shift->nama_shift }}" @selected(old('shift', auth()->user()->shift) === $shift->nama_shift)>
-                                        {{ $shift->nama_shift }}
-                                    </option>
-                                @endforeach
+                            <input type="hidden" name="shift" value="{{ auth()->user()->shift }}">
+                            <select disabled>
+                                <option>{{ auth()->user()->shift ?: 'Belum ada shift di akun' }}</option>
                             </select>
                         </div>
                         <div><label>Mulai Istirahat</label><input type="time" name="jam_istirahat_mulai" value="{{ old('jam_istirahat_mulai', '12:00') }}"></div>
