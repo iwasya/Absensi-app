@@ -308,7 +308,7 @@
                 <div class="task-panel-head">
                     <div>
                         <h2>Info Hari Ini</h2>
-                        <p>Ringkasan periode dan agenda kerja.</p>
+                        <p>Ringkasan periode dan acuan waktu laporan.</p>
                     </div>
                 </div>
 
@@ -318,16 +318,16 @@
                         <div class="task-summary-value">{{ $periodeAktif?->nama_periode ?? '-' }}</div>
                     </div>
                     <div class="task-summary-item">
-                        <div class="task-summary-label">Tanggal</div>
-                        <div class="task-summary-value">{{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</div>
+                        <div class="task-summary-label">Tanggal Acuan</div>
+                        <div class="task-summary-value">{{ $defaultAbsensi?->tanggal?->translatedFormat('d F Y') ?? \Carbon\Carbon::now()->translatedFormat('d F Y') }}</div>
                     </div>
                     <div class="task-summary-item">
                         <div class="task-summary-label">Jam Masuk</div>
-                        <div class="task-summary-value">{{ $todayAbsensi?->jam_masuk ? substr($todayAbsensi->jam_masuk, 0, 5) : '-' }}</div>
+                        <div class="task-summary-value">{{ $defaultAbsensi?->jam_masuk ? substr($defaultAbsensi->jam_masuk, 0, 5) : '-' }}</div>
                     </div>
                     <div class="task-summary-item">
                         <div class="task-summary-label">Jam Pulang</div>
-                        <div class="task-summary-value">{{ $todayAbsensi?->jam_pulang ? substr($todayAbsensi->jam_pulang, 0, 5) : '-' }}</div>
+                        <div class="task-summary-value">{{ $defaultAbsensi?->jam_pulang ? substr($defaultAbsensi->jam_pulang, 0, 5) : '-' }}</div>
                     </div>
                 </div>
             </section>

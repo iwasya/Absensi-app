@@ -28,22 +28,38 @@ class TugasController extends Controller
 
     public function input(Request $request): View
     {
+        $defaultAbsensi = Absensi::where('id_user', $request->user()->id_user)
+            ->whereDate('tanggal', today())
+            ->whereNotNull('jam_masuk')
+            ->first();
+
+        if (! $defaultAbsensi) {
+            $defaultAbsensi = Absensi::where('id_user', $request->user()->id_user)
+                ->whereNotNull('jam_masuk')
+                ->latest('tanggal')
+                ->latest('id_absensi')
+                ->first();
+        }
+
+        $defaultDate = $defaultAbsensi?->tanggal ?? today();
+
+        $defaultTanggalMulai = $defaultAbsensi?->jam_masuk
+            ? $defaultDate->copy()->setTimeFromTimeString($defaultAbsensi->jam_masuk)->format('Y-m-d\TH:i')
+            : now()->format('Y-m-d\TH:i');
+
+        $defaultTanggalSelesai = $defaultAbsensi?->jam_pulang
+            ? $defaultDate->copy()->setTimeFromTimeString($defaultAbsensi->jam_pulang)->format('Y-m-d\TH:i')
+            : now()->format('Y-m-d\TH:i');
+
         $todayAbsensi = Absensi::where('id_user', $request->user()->id_user)
             ->whereDate('tanggal', today())
             ->first();
-
-        $defaultTanggalMulai = $todayAbsensi?->jam_masuk
-            ? today()->setTimeFromTimeString($todayAbsensi->jam_masuk)->format('Y-m-d\TH:i')
-            : now()->format('Y-m-d\TH:i');
-
-        $defaultTanggalSelesai = $todayAbsensi?->jam_pulang
-            ? today()->setTimeFromTimeString($todayAbsensi->jam_pulang)->format('Y-m-d\TH:i')
-            : now()->format('Y-m-d\TH:i');
 
         return view('petugas.tugas-input', [
             'periodeAktif' => Periode::aktif(),
             'jadwalHariIni' => Kalender::whereDate('tanggal', today())->orderBy('id_kalender')->get(),
             'todayAbsensi' => $todayAbsensi,
+            'defaultAbsensi' => $defaultAbsensi,
             'defaultTanggalMulai' => $defaultTanggalMulai,
             'defaultTanggalSelesai' => $defaultTanggalSelesai,
         ]);
@@ -315,21 +331,19 @@ class TugasController extends Controller
             ->whereDate('tanggal', $tanggalMulai->toDateString())
             ->first();
 
-        if (! $absensi || ! $absensi->jam_masuk) {
-            return back()->withInput()->with('error', 'Laporan tugas hanya bisa dikirim setelah absen masuk.');
-        }
+        if ($absensi?->jam_masuk) {
+            $batasMulai = $absensi->tanggal->copy()->setTimeFromTimeString($absensi->jam_masuk);
+            $batasSelesai = $absensi->jam_pulang
+                ? $absensi->tanggal->copy()->setTimeFromTimeString($absensi->jam_pulang)
+                : now();
 
-        $batasMulai = $absensi->tanggal->copy()->setTimeFromTimeString($absensi->jam_masuk);
-        $batasSelesai = $absensi->jam_pulang
-            ? $absensi->tanggal->copy()->setTimeFromTimeString($absensi->jam_pulang)
-            : now();
+            if ($tanggalMulai->lt($batasMulai)) {
+                return back()->withInput()->with('error', 'Waktu mulai tugas tidak boleh sebelum jam masuk absensi.');
+            }
 
-        if ($tanggalMulai->lt($batasMulai)) {
-            return back()->withInput()->with('error', 'Waktu mulai tugas tidak boleh sebelum jam masuk absensi.');
-        }
-
-        if ($tanggalMulai->gt($batasSelesai) || ($tanggalSelesai && $tanggalSelesai->gt($batasSelesai))) {
-            return back()->withInput()->with('error', 'Waktu tugas tidak boleh melewati jam pulang absensi.');
+            if ($tanggalMulai->gt($batasSelesai) || ($tanggalSelesai && $tanggalSelesai->gt($batasSelesai))) {
+                return back()->withInput()->with('error', 'Waktu tugas tidak boleh melewati jam pulang absensi.');
+            }
         }
 
         $tugas = Tugas::create([
