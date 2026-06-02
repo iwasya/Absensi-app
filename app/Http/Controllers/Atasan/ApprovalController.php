@@ -26,7 +26,9 @@ class ApprovalController extends Controller
 {
     public function absensi(Request $request): View
     {
+        $atasan = $request->user();
         $items = Absensi::with(['user.tempatTugas', 'periode']);
+        $this->scopeManageablePetugasRelation($items, $atasan);
 
         if ($request->filled('month')) {
             $items->whereMonth('tanggal', $request->month);
@@ -72,13 +74,15 @@ class ApprovalController extends Controller
             'items' => $items->latest('tanggal')->latest('id_absensi')->paginate($request->get("per_page", 25))->withQueryString(),
             'periodes' => $periodes,
             'selectedPeriode' => $selectedPeriode,
-            'users' => \App\Models\User::orderBy('nama')->get(),
+            'users' => $this->manageablePetugasQuery($atasan)->orderBy('nama')->get(),
         ]);
     }
 
     public function printAbsensi(Request $request): View
     {
+        $atasan = $request->user();
         $items = Absensi::with(['user.tempatTugas', 'periode']);
+        $this->scopeManageablePetugasRelation($items, $atasan);
 
         if ($request->filled('month')) {
             $items->whereMonth('tanggal', $request->month);
@@ -108,15 +112,17 @@ class ApprovalController extends Controller
         return view('atasan.absensi_print', [
             'items' => $items,
             'month' => $request->month,
-            'selectedUser' => $request->id_user ? \App\Models\User::find($request->id_user) : null,
+            'selectedUser' => $request->id_user ? $this->manageablePetugasQuery($atasan)->find($request->id_user) : null,
         ]);
     }
 
     public function cuti(Request $request): View
     {
+        $atasan = $request->user();
         $periodes = Periode::orderByDesc('tanggal_mulai')->get();
         $selectedPeriode = $periodes->firstWhere('id_periode', (int) $request->query('id_periode'));
         $items = Cuti::with(['user', 'approver', 'periode', 'pengganti']);
+        $this->scopeManageablePetugasRelation($items, $atasan);
 
         if ($selectedPeriode) {
             $items->where(function ($query) use ($selectedPeriode) {
@@ -139,7 +145,7 @@ class ApprovalController extends Controller
     {
         $periodes = Periode::orderByDesc('tanggal_mulai')->get();
         $selectedPeriode = $periodes->firstWhere('id_periode', (int) $request->query('id_periode'));
-        $items = $this->queryTugasApproval($selectedPeriode);
+        $items = $this->queryTugasApproval($selectedPeriode, $request->user());
 
         return view('atasan.tugas', [
             'items' => $items->latest('id_tugas')->paginate($request->get("per_page", 25))->withQueryString(),
@@ -154,7 +160,7 @@ class ApprovalController extends Controller
     public function exportTugas(Request $request)
     {
         $selectedPeriode = Periode::find((int) $request->query('id_periode'));
-        $items = $this->queryTugasApproval($selectedPeriode)
+        $items = $this->queryTugasApproval($selectedPeriode, $request->user())
             ->latest('id_tugas');
 
         $headers = [
@@ -246,7 +252,7 @@ class ApprovalController extends Controller
             ->whereIn('id_user', $validated['anggota_ids'])
             ->get();
 
-        if ($anggota->count() !== 5 || $anggota->contains(fn (User $user) => ! $user->isPetugas())) {
+        if ($anggota->count() !== 5 || $anggota->contains(fn (User $user) => ! $this->canManagePetugas($atasan, $user))) {
             return back()->withInput()->with('error', 'Pilih tepat 5 petugas dari area tugas kamu.');
         }
 
@@ -290,26 +296,31 @@ class ApprovalController extends Controller
             'hari_libur.*' => ['nullable', 'integer', 'between:0,6'],
         ]);
 
-        $anggota = User::where('regu', $validated['nama_regu'])->get();
+        $atasan = $request->user();
+        $anggota = $this->manageablePetugasQuery($atasan)
+            ->where('regu', $validated['nama_regu'])
+            ->get();
         if ($anggota->isEmpty()) {
             return back()->with('error', 'Regu tidak ditemukan.');
         }
 
-        User::where('regu', $validated['nama_regu'])->update([
-            'id_tempat' => $validated['id_tempat'] ?? null,
-        ]);
+        $anggotaIds = $anggota->pluck('id_user');
 
         foreach (($validated['shifts'] ?? []) as $userId => $shift) {
-            User::where('regu', $validated['nama_regu'])
+            User::whereIn('id_user', $anggotaIds)
                 ->where('id_user', $userId)
                 ->update(['shift' => $shift ?: null]);
         }
 
         foreach (($validated['hari_libur'] ?? []) as $userId => $hariLibur) {
-            User::where('regu', $validated['nama_regu'])
+            User::whereIn('id_user', $anggotaIds)
                 ->where('id_user', $userId)
                 ->update(['hari_libur' => $hariLibur === null || $hariLibur === '' ? null : (int) $hariLibur]);
         }
+
+        User::whereIn('id_user', $anggotaIds)->update([
+            'id_tempat' => $validated['id_tempat'] ?? null,
+        ]);
 
         ActivityLogger::log($request, 'Mengubah tempat kerja, shift, dan hari libur regu', 'users', null, User::class);
 
@@ -329,11 +340,16 @@ class ApprovalController extends Controller
             return back()->with('error', 'Ketua regu harus dipilih dari petugas.');
         }
 
+        if (! $this->canManagePetugas($atasan, $ketua)) {
+            return back()->with('error', 'Ketua regu harus dipilih dari petugas area tugas kamu.');
+        }
+
         if (! $ketua->regu) {
             return back()->with('error', 'Petugas ini belum punya regu. Isi regu di menu Admin Users terlebih dahulu.');
         }
 
-        User::where('regu', $ketua->regu)
+        $this->manageablePetugasQuery($atasan)
+            ->where('regu', $ketua->regu)
             ->update(['is_ketua_regu' => false]);
 
         $ketua->update(['is_ketua_regu' => true]);
@@ -376,6 +392,7 @@ class ApprovalController extends Controller
     public function remindTugas(Request $request, int $id): RedirectResponse
     {
         $tugas = Tugas::with('user')->findOrFail($id);
+        $this->ensureCanManagePetugas($request->user(), $tugas->user);
 
         Notifikasi::create([
             'id_user' => $tugas->id_user,
@@ -400,9 +417,10 @@ class ApprovalController extends Controller
     /**
      * Query dasar laporan tugas untuk halaman approval dan export CSV.
      */
-    private function queryTugasApproval(?Periode $selectedPeriode)
+    private function queryTugasApproval(?Periode $selectedPeriode, User $atasan)
     {
         $items = Tugas::with(['user', 'periode']);
+        $this->scopeManageablePetugasRelation($items, $atasan);
 
         if ($selectedPeriode) {
             $items->where(function ($query) use ($selectedPeriode) {
@@ -415,6 +433,44 @@ class ApprovalController extends Controller
         }
 
         return $items;
+    }
+
+    private function manageablePetugasQuery(User $atasan)
+    {
+        return User::query()
+            ->whereHas('role', function ($query) {
+                QueryFilters::whereRoleAlias($query, ['petugas', 'karyawan']);
+            })
+            ->when($atasan->id_tempat, fn ($query) => $query->where('id_tempat', $atasan->id_tempat));
+    }
+
+    private function scopeManageablePetugasRelation($query, User $atasan, string $relation = 'user'): void
+    {
+        $query->whereHas($relation, function ($userQuery) use ($atasan) {
+            $userQuery->whereHas('role', function ($roleQuery) {
+                QueryFilters::whereRoleAlias($roleQuery, ['petugas', 'karyawan']);
+            });
+
+            if ($atasan->id_tempat) {
+                $userQuery->where('id_tempat', $atasan->id_tempat);
+            }
+        });
+    }
+
+    private function canManagePetugas(User $atasan, ?User $petugas): bool
+    {
+        if (! $petugas?->isPetugas()) {
+            return false;
+        }
+
+        return ! $atasan->id_tempat || (int) $petugas->id_tempat === (int) $atasan->id_tempat;
+    }
+
+    private function ensureCanManagePetugas(User $atasan, ?User $petugas): void
+    {
+        if (! $this->canManagePetugas($atasan, $petugas)) {
+            abort(403, 'Anda tidak memiliki akses ke data petugas ini.');
+        }
     }
 
     public function rejectPulang(Request $request, int $id): RedirectResponse
@@ -435,6 +491,7 @@ class ApprovalController extends Controller
     private function updateMasukApproval(Request $request, int $id, string $status): RedirectResponse
     {
         $absensi = Absensi::with('user')->findOrFail($id);
+        $this->ensureCanManagePetugas($request->user(), $absensi->user);
 
         if (! $absensi->user?->isPetugas()) {
             abort(403, 'Approval absen hanya untuk petugas.');
@@ -479,6 +536,7 @@ class ApprovalController extends Controller
     private function updatePulangApproval(Request $request, int $id, string $status): RedirectResponse
     {
         $absensi = Absensi::with('user')->findOrFail($id);
+        $this->ensureCanManagePetugas($request->user(), $absensi->user);
 
         if (! $absensi->user?->isPetugas()) {
             abort(403, 'Approval absen hanya untuk petugas.');
@@ -513,6 +571,7 @@ class ApprovalController extends Controller
     private function updateCuti(Request $request, int $id, string $status): RedirectResponse
     {
         $cuti = Cuti::with(['user', 'pengganti'])->findOrFail($id);
+        $this->ensureCanManagePetugas($request->user(), $cuti->user);
         
         // Authorization: Verify the user is petugas (atasan should only approve petugas cuti)
         if (!$cuti->user->isPetugas()) {
@@ -576,6 +635,7 @@ class ApprovalController extends Controller
     private function updateTugas(Request $request, int $id, string $status): RedirectResponse
     {
         $tugas = Tugas::with('user')->findOrFail($id);
+        $this->ensureCanManagePetugas($request->user(), $tugas->user);
         
         // Authorization: Verify the user is petugas (atasan should only approve petugas tugas)
         if (!$tugas->user->isPetugas()) {

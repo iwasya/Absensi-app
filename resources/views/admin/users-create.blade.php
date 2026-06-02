@@ -401,8 +401,9 @@
                 <div class="users-form-grid">
                     <div class="form-control">
                         <label for="no_hp">No Telepon</label>
-                        <input id="no_hp" name="no_hp" type="tel" pattern="[0-9+\- ]*" placeholder="+62 812 3456 7890" value="{{ old('no_hp') }}" aria-describedby="hpHelp">
-                        <div id="hpHelp" class="help-text">✓ Disimpan terenkripsi sebagai data sensitif</div>
+                        <input id="no_hp" name="no_hp" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="20" placeholder="6281234567890" value="{{ preg_replace('/[^0-9]/', '', (string) old('no_hp')) }}" oninput="this.value = this.value.replace(/[^0-9]/g, '')" aria-describedby="hpHelp hpError">
+                        <div id="hpHelp" class="help-text">✓ Hanya angka, disimpan terenkripsi sebagai data sensitif</div>
+                        @error('no_hp')<div id="hpError" class="field-error">❌ {{ $message }}</div>@enderror
                     </div>
 
                     <div class="form-control">

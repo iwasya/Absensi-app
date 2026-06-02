@@ -166,7 +166,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/logs', [AdminController::class, 'logs'])->name('logs.index');
         Route::get('/logs/export', [AdminController::class, 'exportLogs'])->name('logs.export');
 
-        Route::get('/clear-cache', function () {
+        Route::post('/clear-cache', function () {
             Artisan::call('optimize:clear');
 
             return response('Cache cleared successfully.');

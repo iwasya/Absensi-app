@@ -81,7 +81,7 @@
             </div>
             <div class="regu-label">Ketua Regu</div>
             <div class="regu-value">{{ $ketuaRegu->nama ?? '-' }}</div>
-            <div class="regu-sub">{{ $ketuaRegu?->no_hp ? 'HP: ' . $ketuaRegu->no_hp : 'Kontak belum diisi' }}</div>
+            <div class="regu-sub">{{ $ketuaRegu?->no_hp ? 'HP: ' . preg_replace('/[^0-9]/', '', (string) $ketuaRegu->no_hp) : 'Kontak belum diisi' }}</div>
         </div>
         <div class="regu-card">
             <div class="regu-card-icon" style="background:var(--primary-soft);color:var(--primary);">
@@ -128,7 +128,7 @@
                             <td>{{ $anggota->shift ?? '-' }}</td>
                             <td>{{ $anggota->hariLiburLabel() }}</td>
                             <td>{{ $anggota->tempatTugas->nama_tempat ?? '-' }}</td>
-                            <td>{{ $anggota->no_hp ?? '-' }}</td>
+                            <td>{{ $anggota->no_hp ? preg_replace('/[^0-9]/', '', (string) $anggota->no_hp) : '-' }}</td>
                             <td>{{ ucfirst($anggota->status_aktif ?? 'aktif') }}</td>
                         </tr>
                     @empty

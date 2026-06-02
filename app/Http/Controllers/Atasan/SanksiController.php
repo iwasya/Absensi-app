@@ -22,7 +22,9 @@ class SanksiController extends Controller
      */
     public function index(Request $request): View
     {
+        $atasan = $request->user();
         $items = Sanksi::with('user');
+        $this->scopeManageablePetugasRelation($items, $atasan);
 
         if ($request->filled('month')) {
             $items->whereMonth('tanggal', $request->month);
@@ -45,7 +47,7 @@ class SanksiController extends Controller
 
         return view('atasan.sanksi', [
             'items' => $items->orderByDesc('tanggal')->orderByDesc('id_sanksi')->paginate($request->get("per_page", 20))->withQueryString(),
-            'users' => User::orderBy('nama')->get(),
+            'users' => $this->manageablePetugasQuery($atasan)->orderBy('nama')->get(),
         ]);
     }
 
@@ -54,7 +56,9 @@ class SanksiController extends Controller
      */
     public function print(Request $request): View
     {
+        $atasan = $request->user();
         $items = Sanksi::with('user');
+        $this->scopeManageablePetugasRelation($items, $atasan);
 
         if ($request->filled('month')) {
             $items->whereMonth('tanggal', $request->month);
@@ -80,7 +84,7 @@ class SanksiController extends Controller
         return view('atasan.sanksi_print', [
             'items' => $items,
             'month' => $request->month,
-            'selectedUser' => $request->id_user ? User::find($request->id_user) : null,
+            'selectedUser' => $request->id_user ? $this->manageablePetugasQuery($atasan)->find($request->id_user) : null,
         ]);
     }
 
@@ -98,8 +102,8 @@ class SanksiController extends Controller
 
         // Verify user is petugas (atasan should only give sanksi to petugas)
         $targetUser = User::findOrFail($validated['id_user']);
-        if (!$targetUser->isPetugas()) {
-            return back()->with('error', 'Sanksi hanya dapat diberikan kepada petugas.');
+        if (! $this->canManagePetugas($request->user(), $targetUser)) {
+            return back()->with('error', 'Sanksi hanya dapat diberikan kepada petugas area tugas kamu.');
         }
 
         $sanksi = Sanksi::create($validated);
@@ -124,7 +128,8 @@ class SanksiController extends Controller
      */
     public function delete(Request $request, int $id): RedirectResponse
     {
-        $sanksi = Sanksi::findOrFail($id);
+        $sanksi = Sanksi::with('user')->findOrFail($id);
+        $this->ensureCanManagePetugas($request->user(), $sanksi->user);
         
         // Authorization: Only allow deletion if sanksi was created recently (within 24 hours)
         // This prevents manipulation of historical data
@@ -136,5 +141,43 @@ class SanksiController extends Controller
         ActivityLogger::log($request, 'Menghapus sanksi', 'sanksi', $id, Sanksi::class);
 
         return back()->with('success', 'Sanksi berhasil dihapus.');
+    }
+
+    private function manageablePetugasQuery(User $atasan)
+    {
+        return User::query()
+            ->whereHas('role', function ($query) {
+                QueryFilters::whereRoleAlias($query, ['petugas', 'karyawan']);
+            })
+            ->when($atasan->id_tempat, fn ($query) => $query->where('id_tempat', $atasan->id_tempat));
+    }
+
+    private function scopeManageablePetugasRelation($query, User $atasan, string $relation = 'user'): void
+    {
+        $query->whereHas($relation, function ($userQuery) use ($atasan) {
+            $userQuery->whereHas('role', function ($roleQuery) {
+                QueryFilters::whereRoleAlias($roleQuery, ['petugas', 'karyawan']);
+            });
+
+            if ($atasan->id_tempat) {
+                $userQuery->where('id_tempat', $atasan->id_tempat);
+            }
+        });
+    }
+
+    private function canManagePetugas(User $atasan, ?User $petugas): bool
+    {
+        if (! $petugas?->isPetugas()) {
+            return false;
+        }
+
+        return ! $atasan->id_tempat || (int) $petugas->id_tempat === (int) $atasan->id_tempat;
+    }
+
+    private function ensureCanManagePetugas(User $atasan, ?User $petugas): void
+    {
+        if (! $this->canManagePetugas($atasan, $petugas)) {
+            abort(403, 'Anda tidak memiliki akses ke data petugas ini.');
+        }
     }
 }

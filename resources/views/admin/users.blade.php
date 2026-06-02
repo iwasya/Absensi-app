@@ -1054,7 +1054,7 @@
 
                             <td>
                                 <div class="users-info-grid">
-                                    <input type="text" name="no_hp_{{ $item->id_user }}" value="{{ $item->no_hp }}" placeholder="No HP">
+                                    <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="20" name="no_hp_{{ $item->id_user }}" value="{{ preg_replace('/[^0-9]/', '', (string) $item->no_hp) }}" placeholder="No HP" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                                     <input type="text" name="jabatan_{{ $item->id_user }}" value="{{ $item->jabatan }}" placeholder="Jabatan">
                                     <input type="text" name="alamat_{{ $item->id_user }}" value="{{ $item->alamat }}" placeholder="Alamat">
                                 </div>
@@ -1124,7 +1124,9 @@
         formData.append('regu', document.querySelector('[name="regu_' + id + '"]').value);
         formData.append('shift', document.querySelector('[name="shift_' + id + '"]').value);
         formData.append('status_aktif', document.querySelector('[name="status_aktif_' + id + '"]').value);
-        formData.append('no_hp', document.querySelector('[name="no_hp_' + id + '"]').value);
+        const noHpInput = document.querySelector('[name="no_hp_' + id + '"]');
+        noHpInput.value = noHpInput.value.replace(/[^0-9]/g, '');
+        formData.append('no_hp', noHpInput.value);
         formData.append('jabatan', document.querySelector('[name="jabatan_' + id + '"]').value);
         formData.append('alamat', document.querySelector('[name="alamat_' + id + '"]').value);
 

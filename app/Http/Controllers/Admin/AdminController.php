@@ -98,7 +98,7 @@ class AdminController extends Controller
             'is_ketua_regu' => ['nullable', 'boolean'],
             'shift' => ['nullable', 'string', 'max:30'],
             'status_aktif' => ['nullable', 'in:aktif,nonaktif'],
-            'no_hp' => ['nullable', 'string', 'max:30'],
+            'no_hp' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+$/'],
             'alamat' => ['nullable', 'string'],
             'jabatan' => ['nullable', 'string', 'max:100'],
         ]);
@@ -145,7 +145,7 @@ class AdminController extends Controller
             'is_ketua_regu' => ['nullable', 'boolean'],
             'shift' => ['nullable', 'string', 'max:30'],
             'status_aktif' => ['nullable', 'in:aktif,nonaktif'],
-            'no_hp' => ['nullable', 'string', 'max:30'],
+            'no_hp' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+$/'],
             'alamat' => ['nullable', 'string'],
             'jabatan' => ['nullable', 'string', 'max:100'],
         ]);
@@ -214,14 +214,30 @@ class AdminController extends Controller
 
     private function nikExists(?string $nik, ?int $ignoreUserId = null): bool
     {
-        $nik = trim((string) $nik);
+        $nik = UserSensitive::normalizeNik((string) $nik);
         if ($nik === '') {
             return false;
         }
 
-        return UserSensitive::where('nik_hash', hash('sha256', $nik))
+        $existingByHash = UserSensitive::where('nik_hash', hash('sha256', $nik))
             ->when($ignoreUserId, fn ($query) => $query->where('id_user', '!=', $ignoreUserId))
             ->exists();
+
+        if ($existingByHash) {
+            return true;
+        }
+
+        return UserSensitive::whereNotNull('nik_encrypted')
+            ->whereNull('nik_hash')
+            ->when($ignoreUserId, fn ($query) => $query->where('id_user', '!=', $ignoreUserId))
+            ->get()
+            ->contains(function (UserSensitive $record) use ($nik) {
+                try {
+                    return UserSensitive::normalizeNik(\Illuminate\Support\Facades\Crypt::decryptString($record->nik_encrypted)) === $nik;
+                } catch (\Exception $e) {
+                    return false;
+                }
+            });
     }
 
     public function tempat(Request $request): View

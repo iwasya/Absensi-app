@@ -46,13 +46,13 @@ class UsersImport implements ToCollection, WithHeadingRow, WithBatchInserts, Wit
 
         foreach ($rows as $row) {
             $nama = trim((string) ($row['nama'] ?? ''));
-            $nik = trim((string) ($row['nik'] ?? ''));
+            $nik = UserSensitive::normalizeNik((string) ($row['nik'] ?? ''));
             $username = trim((string) ($row['username'] ?? ''));
             $email = trim((string) ($row['email'] ?? $row['email_opsional'] ?? ''));
             $password = (string) ($row['password'] ?? '');
             $roleInput = trim((string) ($row['role'] ?? 'Petugas PPSU'));
             $statusAktif = strtolower(trim((string) ($row['status_akun'] ?? 'aktif')));
-            $noHp = trim((string) ($row['no_telepon_sensitif'] ?? $row['no_telepon'] ?? ''));
+            $noHp = UserSensitive::normalizePhone((string) ($row['no_telepon_sensitif'] ?? $row['no_telepon'] ?? ''));
 
             if ($nama === '' || $nik === '' || $username === '' || $email === '' || $password === '' || $roleInput === '') {
                 continue;
@@ -131,7 +131,7 @@ class UsersImport implements ToCollection, WithHeadingRow, WithBatchInserts, Wit
 
                     if (! empty($phoneData[$username])) {
                         $row['no_hp_encrypted'] = Crypt::encryptString($phoneData[$username]);
-                        $row['no_hp_hash'] = hash('sha256', preg_replace('/[^0-9+]/', '', $phoneData[$username]) ?? '');
+                        $row['no_hp_hash'] = hash('sha256', $phoneData[$username]);
                     }
 
                     $sensitiveToInsert[] = $row;

@@ -23,7 +23,8 @@ class MigrateNikHash extends Command
                 foreach ($records as $record) {
                     try {
                         $decrypted = \Illuminate\Support\Facades\Crypt::decryptString($record->nik_encrypted);
-                        $record->nik_hash = hash('sha256', $decrypted);
+                        $normalized = UserSensitive::normalizeNik($decrypted);
+                        $record->nik_hash = hash('sha256', $normalized);
                         $record->save();
                         $count++;
                     } catch (\Exception $e) {

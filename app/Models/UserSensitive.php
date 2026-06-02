@@ -24,8 +24,9 @@ class UserSensitive extends Model
      */
     public function setNik(string $rawNik): self
     {
-        $this->nik_encrypted = \Illuminate\Support\Facades\Crypt::encryptString($rawNik);
-        $this->nik_hash = hash('sha256', $rawNik);
+        $normalized = self::normalizeNik($rawNik);
+        $this->nik_encrypted = \Illuminate\Support\Facades\Crypt::encryptString($normalized);
+        $this->nik_hash = hash('sha256', $normalized);
         return $this;
     }
 
@@ -37,7 +38,12 @@ class UserSensitive extends Model
         if (!$this->nik_hash) {
             return false;
         }
-        return hash_equals($this->nik_hash, hash('sha256', $rawNik));
+        return hash_equals($this->nik_hash, hash('sha256', self::normalizeNik($rawNik)));
+    }
+
+    public static function normalizeNik(string $rawNik): string
+    {
+        return preg_replace('/[^0-9]/', '', $rawNik) ?? '';
     }
 
     public function clearNik(): self
@@ -53,7 +59,7 @@ class UserSensitive extends Model
     public function setNoHp(string $rawNoHp): self
     {
         $normalized = $this->normalizePhone($rawNoHp);
-        $this->no_hp_encrypted = \Illuminate\Support\Facades\Crypt::encryptString($rawNoHp);
+        $this->no_hp_encrypted = \Illuminate\Support\Facades\Crypt::encryptString($normalized);
         $this->no_hp_hash = hash('sha256', $normalized);
         return $this;
     }
@@ -65,9 +71,9 @@ class UserSensitive extends Model
         return $this;
     }
 
-    private function normalizePhone(string $rawNoHp): string
+    public static function normalizePhone(string $rawNoHp): string
     {
-        return preg_replace('/[^0-9+]/', '', $rawNoHp) ?? '';
+        return preg_replace('/[^0-9]/', '', $rawNoHp) ?? '';
     }
 
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
