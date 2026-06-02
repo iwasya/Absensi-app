@@ -203,7 +203,7 @@ class AbsensiController extends Controller
         return ImageOptimizer::storeBinary($imageBase64, $folder, 720, 720, 72);
     }
 
-    private function validateAssignedArea($user, ?float $latitude, ?float $longitude): ?string
+    private function validateAssignedArea($user, ?float $latitude, ?float $longitude, ?float $accuracy = null): ?string
     {
         $tempat = $user->tempatTugas;
 
@@ -213,6 +213,11 @@ class AbsensiController extends Controller
 
         if ($latitude === null || $longitude === null) {
             return 'Lokasi GPS belum terbaca. Izinkan akses lokasi lalu coba lagi.';
+        }
+
+        $maxAccuracy = max((float) config('absensi.jarak_maks_meter', 100), 100.0);
+        if ($accuracy !== null && $accuracy > $maxAccuracy) {
+            return 'Akurasi GPS masih terlalu rendah. Aktifkan lokasi presisi, tunggu beberapa saat, lalu coba lagi.';
         }
 
         $dist = $this->calculateDistance(
@@ -380,6 +385,7 @@ class AbsensiController extends Controller
             'foto_masuk' => ['required', 'string'],
             'latitude_masuk' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude_masuk' => ['nullable', 'numeric', 'between:-180,180'],
+            'accuracy_masuk' => ['nullable', 'numeric', 'min:0'],
             'lokasi_masuk' => ['nullable', 'string', 'max:255'],
             'keterangan' => ['nullable', 'string', 'max:500'],
             'shift' => ['nullable', 'string', 'max:30'],
@@ -444,7 +450,8 @@ class AbsensiController extends Controller
         $areaError = $this->validateAssignedArea(
             $user,
             isset($validated['latitude_masuk']) ? (float) $validated['latitude_masuk'] : null,
-            isset($validated['longitude_masuk']) ? (float) $validated['longitude_masuk'] : null
+            isset($validated['longitude_masuk']) ? (float) $validated['longitude_masuk'] : null,
+            isset($validated['accuracy_masuk']) ? (float) $validated['accuracy_masuk'] : null
         );
         if ($areaError) {
             return back()->with('error', $areaError);
@@ -520,6 +527,7 @@ class AbsensiController extends Controller
             'foto_pulang' => ['required', 'string'],
             'latitude_pulang' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude_pulang' => ['nullable', 'numeric', 'between:-180,180'],
+            'accuracy_pulang' => ['nullable', 'numeric', 'min:0'],
             'lokasi_pulang' => ['nullable', 'string', 'max:255'],
             'id_absensi' => ['nullable', 'exists:absensi,id_absensi'],
         ]);
@@ -573,7 +581,8 @@ class AbsensiController extends Controller
         $areaError = $this->validateAssignedArea(
             $user,
             isset($validated['latitude_pulang']) ? (float) $validated['latitude_pulang'] : null,
-            isset($validated['longitude_pulang']) ? (float) $validated['longitude_pulang'] : null
+            isset($validated['longitude_pulang']) ? (float) $validated['longitude_pulang'] : null,
+            isset($validated['accuracy_pulang']) ? (float) $validated['accuracy_pulang'] : null
         );
         if ($areaError) {
             return back()->with('error', $areaError);

@@ -471,6 +471,7 @@
                         <div><label>Longitude</label><input name="longitude_masuk" id="lng_masuk" readonly></div>
                         <div><label>Lokasi</label><input name="lokasi_masuk" readonly></div>
                     </div>
+                    <input type="hidden" name="accuracy_masuk" id="accuracy_masuk">
                     <div class="coord-row" style="margin-top:12px;">
                         <div>
                             <label>Shift</label>
@@ -562,6 +563,7 @@
                         <div><label>Longitude</label><input name="longitude_pulang" id="lng_pulang" readonly></div>
                         <div><label>Lokasi</label><input name="lokasi_pulang" readonly></div>
                     </div>
+                    <input type="hidden" name="accuracy_pulang" id="accuracy_pulang">
                     <button type="submit" style="margin-top:14px;width:100%;padding:11px;">Simpan Absen Pulang</button>
                 </form>
             @elseif($today?->status === 'tidak_absen' && !$today?->jam_masuk)
@@ -604,6 +606,7 @@
                         <div><label>Longitude</label><input name="longitude_pulang" id="lng_pulang" readonly></div>
                         <div><label>Lokasi</label><input name="lokasi_pulang" readonly></div>
                     </div>
+                    <input type="hidden" name="accuracy_pulang" id="accuracy_pulang">
                     <button type="submit" style="margin-top:14px;width:100%;padding:11px;">Simpan Absen Pulang</button>
                 </form>
             @endif
@@ -761,6 +764,7 @@
     var tempatLng  = {{ isset($tempatTugas) && $tempatTugas->longitude ? $tempatTugas->longitude : 'null' }};
     var namaTempat = "{{ isset($tempatTugas) ? $tempatTugas->nama_tempat : '' }}";
     var jarakMaksMeter = {{ (int) $jarakMaksMeter }};
+    var maxAccuracyMeter = Math.max(jarakMaksMeter, 100);
 
     function setSubmitDisabled(disabled) {
         ['form_masuk', 'form_pulang'].forEach(function (formId) {
@@ -781,6 +785,7 @@
         var accuracy = position.coords.accuracy;
         var distance = null;
         var inRange = true;
+        var isAccurate = !accuracy || accuracy <= maxAccuracyMeter;
 
         if (tempatLat !== null && tempatLng !== null) {
             distance = calculateDistance(userLat, userLng, tempatLat, tempatLng);
@@ -791,17 +796,23 @@
             var lat = document.getElementById('lat_' + type);
             var lng = document.getElementById('lng_' + type);
             var loc = document.querySelector('input[name="lokasi_' + type + '"]');
+            var acc = document.getElementById('accuracy_' + type);
 
             if (lat && lng) {
                 lat.value = userLat.toFixed(7);
                 lng.value = userLng.toFixed(7);
             }
+            if (acc) acc.value = accuracy ? Math.round(accuracy) : '';
             if (loc) {
                 var details = [];
                 if (distance !== null) details.push('jarak ' + Math.round(distance) + ' m');
                 if (accuracy) details.push('akurasi +/- ' + Math.round(accuracy) + ' m');
 
-                if (!inRange) {
+                if (!isAccurate) {
+                    loc.value = 'GPS belum akurat';
+                    loc.style.color = '#B45309';
+                    loc.style.fontWeight = 'bold';
+                } else if (!inRange) {
                     loc.value = 'Di luar area kantor';
                     loc.style.color = 'red';
                     loc.style.fontWeight = 'bold';
@@ -813,8 +824,10 @@
             }
         });
 
-        setSubmitDisabled(!inRange);
-        if (!inRange) {
+        setSubmitDisabled(!isAccurate || !inRange);
+        if (!isAccurate) {
+            alert('Akurasi GPS masih terlalu rendah (+/- ' + Math.round(accuracy) + ' meter). Aktifkan GPS/lokasi presisi, tunggu sebentar, lalu muat ulang halaman.');
+        } else if (!inRange) {
             alert('Anda berada di luar area kantor. Jarak Anda sekitar ' + Math.round(distance) + ' meter dari lokasi yang diizinkan.');
         }
     }
@@ -925,9 +938,16 @@
 
                 var lat = document.getElementById('lat_' + type);
                 var lng = document.getElementById('lng_' + type);
+                var acc = document.getElementById('accuracy_' + type);
                 if (lat && lng && (!lat.value || !lng.value)) {
                     e.preventDefault();
                     alert('Lokasi GPS belum selesai dibaca. Tunggu sebentar sampai latitude dan longitude terisi.');
+                    return;
+                }
+
+                if (acc && acc.value && Number(acc.value) > maxAccuracyMeter) {
+                    e.preventDefault();
+                    alert('Akurasi GPS masih terlalu rendah. Aktifkan lokasi presisi lalu coba lagi.');
                 }
             });
         }
