@@ -440,7 +440,7 @@
                 <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/>
                 <path d="M8 7v4M8 5.5v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
             </svg>
-            Khusus petugas Pendamsos, Admin, dan Kasie Ekbang
+            Khusus petugas PPSU, Admin, dan Kasie Ekbang
         </div>
 
         <form method="POST" action="{{ route('login', [], false) }}">
