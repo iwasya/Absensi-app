@@ -52,6 +52,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/set-periode', [\App\Http\Controllers\Controller::class, 'setPeriode'])->name('set.periode');
 
     Route::get('/absensi/{id}/detail', [\App\Http\Controllers\Petugas\AbsensiController::class, 'show'])->name('absensi.detail');
+    Route::get('/absensi/{absensi}/foto/{type}', [\App\Http\Controllers\Petugas\AbsensiController::class, 'photo'])->whereIn('type', ['masuk', 'pulang'])->name('absensi.photo');
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
     Route::post('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->middleware('throttle:10,1')->name('profile.update');
     Route::post('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->middleware('throttle:5,1')->name('profile.password');

@@ -4,6 +4,15 @@
 
 @section('content')
     <h1>Tempat Tugas</h1>
+    <div class="panel" style="margin-bottom: 16px;">
+        <strong>Cara isi titik maps untuk absensi</strong>
+        <ol style="margin:10px 0 0 18px;color:var(--muted);line-height:1.7;">
+            <li>Buka Google Maps dan cari lokasi tempat tugas.</li>
+            <li>Klik kanan pada titik lokasi, lalu klik angka koordinat yang muncul untuk menyalin.</li>
+            <li>Paste angka pertama ke kolom Latitude dan angka kedua ke kolom Longitude.</li>
+            <li>Contoh hasil salinan: <code>-6.209286, 106.871253</code>.</li>
+        </ol>
+    </div>
     <div class="panel" style="margin-bottom: 24px;">        <form action="{{ route('admin.tempat.index') }}" method="GET" class="filter-bar">            <div class="filter-control" style="max-width:120px;">                <label>Per Halaman</label>                <select name="per_page" onchange="this.form.submit()" style="width:100%;">                    <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10 / hal</option>                    <option value="15" {{ request('per_page') == 15 ? 'selected' : (request('per_page') ? '' : 'selected') }}>15 / hal</option>                    <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 / hal</option>                    <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 / hal</option>                    <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100 / hal</option>                </select>            </div>        </form>    </div>    <div class="panel">
         <form method="POST" action="{{ route('admin.tempat.store') }}">
             @csrf

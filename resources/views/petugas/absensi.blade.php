@@ -39,6 +39,9 @@
     $activeAbsensiDateLabel = $today?->tanggal
         ? $today->tanggal->translatedFormat('d F Y')
         : now()->translatedFormat('d F Y');
+    $isOvernightShift = $isOvernightShift ?? false;
+    $jamPulangBukaAt = $jamPulangBukaAt ?? null;
+    $jamPulangTutupAt = $jamPulangTutupAt ?? null;
 @endphp
 <style>
     main { max-width: 100% !important; margin: 0 !important; padding: 20px !important; }
@@ -130,6 +133,41 @@
         gap: 9px;
     }
     .abs-info svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .abs-schedule-note {
+        margin-bottom: 20px;
+        background: var(--primary-soft);
+        border-color: var(--primary-border);
+        color: var(--primary2);
+        align-items: flex-start;
+    }
+    .abs-schedule-note strong {
+        color: var(--text-color);
+    }
+    .abs-schedule-list {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .abs-schedule-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .abs-shift-list {
+        display: grid;
+        gap: 6px;
+        margin-top: 10px;
+    }
+    .abs-shift-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        color: var(--muted);
+    }
+    .abs-shift-row strong {
+        min-width: 74px;
+    }
 
     /* ── Camera ── */
     .camera-container {
@@ -376,6 +414,36 @@
         Jadwal shift kamu belum diatur. Form absensi tetap dibuka, dan data shift boleh dikosongkan atau dipilih manual.
     </div>
 @endif
+<div class="abs-info abs-schedule-note">
+    <svg fill="none" viewBox="0 0 16 16">
+        <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M8 4.5V8l2.5 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+        <strong>Jadwal absensi {{ $activeAbsensiDateLabel }}</strong>
+        <div class="abs-schedule-list">
+            <span class="abs-schedule-item">Masuk: {{ substr($jamMasukBuka, 0, 5) }} - {{ substr($jamMasukTutup, 0, 5) }}</span>
+            <span class="abs-schedule-item">Pulang: {{ substr($jamPulangBuka, 0, 5) }} - {{ substr($jamPulangTutup, 0, 5) }}{{ $isOvernightShift ? ' (hari berikutnya)' : '' }}</span>
+        </div>
+        @if($shifts->isNotEmpty())
+            <div class="abs-shift-list">
+                @foreach($shifts as $shift)
+                    @php
+                        $shiftMasuk = \Carbon\Carbon::parse($shift->jam_masuk);
+                        $shiftMasukTutup = $shiftMasuk->copy()->addMinutes(15);
+                        $shiftPulangBuka = $shiftMasuk->copy()->addHours($shift->durasi_jam ?: 8);
+                        $shiftPulangOvernight = $shiftPulangBuka->toDateString() !== $shiftMasuk->toDateString();
+                    @endphp
+                    <div class="abs-shift-row">
+                        <strong>{{ $shift->nama_shift }}</strong>
+                        <span>Masuk {{ $shiftMasuk->format('H:i') }} - {{ $shiftMasukTutup->format('H:i') }}</span>
+                        <span>Pulang {{ $shiftPulangBuka->format('H:i') }} - 23:59{{ $shiftPulangOvernight ? ' (hari berikutnya)' : '' }}</span>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </div>
+</div>
 
 {{-- ── Form Absensi ── --}}
 <div class="abs-grid">
@@ -387,7 +455,7 @@
                 <svg fill="none" viewBox="0 0 16 16"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 Absen Masuk
             </div>
-            <span class="abs-card-time">Batas {{ substr($jamMasukTutup, 0, 5) }}</span>
+            <span class="abs-card-time">{{ substr($jamMasukBuka, 0, 5) }} - {{ substr($jamMasukTutup, 0, 5) }}</span>
         </div>
         <div class="abs-card-body">
             @if($today?->jam_masuk)
@@ -498,7 +566,7 @@
                 <svg fill="none" viewBox="0 0 16 16"><path d="M10 3l5 5-5 5M3 8h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 Absen Pulang
             </div>
-            <span class="abs-card-time">Terbuka sepanjang hari</span>
+            <span class="abs-card-time">{{ substr($jamPulangBuka, 0, 5) }} - {{ substr($jamPulangTutup, 0, 5) }}{{ $isOvernightShift ? ' +1 hari' : '' }}</span>
         </div>
         <div class="abs-card-body">
             @if(($today?->status === 'cuti' || $isLeave) && ! $hasApprovedPulangAccess)
@@ -564,12 +632,12 @@
                 </form>
             @elseif($today?->status === 'tidak_absen' && !$today?->jam_masuk)
                 <div class="error" style="margin:0;">Tidak ada absen masuk untuk hari ini sehingga tidak bisa absen pulang.</div>
+            @elseif($jamPulangBukaAt && now()->lt($jamPulangBukaAt))
+                <div class="abs-info" style="margin:0;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
+                    <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    Absen pulang belum dibuka. Mulai pukul <strong>{{ substr($jamPulangBuka, 0, 5) }}</strong>{{ $isOvernightShift ? ' hari berikutnya' : '' }}.
+                </div>
             @else
-                @if(now()->format('H:i:s') < $jamPulangBuka)
-                    <div class="abs-info" style="margin-bottom:16px;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
-                        Absen pulang dilakukan sebelum jam pulang normal. Absensi tetap bisa disimpan.
-                    </div>
-                @endif
                 <form id="form_pulang" method="POST" action="{{ route('petugas.absensi.pulang') }}" enctype="multipart/form-data">
                     @csrf
                     <label style="margin-bottom:8px;">Foto Pulang</label>

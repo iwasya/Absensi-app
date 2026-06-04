@@ -1019,7 +1019,7 @@
                 </a>
                 <a href="{{ route('admin.sift.index') }}" class="{{ request()->routeIs('admin.sift.*') ? 'active' : '' }}">
                     <svg fill="none" viewBox="0 0 16 16"><circle cx="5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 14c0-3 2.2-5 5-5M10 9c2.5 0 5 2 5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M6.5 9.5L8 11l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                    SIFT
+                    SHIFT
                 </a>
                 <a href="{{ route('admin.buka-absen.index') }}">
                     <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>

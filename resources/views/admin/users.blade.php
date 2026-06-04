@@ -987,6 +987,10 @@
                     @forelse($items as $item)
                         @php
                             $currentRole = $roles->firstWhere('id_role', $item->id_role);
+                            $jabatanSelectOptions = $jabatanOptions;
+                            if ($item->jabatan && ! in_array($item->jabatan, $jabatanSelectOptions, true)) {
+                                $jabatanSelectOptions[] = $item->jabatan;
+                            }
                         @endphp
                         <tr>
                             <td class="users-check-cell">
@@ -1055,7 +1059,14 @@
                             <td>
                                 <div class="users-info-grid">
                                     <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="20" name="no_hp_{{ $item->id_user }}" value="{{ preg_replace('/[^0-9]/', '', (string) $item->no_hp) }}" placeholder="No HP" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-                                    <input type="text" name="jabatan_{{ $item->id_user }}" value="{{ $item->jabatan }}" placeholder="Jabatan">
+                                    <select name="jabatan_{{ $item->id_user }}" class="users-select">
+                                        <option value="">Jabatan</option>
+                                        @foreach($jabatanSelectOptions as $jabatanOption)
+                                            <option value="{{ $jabatanOption }}" @selected($item->jabatan === $jabatanOption)>
+                                                {{ $jabatanOption }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                     <input type="text" name="alamat_{{ $item->id_user }}" value="{{ $item->alamat }}" placeholder="Alamat">
                                 </div>
                             </td>

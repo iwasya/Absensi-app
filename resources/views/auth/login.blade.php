@@ -253,6 +253,48 @@
             box-shadow: 0 0 0 3px rgba(14,116,144,.12);
         }
         input::placeholder { color: var(--text3); }
+        .input-wrap.has-toggle input {
+            padding-right: 46px;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border: 0;
+            border-radius: 7px;
+            background: transparent;
+            color: var(--text3);
+            cursor: pointer;
+            transition: background .18s, color .18s;
+        }
+        .password-toggle:hover,
+        .password-toggle:focus-visible {
+            background: rgba(14,116,144,.1);
+            color: var(--accent);
+            outline: none;
+        }
+        .input-wrap .password-toggle svg {
+            position: static;
+            transform: none;
+            width: 18px;
+            height: 18px;
+            pointer-events: none;
+        }
+        .password-toggle .icon-eye-off {
+            display: none;
+        }
+        .password-toggle.is-visible .icon-eye {
+            display: none;
+        }
+        .password-toggle.is-visible .icon-eye-off {
+            display: block;
+        }
 
         /* ── REMEMBER + FORGOT ── */
         .check-row {
@@ -466,7 +508,7 @@
             {{-- Password --}}
             <div class="form-group">
                 <label for="password">Password</label>
-                <div class="input-wrap">
+                <div class="input-wrap has-toggle">
                     <svg fill="none" viewBox="0 0 16 16">
                         <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
                         <path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
@@ -479,6 +521,24 @@
                         required
                         autocomplete="current-password"
                     >
+                    <button
+                        type="button"
+                        class="password-toggle"
+                        id="togglePassword"
+                        aria-label="Tampilkan password"
+                        aria-pressed="false"
+                        title="Tampilkan password"
+                    >
+                        <svg class="icon-eye" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/>
+                        </svg>
+                        <svg class="icon-eye-off" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M3 3l18 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            <path d="M10.7 5.2A10.7 10.7 0 0112 5c6 0 9.5 7 9.5 7a18.4 18.4 0 01-3.1 4.1M6.7 6.8C3.9 8.7 2.5 12 2.5 12s3.5 7 9.5 7c1.4 0 2.7-.4 3.8-1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M9.9 9.9A3 3 0 0012 15a3 3 0 002.1-.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                    </button>
                 </div>
                 @error('password')
                     <div class="error-msg">
@@ -515,6 +575,26 @@
 
     </div>
 </main>
+
+<script>
+    (function () {
+        const toggle = document.getElementById('togglePassword');
+        const password = document.getElementById('password');
+
+        if (!toggle || !password) {
+            return;
+        }
+
+        toggle.addEventListener('click', function () {
+            const isHidden = password.type === 'password';
+            password.type = isHidden ? 'text' : 'password';
+            toggle.classList.toggle('is-visible', isHidden);
+            toggle.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+            toggle.setAttribute('aria-label', isHidden ? 'Sembunyikan password' : 'Tampilkan password');
+            toggle.setAttribute('title', isHidden ? 'Sembunyikan password' : 'Tampilkan password');
+        });
+    })();
+</script>
 
 </body>
 </html>

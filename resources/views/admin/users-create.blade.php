@@ -208,6 +208,42 @@
         display: none;
     }
 
+    .jabatan-choice-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .jabatan-choice {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 10px 14px;
+        border: 1.5px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--bg-color);
+        color: var(--text-color);
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: border-color .18s, background .18s, color .18s, box-shadow .18s;
+    }
+
+    .jabatan-choice input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .jabatan-choice:has(input:checked) {
+        border-color: var(--primary);
+        background: var(--primary-soft);
+        color: var(--primary2);
+        box-shadow: inset 0 0 0 1px var(--primary-border);
+    }
+
     .users-form-actions {
         margin-top: 32px;
         display: flex;
@@ -407,9 +443,16 @@
                     </div>
 
                     <div class="form-control">
-                        <label for="jabatan">Jabatan</label>
-                        <input id="jabatan" name="jabatan" type="text" placeholder="Contoh: Manager, Staff" value="{{ old('jabatan') }}" aria-describedby="jabatanHelp">
-                        <div id="jabatanHelp" class="help-text">✓ Posisi/jabatan di perusahaan</div>
+                        <label>Jabatan</label>
+                        <div class="jabatan-choice-grid" id="jabatanHelp">
+                            @foreach($jabatanOptions as $jabatanOption)
+                                <label class="jabatan-choice">
+                                    <input type="radio" name="jabatan" value="{{ $jabatanOption }}" @checked(old('jabatan', 'Petugas') === $jabatanOption)>
+                                    {{ $jabatanOption }}
+                                </label>
+                            @endforeach
+                        </div>
+                        <div class="help-text">✓ Pilih jabatan agar data seragam</div>
                     </div>
 
                     <div class="form-control">

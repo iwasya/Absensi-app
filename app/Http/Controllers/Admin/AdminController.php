@@ -48,6 +48,7 @@ class AdminController extends Controller
             'items' => $query->orderBy('created_at', 'asc')->paginate($request->get("per_page", 25))->withQueryString(),
             'roles' => Role::orderBy('id_role')->get(),
             'tempatTugas' => TempatTugas::orderBy('nama_tempat')->get(),
+            'jabatanOptions' => $this->jabatanOptions(),
             'filters' => [
                 'search'   => $request->get('search', ''),
                 'role'     => $request->get('role', ''),
@@ -61,6 +62,7 @@ class AdminController extends Controller
         return view('admin.users-create', [
             'roles' => Role::orderBy('id_role')->get(),
             'tempatTugas' => TempatTugas::orderBy('nama_tempat')->get(),
+            'jabatanOptions' => $this->jabatanOptions(),
         ]);
     }
 
@@ -78,6 +80,11 @@ class AdminController extends Controller
                 'role' => $request->role,
             ],
         ]);
+    }
+
+    private function jabatanOptions(): array
+    {
+        return ['Petugas', 'Ketua Regu', 'Admin', 'Kasie Ekbang', 'Staf'];
     }
 
     public function storeUser(Request $request): RedirectResponse

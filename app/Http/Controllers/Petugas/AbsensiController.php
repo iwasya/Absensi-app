@@ -15,6 +15,7 @@ use App\Support\QueryFilters;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 /**
@@ -89,6 +90,9 @@ class AbsensiController extends Controller
             'jamMasukTutup' => $shiftWindow['jam_masuk_tutup'],
             'jamPulangBuka' => $shiftWindow['jam_pulang_buka'],
             'jamPulangTutup' => $shiftWindow['jam_pulang_tutup'],
+            'jamPulangBukaAt' => $shiftWindow['pulang_buka_at'],
+            'jamPulangTutupAt' => $shiftWindow['pulang_tutup_at'],
+            'isOvernightShift' => $shiftWindow['is_overnight'],
             'jarakMaksMeter' => config('absensi.jarak_maks_meter', 100),
             'holidayInfo' => $holidayInfo,
             'leaveInfo' => $leaveInfo,
@@ -133,6 +137,26 @@ class AbsensiController extends Controller
         }
 
         return view('petugas.absensi-detail', compact('item'));
+    }
+
+    public function photo(Absensi $absensi, string $type)
+    {
+        $user = auth()->user();
+        if ($user->isPetugas() && $absensi->id_user !== $user->id_user) {
+            abort(403);
+        }
+
+        $field = match ($type) {
+            'masuk' => 'foto_masuk',
+            'pulang' => 'foto_pulang',
+            default => null,
+        };
+
+        if (! $field || ! $absensi->{$field} || ! Storage::disk('public')->exists($absensi->{$field})) {
+            abort(404);
+        }
+
+        return response()->file(Storage::disk('public')->path($absensi->{$field}));
     }
 
     private function calculateDistance($lat1, $lon1, $lat2, $lon2)
@@ -254,22 +278,22 @@ class AbsensiController extends Controller
 
         $shift = $this->shiftForUser($user);
         if (! $shift) {
-            $masukBuka = $targetDate->copy()->startOfDay();
-            $masukTutup = $targetDate->copy()->endOfDay();
-            $jamMasukBatasTelat = $targetDate->copy()->endOfDay();
-            $pulangBuka = $targetDate->copy()->startOfDay();
-            $pulangTutup = $targetDate->copy()->setTimeFromTimeString(config('absensi.jam_pulang_tutup', '23:59:59'));
+            $masukBuka = $targetDate->copy()->setTimeFromTimeString(config('absensi.jam_masuk_buka', '07:50:00'));
+            $masukTutup = $targetDate->copy()->setTimeFromTimeString(config('absensi.jam_masuk_tutup', '08:05:00'));
+            $jamMasukBatasTelat = $targetDate->copy()->setTimeFromTimeString(config('absensi.jam_masuk_batas_telat', '07:50:00'));
+            $pulangBuka = $masukBuka->copy()->addHours((int) config('absensi.durasi_kerja_default_jam', 8));
+            $pulangTutup = $pulangBuka->copy()->setTimeFromTimeString(config('absensi.jam_pulang_tutup', '23:59:59'));
         } else {
             $masukBuka = $targetDate->copy()->setTimeFromTimeString(Carbon::parse($shift->jam_masuk)->format('H:i:s'));
             $masukTutup = $masukBuka->copy()->addMinutes(15);
             $jamMasukBatasTelat = $masukBuka;
-            $pulangBuka = $targetDate->copy()->setTimeFromTimeString(Carbon::parse($shift->jam_pulang)->format('H:i:s'));
+            $pulangBuka = $masukBuka->copy()->addHours($shift->durasi_jam ?: 8);
 
             if ($pulangBuka->lessThanOrEqualTo($masukBuka)) {
                 $pulangBuka->addDay();
             }
 
-            $pulangTutup = $pulangBuka->copy()->addHours(4);
+            $pulangTutup = $pulangBuka->copy()->setTimeFromTimeString(config('absensi.jam_pulang_tutup', '23:59:59'));
         }
 
         return [
@@ -577,6 +601,16 @@ class AbsensiController extends Controller
 
         if ($this->requiresPulangApproval($absensi)) {
             return back()->with('error', 'Absen pulang untuk absensi ini harus diajukan dan disetujui atasan terlebih dahulu.');
+        }
+
+        $now = now();
+        $shiftWindow = $this->shiftWindow($user, $targetDate);
+        if ($now->lt($shiftWindow['pulang_buka_at']) && ! $isApprovedForgottenCheckout) {
+            return back()->with('error', 'Absen pulang belum dibuka. Jam pulang dibuka pukul ' . substr($shiftWindow['jam_pulang_buka'], 0, 5) . '.');
+        }
+
+        if ($now->gt($shiftWindow['pulang_tutup_at']) && ! $isApprovedForgottenCheckout) {
+            return back()->with('error', 'Absen pulang sudah ditutup. Ajukan approval absen pulang terlewat.');
         }
 
         $areaError = $this->validateAssignedArea(

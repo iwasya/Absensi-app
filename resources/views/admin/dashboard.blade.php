@@ -221,7 +221,7 @@
                 </a>
                 <a class="quick-link" href="{{ route('admin.sift.index') }}">
                     <span class="quick-ico bg-amber"><svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
-                    <span class="quick-text"><span class="quick-title">Sift kerja</span><span class="quick-sub">jadwal dan penugasan shift</span></span>
+                    <span class="quick-text"><span class="quick-title">Shift kerja</span><span class="quick-sub">jadwal dan penugasan shift</span></span>
                 </a>
                 <a class="quick-link" href="{{ route('admin.pengaturan.index') }}">
                     <span class="quick-ico bg-primary"><svg fill="none" viewBox="0 0 16 16"><path d="M8 5.5A2.5 2.5 0 1 0 8 10.5 2.5 2.5 0 0 0 8 5.5Z" stroke="currentColor" stroke-width="1.3"/><path d="M8 2v1.2M8 12.8V14M2 8h1.2M12.8 8H14M3.8 3.8l.9.9M11.3 11.3l.9.9M12.2 3.8l-.9.9M4.7 11.3l-.9.9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>

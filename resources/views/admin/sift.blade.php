@@ -1,9 +1,9 @@
 @extends('layouts.app')
 
-@section('title', 'SIFT - Shift & Timetable')
+@section('title', 'SHIFT - Shift & Timetable')
 
 @section('content')
-    <h1>SIFT - Shift & Timetable</h1>
+    <h1>SHIFT - Shift & Timetable</h1>
 
     {{-- Tab Navigation --}}
     <div class="panel" style="padding: 0; margin-bottom: 16px;">
@@ -330,7 +330,7 @@
             border-bottom-color: var(--primary);
         }
 
-        /* ── Sift Action Buttons ── */
+        /* ── Shift Action Buttons ── */
         .sift-action-group {
             display: flex;
             gap: 5px;

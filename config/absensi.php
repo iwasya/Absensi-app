@@ -7,13 +7,14 @@
 
 return [
     // Jam absen masuk
-    'jam_masuk_buka' => '06:00:00',
-    'jam_masuk_tutup' => '07:15:00',
-    'jam_masuk_batas_telat' => '07:00:00', // Batas waktu tepat waktu, setelah ini dianggap telat
+    'jam_masuk_buka' => '07:50:00',
+    'jam_masuk_tutup' => '08:05:00',
+    'jam_masuk_batas_telat' => '07:50:00', // Batas waktu tepat waktu, setelah ini dianggap telat
 
     // Jam absen pulang
-    'jam_pulang_buka' => '16:00:00',
+    'jam_pulang_buka' => '15:50:00',
     'jam_pulang_tutup' => '23:59:59',
+    'durasi_kerja_default_jam' => 8,
 
     // Batas jarak (meter) dari lokasi kantor
     'jarak_maks_meter' => 100,
@@ -25,5 +26,5 @@ return [
     'kuota_cuti_tahunan' => 12,
 
     // Batas jam absen otomatis tidak_absen (setelah jam ini, buat record tidak_absen)
-    'batas_otomatis_tidak_absen' => '07:15:00',
+    'batas_otomatis_tidak_absen' => '08:05:00',
 ];
