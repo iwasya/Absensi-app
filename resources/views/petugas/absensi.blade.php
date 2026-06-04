@@ -409,7 +409,7 @@
     </div>
 @endif
 @if(! $hasAssignedShift)
-    <div class="abs-info" style="margin-bottom:20px;background:var(--primary-soft);border-color:var(--primary-border);color:var(--primary2);">
+    <div id="missing_shift_notice" class="abs-info" style="margin-bottom:20px;background:var(--primary-soft);border-color:var(--primary-border);color:var(--primary2);transition:opacity .25s ease;">
         <svg fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 4.5v4M8 11.5h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Jadwal shift kamu belum diatur. Form absensi tetap dibuka, dan data shift boleh dikosongkan atau dipilih manual.
     </div>
@@ -1018,6 +1018,16 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        var missingShiftNotice = document.getElementById('missing_shift_notice');
+        if (missingShiftNotice) {
+            setTimeout(function () {
+                missingShiftNotice.style.opacity = '0';
+                setTimeout(function () {
+                    missingShiftNotice.style.display = 'none';
+                }, 250);
+            }, 5000);
+        }
+
         readAccurateLocation();
         setupCamera('masuk');
         setupCamera('pulang');
