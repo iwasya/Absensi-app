@@ -48,7 +48,7 @@
 <body>
     <header>
         <strong>{{ config('app.name') }}</strong>
-        <form method="POST" action="{{ route('logout') }}">
+        <form method="POST" action="{{ route('logout', [], false) }}">
             @csrf
             <button type="submit">Logout</button>
         </form>

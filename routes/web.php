@@ -44,7 +44,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::get('/home', function () {
-        return redirect()->route('dashboard');
+        return redirect('/dashboard');
     });
 
     Route::get('/notifikasi', [NotifikasiController::class, 'index'])->name('notifikasi.index');

@@ -314,7 +314,7 @@
                         {{ $homeLabel }}
                     </a>
                     @auth
-                        <form class="logout-form" method="POST" action="{{ route('logout') }}">
+                        <form class="logout-form" method="POST" action="{{ route('logout', [], false) }}">
                             @csrf
                             <button class="button secondary" type="submit">
                                 <svg fill="none" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 17l5-5-5-5M20 12H9m3 8H6a2 2 0 01-2-2V6a2 2 0 012-2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>

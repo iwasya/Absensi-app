@@ -1153,7 +1153,7 @@
                     </button>
                     <div class="notification-panel" id="profilePanel">
                         <a href="{{ route('profile.index') }}">Lihat Profil</a>
-                        <form method="POST" action="{{ route('logout') }}" style="margin:0">
+                        <form method="POST" action="{{ route('logout', [], false) }}" style="margin:0">
                             @csrf
                             <button type="submit">Logout</button>
                         </form>
