@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 class PreventBackHistory
 {
     /**
-     * Prevent browsers from showing authenticated pages from the back/forward cache.
+     * Prevent browsers from showing sensitive pages from the back/forward cache.
      */
     public function handle(Request $request, Closure $next): Response
     {
