@@ -30,6 +30,8 @@ Route::get('/', function () {
     return view('auth.login');
 });
 
+Route::view('/maintenance', 'errors.503')->name('maintenance.notice');
+
 
 // Route autentikasi untuk pengguna yang belum login
 
