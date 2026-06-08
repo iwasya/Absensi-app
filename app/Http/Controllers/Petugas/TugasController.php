@@ -355,7 +355,9 @@ class TugasController extends Controller
             : $this->defaultShiftBoundsForDateTime($tanggalMulai);
 
         if ($absensi?->jam_masuk) {
-            $batasMulai = $absensi->tanggal->copy()->setTimeFromTimeString($absensi->jam_masuk);
+            $batasMulai = $absensi->tanggal->copy()
+                ->setTimeFromTimeString($absensi->jam_masuk)
+                ->startOfMinute();
             $batasSelesai = $absensi->jam_pulang
                 ? $this->combineDateAndTime($absensi->tanggal, $absensi->jam_pulang, $batasMulai)
                 : now();
