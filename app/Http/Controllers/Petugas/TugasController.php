@@ -7,7 +7,9 @@ use App\Models\Absensi;
 use App\Models\Cuti;
 use App\Models\Kalender;
 use App\Models\Periode;
+use App\Models\Shift;
 use App\Models\Tugas;
+use App\Models\User;
 use App\Support\ActivityLogger;
 use App\Support\QueryFilters;
 use Carbon\Carbon;
@@ -28,13 +30,16 @@ class TugasController extends Controller
 
     public function input(Request $request): View
     {
-        $defaultAbsensi = Absensi::where('id_user', $request->user()->id_user)
+        $user = $request->user();
+        $assignedShift = $this->shiftForUser($user);
+
+        $defaultAbsensi = Absensi::where('id_user', $user->id_user)
             ->whereDate('tanggal', today())
             ->whereNotNull('jam_masuk')
             ->first();
 
         if (! $defaultAbsensi) {
-            $defaultAbsensi = Absensi::where('id_user', $request->user()->id_user)
+            $defaultAbsensi = Absensi::where('id_user', $user->id_user)
                 ->whereNotNull('jam_masuk')
                 ->latest('tanggal')
                 ->latest('id_absensi')
@@ -42,16 +47,25 @@ class TugasController extends Controller
         }
 
         $defaultDate = $defaultAbsensi?->tanggal ?? today();
+        $shiftBounds = $assignedShift ? $this->shiftBounds($assignedShift, $defaultDate) : null;
 
-        $defaultTanggalMulai = $defaultAbsensi?->jam_masuk
-            ? $defaultDate->copy()->setTimeFromTimeString($defaultAbsensi->jam_masuk)->format('Y-m-d\TH:i')
-            : now()->format('Y-m-d\TH:i');
+        if ($defaultAbsensi?->jam_masuk) {
+            $defaultTanggalMulai = $defaultDate->copy()->setTimeFromTimeString($defaultAbsensi->jam_masuk);
+        } elseif ($shiftBounds) {
+            $defaultTanggalMulai = $shiftBounds['mulai'];
+        } else {
+            $defaultTanggalMulai = now();
+        }
 
-        $defaultTanggalSelesai = $defaultAbsensi?->jam_pulang
-            ? $defaultDate->copy()->setTimeFromTimeString($defaultAbsensi->jam_pulang)->format('Y-m-d\TH:i')
-            : now()->format('Y-m-d\TH:i');
+        if ($defaultAbsensi?->jam_pulang) {
+            $defaultTanggalSelesai = $defaultDate->copy()->setTimeFromTimeString($defaultAbsensi->jam_pulang);
+        } elseif (! $defaultAbsensi && $shiftBounds) {
+            $defaultTanggalSelesai = $shiftBounds['selesai'];
+        } else {
+            $defaultTanggalSelesai = now();
+        }
 
-        $todayAbsensi = Absensi::where('id_user', $request->user()->id_user)
+        $todayAbsensi = Absensi::where('id_user', $user->id_user)
             ->whereDate('tanggal', today())
             ->first();
 
@@ -60,8 +74,10 @@ class TugasController extends Controller
             'jadwalHariIni' => Kalender::whereDate('tanggal', today())->orderBy('id_kalender')->get(),
             'todayAbsensi' => $todayAbsensi,
             'defaultAbsensi' => $defaultAbsensi,
-            'defaultTanggalMulai' => $defaultTanggalMulai,
-            'defaultTanggalSelesai' => $defaultTanggalSelesai,
+            'assignedShift' => $assignedShift,
+            'shiftBounds' => $shiftBounds,
+            'defaultTanggalMulai' => $defaultTanggalMulai->format('Y-m-d\TH:i'),
+            'defaultTanggalSelesai' => $defaultTanggalSelesai->format('Y-m-d\TH:i'),
         ]);
     }
 
@@ -315,6 +331,7 @@ class TugasController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $user = $request->user();
         $validated = $request->validate([
             'tanggal_mulai' => ['required', 'date'],
             'tanggal_selesai' => ['nullable', 'date', 'after_or_equal:tanggal_mulai'],
@@ -327,27 +344,37 @@ class TugasController extends Controller
             : null;
         $submittedAt = now();
         $isLateInput = $tanggalMulai->toDateString() < $submittedAt->toDateString();
-        $absensi = Absensi::where('id_user', $request->user()->id_user)
+        $absensi = Absensi::where('id_user', $user->id_user)
             ->whereDate('tanggal', $tanggalMulai->toDateString())
             ->first();
+        $assignedShift = $this->shiftForUser($user);
+        $shiftBounds = $assignedShift ? $this->shiftBoundsForDateTime($assignedShift, $tanggalMulai) : null;
 
         if ($absensi?->jam_masuk) {
             $batasMulai = $absensi->tanggal->copy()->setTimeFromTimeString($absensi->jam_masuk);
             $batasSelesai = $absensi->jam_pulang
-                ? $absensi->tanggal->copy()->setTimeFromTimeString($absensi->jam_pulang)
+                ? $this->combineDateAndTime($absensi->tanggal, $absensi->jam_pulang, $batasMulai)
                 : now();
+        } elseif ($shiftBounds) {
+            $batasMulai = $shiftBounds['mulai'];
+            $batasSelesai = $shiftBounds['selesai'];
+        } else {
+            $batasMulai = null;
+            $batasSelesai = null;
+        }
 
+        if ($batasMulai && $batasSelesai) {
             if ($tanggalMulai->lt($batasMulai)) {
-                return back()->withInput()->with('error', 'Waktu mulai tugas tidak boleh sebelum jam masuk absensi.');
+                return back()->withInput()->with('error', 'Waktu mulai tugas tidak boleh sebelum jam masuk ' . ($absensi?->jam_masuk ? 'absensi' : 'shift') . '.');
             }
 
             if ($tanggalMulai->gt($batasSelesai) || ($tanggalSelesai && $tanggalSelesai->gt($batasSelesai))) {
-                return back()->withInput()->with('error', 'Waktu tugas tidak boleh melewati jam pulang absensi.');
+                return back()->withInput()->with('error', 'Waktu tugas tidak boleh melewati jam pulang ' . ($absensi?->jam_masuk ? 'absensi' : 'shift') . '.');
             }
         }
 
         $tugas = Tugas::create([
-            'id_user' => $request->user()->id_user,
+            'id_user' => $user->id_user,
             'id_periode' => optional(Periode::aktif())->id_periode,
             'tanggal_mulai' => $tanggalMulai,
             'tanggal_selesai' => $tanggalSelesai,
@@ -362,5 +389,52 @@ class TugasController extends Controller
         return back()->with('success', $isLateInput
             ? 'Laporan tugas berhasil dikirim dan ditandai telat input.'
             : 'Laporan tugas berhasil dikirim.');
+    }
+
+    private function shiftForUser(User $user): ?Shift
+    {
+        if (! $user->shift) {
+            return null;
+        }
+
+        return Shift::aktif()->where('nama_shift', $user->shift)->first();
+    }
+
+    private function shiftBounds(Shift $shift, Carbon|string $date): array
+    {
+        $mulai = Carbon::parse($date)
+            ->startOfDay()
+            ->setTimeFromTimeString(Carbon::parse($shift->jam_masuk)->format('H:i:s'));
+
+        $selesai = $this->combineDateAndTime($mulai, $shift->jam_pulang, $mulai);
+
+        return [
+            'mulai' => $mulai,
+            'selesai' => $selesai,
+        ];
+    }
+
+    private function shiftBoundsForDateTime(Shift $shift, Carbon $dateTime): array
+    {
+        $bounds = $this->shiftBounds($shift, $dateTime);
+
+        if ($bounds['selesai']->isSameDay($bounds['mulai']) || $dateTime->gte($bounds['mulai'])) {
+            return $bounds;
+        }
+
+        return $this->shiftBounds($shift, $dateTime->copy()->subDay());
+    }
+
+    private function combineDateAndTime(Carbon|string $date, Carbon|string $time, ?Carbon $minimum = null): Carbon
+    {
+        $dateTime = Carbon::parse($date)
+            ->startOfDay()
+            ->setTimeFromTimeString(Carbon::parse($time)->format('H:i:s'));
+
+        if ($minimum && $dateTime->lt($minimum)) {
+            $dateTime->addDay();
+        }
+
+        return $dateTime;
     }
 }

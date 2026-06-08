@@ -114,6 +114,20 @@
         gap: 12px;
     }
 
+    .task-date-time-pair {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(86px, .65fr);
+        gap: 8px;
+    }
+
+    .task-locked-time {
+        cursor: default;
+        color: var(--text-color);
+        background: var(--bg-color);
+        font-family: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        letter-spacing: 0;
+    }
+
     .task-textarea {
         min-height: 160px;
         line-height: 1.6;
@@ -273,23 +287,45 @@
 
             <form method="POST" action="{{ route('petugas.tugas.store') }}" class="task-form">
                 @csrf
+                @php
+                    $mulaiValue = old('tanggal_mulai', $defaultTanggalMulai);
+                    $selesaiValue = old('tanggal_selesai', $defaultTanggalSelesai);
+                    $mulaiDateTime = \Carbon\Carbon::parse($mulaiValue);
+                    $selesaiDateTime = \Carbon\Carbon::parse($selesaiValue);
+                @endphp
 
                 <div class="task-form-grid">
                     <div>
                         <label>Mulai</label>
-                        <input type="datetime-local"
-                               name="tanggal_mulai"
-                               value="{{ old('tanggal_mulai', $defaultTanggalMulai) }}"
-                               lang="id-ID"
-                               required>
+                        <input type="hidden" name="tanggal_mulai" id="tanggal_mulai" value="{{ $mulaiDateTime->format('Y-m-d\TH:i') }}">
+                        <div class="task-date-time-pair" data-datetime-lock="tanggal_mulai">
+                            <input type="date"
+                                   value="{{ $mulaiDateTime->format('Y-m-d') }}"
+                                   data-locked-date
+                                   lang="id-ID"
+                                   required>
+                            <input type="text"
+                                   class="task-locked-time"
+                                   value="{{ $mulaiDateTime->format('H:i') }}"
+                                   data-locked-time
+                                   readonly>
+                        </div>
                     </div>
 
                     <div>
                         <label>Selesai</label>
-                        <input type="datetime-local"
-                               name="tanggal_selesai"
-                               value="{{ old('tanggal_selesai', $defaultTanggalSelesai) }}"
-                               lang="id-ID">
+                        <input type="hidden" name="tanggal_selesai" id="tanggal_selesai" value="{{ $selesaiDateTime->format('Y-m-d\TH:i') }}">
+                        <div class="task-date-time-pair" data-datetime-lock="tanggal_selesai">
+                            <input type="date"
+                                   value="{{ $selesaiDateTime->format('Y-m-d') }}"
+                                   data-locked-date
+                                   lang="id-ID">
+                            <input type="text"
+                                   class="task-locked-time"
+                                   value="{{ $selesaiDateTime->format('H:i') }}"
+                                   data-locked-time
+                                   readonly>
+                        </div>
                     </div>
                 </div>
 
@@ -322,6 +358,20 @@
                     <div class="task-summary-item">
                         <div class="task-summary-label">Tanggal Acuan</div>
                         <div class="task-summary-value">{{ $defaultAbsensi?->tanggal?->translatedFormat('d F Y') ?? \Carbon\Carbon::now()->translatedFormat('d F Y') }}</div>
+                    </div>
+                    <div class="task-summary-item">
+                        <div class="task-summary-label">Shift Akun</div>
+                        <div class="task-summary-value">{{ $assignedShift?->nama_shift ?? (auth()->user()->shift ?? '-') }}</div>
+                    </div>
+                    <div class="task-summary-item">
+                        <div class="task-summary-label">Jam Shift</div>
+                        <div class="task-summary-value">
+                            @if($shiftBounds)
+                                {{ $shiftBounds['mulai']->format('H:i') }} - {{ $shiftBounds['selesai']->format('H:i') }}
+                            @else
+                                -
+                            @endif
+                        </div>
                     </div>
                     <div class="task-summary-item">
                         <div class="task-summary-label">Jam Masuk</div>
@@ -365,4 +415,24 @@
         </aside>
     </div>
 </div>
+
+<script>
+    document.querySelectorAll('[data-datetime-lock]').forEach(function (group) {
+        var hiddenInput = document.getElementById(group.dataset.datetimeLock);
+        var dateInput = group.querySelector('[data-locked-date]');
+        var timeInput = group.querySelector('[data-locked-time]');
+
+        function syncHiddenValue() {
+            if (!hiddenInput) return;
+            hiddenInput.value = dateInput.value && timeInput.value
+                ? dateInput.value + 'T' + timeInput.value
+                : '';
+        }
+
+        dateInput.addEventListener('input', syncHiddenValue);
+        dateInput.addEventListener('change', syncHiddenValue);
+        syncHiddenValue();
+    });
+</script>
+
 @endsection
