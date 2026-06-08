@@ -47,7 +47,9 @@ class TugasController extends Controller
         }
 
         $defaultDate = $defaultAbsensi?->tanggal ?? today();
-        $shiftBounds = $assignedShift ? $this->shiftBounds($assignedShift, $defaultDate) : null;
+        $shiftBounds = $assignedShift
+            ? $this->shiftBounds($assignedShift, $defaultDate)
+            : $this->defaultShiftBounds($defaultDate);
 
         if ($defaultAbsensi?->jam_masuk) {
             $defaultTanggalMulai = $defaultDate->copy()->setTimeFromTimeString($defaultAbsensi->jam_masuk);
@@ -348,7 +350,9 @@ class TugasController extends Controller
             ->whereDate('tanggal', $tanggalMulai->toDateString())
             ->first();
         $assignedShift = $this->shiftForUser($user);
-        $shiftBounds = $assignedShift ? $this->shiftBoundsForDateTime($assignedShift, $tanggalMulai) : null;
+        $shiftBounds = $assignedShift
+            ? $this->shiftBoundsForDateTime($assignedShift, $tanggalMulai)
+            : $this->defaultShiftBoundsForDateTime($tanggalMulai);
 
         if ($absensi?->jam_masuk) {
             $batasMulai = $absensi->tanggal->copy()->setTimeFromTimeString($absensi->jam_masuk);
@@ -423,6 +427,35 @@ class TugasController extends Controller
         }
 
         return $this->shiftBounds($shift, $dateTime->copy()->subDay());
+    }
+
+    private function defaultShiftBounds(Carbon|string $date): array
+    {
+        $mulai = Carbon::parse($date)
+            ->startOfDay()
+            ->setTimeFromTimeString(config('absensi.jam_masuk_buka', '07:50:00'));
+
+        $selesai = $mulai->copy()->addHours((int) config('absensi.durasi_kerja_default_jam', 8));
+
+        if ($selesai->lessThanOrEqualTo($mulai)) {
+            $selesai->addDay();
+        }
+
+        return [
+            'mulai' => $mulai,
+            'selesai' => $selesai,
+        ];
+    }
+
+    private function defaultShiftBoundsForDateTime(Carbon $dateTime): array
+    {
+        $bounds = $this->defaultShiftBounds($dateTime);
+
+        if ($bounds['selesai']->isSameDay($bounds['mulai']) || $dateTime->gte($bounds['mulai'])) {
+            return $bounds;
+        }
+
+        return $this->defaultShiftBounds($dateTime->copy()->subDay());
     }
 
     private function combineDateAndTime(Carbon|string $date, Carbon|string $time, ?Carbon $minimum = null): Carbon
