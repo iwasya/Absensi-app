@@ -1,0 +1,16 @@
+services:
+  face-service:
+    build:
+      context: ./face-service
+    ports:
+      - "8010:8010"
+    environment:
+      FACE_MODEL_NAME: Facenet512
+      FACE_DETECTOR_BACKENDS: mtcnn,opencv
+      MAX_IMAGE_BYTES: 5242880
+    volumes:
+      - face-model-cache:/root/.deepface
+    restart: unless-stopped
+
+volumes:
+  face-model-cache:

@@ -46,14 +46,36 @@ php artisan db:seed --class=ShiftSeeder
 
 Fitur verifikasi wajah membandingkan foto absen dengan `foto_profil` user. Saat wajah tidak cocok, absen ditolak dan user menerima notifikasi "Foto Absensi Tidak Sesuai".
 
+### Menjalankan Face Service Lokal
+
+Build dan jalankan service lokal:
+
+```bash
+docker compose -f docker-compose.face.yml up --build
+```
+
+Service akan tersedia di:
+
+```text
+http://127.0.0.1:8010/verify-face
+```
+
+Tes health check:
+
+```bash
+curl http://127.0.0.1:8010/health
+```
+
+Catatan: saat pertama kali dipakai, DeepFace dapat mengunduh model ke volume Docker `face-model-cache`, jadi koneksi internet mungkin diperlukan pada run pertama. Service lokal mencoba detector `mtcnn` lalu fallback ke `opencv`; kalau wajah manusia tidak terdeteksi, aplikasi akan menolak absen sebagai foto tidak sesuai.
+
 Aktifkan melalui `.env`:
 
 ```env
 FACE_VERIFICATION_ENABLED=true
-FACE_VERIFICATION_ENDPOINT=https://example.com/verify-face
+FACE_VERIFICATION_ENDPOINT=http://127.0.0.1:8010/verify-face
 FACE_VERIFICATION_TOKEN=
 FACE_VERIFICATION_THRESHOLD=0.75
-FACE_VERIFICATION_TIMEOUT=8
+FACE_VERIFICATION_TIMEOUT=12
 FACE_VERIFICATION_FAIL_OPEN=true
 ```
 
