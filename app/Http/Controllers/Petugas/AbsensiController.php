@@ -395,14 +395,6 @@ class AbsensiController extends Controller
             && ! $absensi->jam_pulang;
     }
 
-    private function requiresPulangApproval(Absensi $absensi): bool
-    {
-        return $absensi->approval_masuk_status === 'approved'
-            && $absensi->approval_pulang_status !== 'approved'
-            && (bool) $absensi->jam_masuk
-            && ! $absensi->jam_pulang;
-    }
-
     public function masuk(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -597,10 +589,6 @@ class AbsensiController extends Controller
 
         if (! $absensi->jam_masuk) {
             return back()->with('error', 'Absen masuk dulu sebelum absen pulang.');
-        }
-
-        if ($this->requiresPulangApproval($absensi)) {
-            return back()->with('error', 'Absen pulang untuk absensi ini harus diajukan dan disetujui atasan terlebih dahulu.');
         }
 
         $now = now();

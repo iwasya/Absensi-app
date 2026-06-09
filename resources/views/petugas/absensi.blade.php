@@ -21,10 +21,13 @@
     $hasApprovedPulangAccess = $today?->approval_pulang_status === 'approved'
         && $today?->jam_masuk
         && ! $today?->jam_pulang;
-    $requiresPulangApproval = $today?->approval_masuk_status === 'approved'
-        && $today?->jam_masuk
+    $jamPulangBukaAt = $jamPulangBukaAt ?? null;
+    $jamPulangTutupAt = $jamPulangTutupAt ?? null;
+    $isPulangLocked = $today?->jam_masuk
         && ! $today?->jam_pulang
-        && $today?->approval_pulang_status !== 'approved';
+        && ! $hasApprovedPulangAccess
+        && $jamPulangTutupAt
+        && now()->gt($jamPulangTutupAt);
     $isMasukLocked = ! $hasApprovedMasukAccess
         && ! $isHoliday
         && ! $isLeave
@@ -40,8 +43,6 @@
         ? $today->tanggal->translatedFormat('d F Y')
         : now()->translatedFormat('d F Y');
     $isOvernightShift = $isOvernightShift ?? false;
-    $jamPulangBukaAt = $jamPulangBukaAt ?? null;
-    $jamPulangTutupAt = $jamPulangTutupAt ?? null;
 @endphp
 <style>
     main { max-width: 100% !important; margin: 0 !important; padding: 20px !important; }
@@ -583,7 +584,7 @@
                 <div class="success" style="margin:0;">
                     <strong>Sudah absen pulang</strong> — pukul {{ $today->jam_pulang }}
                 </div>
-            @elseif($requiresPulangApproval)
+            @elseif($isPulangLocked)
                 @if(in_array($today?->approval_pulang_status, ['pending_ketua', 'pending_atasan'], true))
                     <div class="abs-info" style="margin:0;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
                         Request absen pulang sedang menunggu approval: <strong>{{ str_replace('_', ' ', $today->approval_pulang_status) }}</strong>.
@@ -594,7 +595,7 @@
                     </div>
                 @else
                     <div class="abs-info" style="margin-bottom:14px;background:var(--amber-soft);border-color:#FCD34D;color:var(--amber-dark);">
-                        Absen masuk ini dibuka lewat approval. Ajukan approval pulang terlebih dahulu sebelum mengisi form pulang.
+                        Absen pulang sudah melewati batas waktu. Ajukan approval pulang terlebih dahulu sebelum mengisi form pulang.
                     </div>
                     <form method="POST" action="{{ route('petugas.absensi.request-pulang', $today->id_absensi) }}" style="display:grid;gap:8px;">
                         @csrf
