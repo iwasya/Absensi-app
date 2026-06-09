@@ -385,7 +385,7 @@
                 <label for="status">Status</label>
                 <select id="status" name="status">
                     <option value="">Semua Status</option>
-                    <option value="hadir" {{ request('status') == 'hadir' ? 'selected' : '' }}>Hadir</option>
+                    <option value="hadir" {{ request('status') == 'hadir' ? 'selected' : '' }}>Hadir / Sudah Masuk</option>
                     <option value="telat" {{ request('status') == 'telat' ? 'selected' : '' }}>Terlambat</option>
                     <option value="tidak_absen" {{ request('status') == 'tidak_absen' ? 'selected' : '' }}>Tidak Absen</option>
                     <option value="cuti" {{ request('status') == 'cuti' ? 'selected' : '' }}>Cuti</option>

@@ -39,7 +39,7 @@ class ApprovalController extends Controller
         }
 
         if ($request->filled('status')) {
-            $items->where('status', $request->status);
+            $this->scopeAbsensiStatusFilter($items, $request->status);
         }
 
         if ($request->filled('search')) {
@@ -93,7 +93,7 @@ class ApprovalController extends Controller
         }
 
         if ($request->filled('status')) {
-            $items->where('status', $request->status);
+            $this->scopeAbsensiStatusFilter($items, $request->status);
         }
 
         if ($request->filled('search')) {
@@ -455,6 +455,18 @@ class ApprovalController extends Controller
                 $userQuery->where('id_tempat', $atasan->id_tempat);
             }
         });
+    }
+
+    private function scopeAbsensiStatusFilter($query, string $status): void
+    {
+        if ($status === 'hadir') {
+            $query->whereNotNull('jam_masuk')
+                ->whereIn('status', ['hadir', 'telat', 'diluar_area']);
+
+            return;
+        }
+
+        $query->where('status', $status);
     }
 
     private function canManagePetugas(User $atasan, ?User $petugas): bool
