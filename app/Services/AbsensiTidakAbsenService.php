@@ -70,7 +70,7 @@ class AbsensiTidakAbsenService
             }
 
             $exists = Absensi::where('id_user', $petugas->id_user)
-                ->whereDate('tanggal', $tanggalString)
+                ->where('tanggal', $tanggalString)
                 ->exists();
 
             if ($exists) {
@@ -160,7 +160,7 @@ class AbsensiTidakAbsenService
         }
 
         $lastAbsensiDate = Absensi::where('id_user', $user->id_user)
-            ->whereDate('tanggal', '<', $today->toDateString())
+            ->where('tanggal', '<', $today->toDateString())
             ->max('tanggal');
 
         $startDate = $lastAbsensiDate
@@ -243,7 +243,7 @@ class AbsensiTidakAbsenService
             ];
         }
 
-        $event = Kalender::whereDate('tanggal', $targetDate->toDateString())
+        $event = Kalender::where('tanggal', $targetDate->toDateString())
             ->whereIn('jenis_event', ['libur', 'cuti_bersama'])
             ->orderBy('id_kalender')
             ->first();
@@ -288,8 +288,8 @@ class AbsensiTidakAbsenService
 
         $cuti = Cuti::where('id_user', $userId)
             ->whereIn('status', ['approve', 'approved'])
-            ->whereDate('tanggal_mulai', '<=', $targetDate->toDateString())
-            ->whereDate('tanggal_selesai', '>=', $targetDate->toDateString())
+            ->where('tanggal_mulai', '<=', $targetDate->toDateString())
+            ->where('tanggal_selesai', '>=', $targetDate->toDateString())
             ->orderByDesc('id_cuti')
             ->first();
 
@@ -311,7 +311,7 @@ class AbsensiTidakAbsenService
         $tanggal = $date->toDateString();
         $keterangan = $this->leaveReason($cuti);
         $existing = Absensi::where('id_user', $user->id_user)
-            ->whereDate('tanggal', $tanggal)
+            ->where('tanggal', $tanggal)
             ->first();
 
         if ($existing) {

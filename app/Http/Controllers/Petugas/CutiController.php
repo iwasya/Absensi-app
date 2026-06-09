@@ -191,7 +191,7 @@ class CutiController extends Controller
     private function jumlahCutiTahunan(int $userId, int $year): int
     {
         return Cuti::where('id_user', $userId)
-            ->whereYear('tanggal_mulai', $year)
+            ->whereBetween('tanggal_mulai', ["{$year}-01-01", "{$year}-12-31"])
             ->whereIn('status', ['pending', 'approve'])
             ->where('jenis_cuti', '!=', 'Kompensasi')
             ->count();

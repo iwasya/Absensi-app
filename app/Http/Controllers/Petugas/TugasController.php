@@ -34,7 +34,7 @@ class TugasController extends Controller
         $assignedShift = $this->shiftForUser($user);
 
         $defaultAbsensi = Absensi::where('id_user', $user->id_user)
-            ->whereDate('tanggal', today())
+            ->where('tanggal', today()->toDateString())
             ->whereNotNull('jam_masuk')
             ->first();
 
@@ -68,12 +68,12 @@ class TugasController extends Controller
         }
 
         $todayAbsensi = Absensi::where('id_user', $user->id_user)
-            ->whereDate('tanggal', today())
+            ->where('tanggal', today()->toDateString())
             ->first();
 
         return view('petugas.tugas-input', [
             'periodeAktif' => Periode::aktif(),
-            'jadwalHariIni' => Kalender::whereDate('tanggal', today())->orderBy('id_kalender')->get(),
+            'jadwalHariIni' => Kalender::where('tanggal', today()->toDateString())->orderBy('id_kalender')->get(),
             'todayAbsensi' => $todayAbsensi,
             'defaultAbsensi' => $defaultAbsensi,
             'assignedShift' => $assignedShift,
@@ -226,8 +226,8 @@ class TugasController extends Controller
             ->where('id_pengganti', $user->id_user)
             ->where('replacement_status', 'accepted')
             ->whereIn('status', ['approve', 'approved'])
-            ->whereDate('tanggal_mulai', '<=', $calendarEnd->toDateString())
-            ->whereDate('tanggal_selesai', '>=', $calendarStart->toDateString())
+            ->where('tanggal_mulai', '<=', $calendarEnd->toDateString())
+            ->where('tanggal_selesai', '>=', $calendarStart->toDateString())
             ->get();
 
         $replacementCutiByDate = [];
@@ -306,7 +306,7 @@ class TugasController extends Controller
             ->all();
 
         return view('petugas.kalender', [
-            'todayItems' => Kalender::whereDate('tanggal', today())->orderBy('id_kalender')->get(),
+            'todayItems' => Kalender::where('tanggal', today()->toDateString())->orderBy('id_kalender')->get(),
             'todayTugas' => $todayTugas,
             'todayReplacementCuti' => $todayReplacementCuti,
             'todayWeeklyOff' => $weeklyOffByDate->get(today()->format('Y-m-d')),
@@ -347,7 +347,7 @@ class TugasController extends Controller
         $submittedAt = now();
         $isLateInput = $tanggalMulai->toDateString() < $submittedAt->toDateString();
         $absensi = Absensi::where('id_user', $user->id_user)
-            ->whereDate('tanggal', $tanggalMulai->toDateString())
+            ->where('tanggal', $tanggalMulai->toDateString())
             ->first();
         $assignedShift = $this->shiftForUser($user);
         $shiftBounds = $assignedShift

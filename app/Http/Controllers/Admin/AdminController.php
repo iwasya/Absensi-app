@@ -369,7 +369,7 @@ class AdminController extends Controller
             fputcsv($file, ['Tanggal', 'Nama', 'Regu', 'Shift', 'Status User', 'Masuk', 'Pulang', 'Status Absensi', 'Approval Pulang', 'Keterangan']);
 
             Absensi::with('user')
-                ->whereYear('tanggal', $year)
+                ->whereBetween('tanggal', ["{$year}-01-01", "{$year}-12-31"])
                 ->orderBy('tanggal')
                 ->orderBy('id_user')
                 ->chunk(500, function ($items) use ($file) {
@@ -435,7 +435,7 @@ class AdminController extends Controller
         $kalender = Kalender::create($validated);
 
         if (in_array($kalender->jenis_event, ['libur', 'cuti_bersama'], true)) {
-            \App\Models\Absensi::whereDate('tanggal', $kalender->tanggal)
+            \App\Models\Absensi::where('tanggal', $kalender->tanggal->toDateString())
                 ->where('status', 'tidak_absen')
                 ->where('keterangan', 'Tidak hadir (otomatis sistem)')
                 ->delete();
@@ -731,7 +731,7 @@ class AdminController extends Controller
                 QueryFilters::whereRoleAlias($q, ['petugas', 'karyawan']);
             })->orderBy('nama')->get(),
             'items' => \App\Models\Absensi::with('user')
-                ->whereDate('tanggal', today())
+                ->where('tanggal', today()->toDateString())
                 ->where('status', 'akses_dibuka')
                 ->orderBy('id_absensi', 'asc')
                 ->paginate($request->get('per_page', 15)),

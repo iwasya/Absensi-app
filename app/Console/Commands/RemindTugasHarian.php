@@ -36,7 +36,10 @@ class RemindTugasHarian extends Command
 
         $petugasIds = $petugas->pluck('id_user');
         $reportedUserIds = Tugas::whereIn('id_user', $petugasIds)
-            ->whereDate('tanggal_mulai', $targetDate->toDateString())
+            ->whereBetween('tanggal_mulai', [
+                $targetDate->copy()->startOfDay(),
+                $targetDate->copy()->endOfDay(),
+            ])
             ->pluck('id_user')
             ->all();
 

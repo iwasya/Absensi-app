@@ -50,8 +50,8 @@ class CutiReplacementService
 
         $penggantiSedangCuti = Cuti::where('id_user', $pengganti->id_user)
             ->whereIn('status', ['pending', 'approve', 'approved'])
-            ->whereDate('tanggal_mulai', '<=', $endDate->toDateString())
-            ->whereDate('tanggal_selesai', '>=', $startDate->toDateString())
+            ->where('tanggal_mulai', '<=', $endDate->toDateString())
+            ->where('tanggal_selesai', '>=', $startDate->toDateString())
             ->exists();
 
         if ($penggantiSedangCuti) {
@@ -60,8 +60,8 @@ class CutiReplacementService
 
         $penggantiSudahBertugas = Cuti::where('id_pengganti', $pengganti->id_user)
             ->whereIn('status', ['pending', 'approve', 'approved'])
-            ->whereDate('tanggal_mulai', '<=', $endDate->toDateString())
-            ->whereDate('tanggal_selesai', '>=', $startDate->toDateString())
+            ->where('tanggal_mulai', '<=', $endDate->toDateString())
+            ->where('tanggal_selesai', '>=', $startDate->toDateString())
             ->exists();
 
         if ($penggantiSudahBertugas) {

@@ -10,7 +10,6 @@ use App\Models\Notifikasi;
 use App\Models\Periode;
 use App\Models\Tugas;
 use App\Models\User;
-use App\Services\AbsensiTidakAbsenService;
 use App\Support\QueryFilters;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -34,7 +33,7 @@ class DashboardController extends Controller
                 'totalPetugas' => User::whereHas('role', function ($query) {
                     QueryFilters::whereRoleAlias($query, ['petugas', 'karyawan']);
                 })->count(),
-                'totalAbsensiHariIni' => Absensi::whereDate('tanggal', today())->count(),
+                'totalAbsensiHariIni' => Absensi::where('tanggal', today()->toDateString())->count(),
                 'cutiPending' => Cuti::where('status', 'pending')->count(),
                 'cutiPendingAdmin' => 0,
                 'approvalPulangPending' => Absensi::whereIn('approval_pulang_status', ['pending_ketua', 'pending_atasan'])->count(),
@@ -118,7 +117,7 @@ class DashboardController extends Controller
 
             return view('atasan.dashboard', [
                 'user' => $user,
-                'absensiHariIni' => Absensi::with('user')->whereDate('tanggal', today())->latest('id_absensi')->limit(5)->get(),
+                'absensiHariIni' => Absensi::with('user')->where('tanggal', today()->toDateString())->latest('id_absensi')->limit(5)->get(),
                 'cutiPending' => Cuti::with('user')->where('status', 'pending')->latest('id_cuti')->limit(5)->get(),
                 'approvalPulangPending' => Absensi::with('user')
                     ->whereIn('approval_pulang_status', ['pending_ketua', 'pending_atasan'])
@@ -130,7 +129,7 @@ class DashboardController extends Controller
                     $calendar['currentMonth']->copy()->startOfMonth()->toDateString(),
                     $calendar['currentMonth']->copy()->endOfMonth()->toDateString(),
                 ])->count(),
-                'kalender' => Kalender::whereDate('tanggal', '>=', today())->orderBy('tanggal')->limit(5)->get(),
+                'kalender' => Kalender::where('tanggal', '>=', today()->toDateString())->orderBy('tanggal')->limit(5)->get(),
                 'currentMonth' => $calendar['currentMonth'],
                 'previousMonth' => $calendar['previousMonth'],
                 'nextMonth' => $calendar['nextMonth'],
@@ -145,16 +144,6 @@ class DashboardController extends Controller
             ]);
         }
 
-        $absensiTidakAbsen = app(AbsensiTidakAbsenService::class);
-        $absensiTidakAbsen->backfillForUserUntilYesterday($user);
-        $holidayInfo = $absensiTidakAbsen->holidayInfo(today());
-        $leaveInfo = $absensiTidakAbsen->leaveInfo($user, today());
-        if (! $holidayInfo['is_holiday']) {
-            if ($leaveInfo['is_leave']) {
-                $absensiTidakAbsen->generateForDate(today(), $user);
-            }
-        }
-
         $calendar = $this->dashboardCalendar($request);
         $weeklyOffDetails = $this->weeklyOffDetails($user, $calendar['calendarStart'], $calendar['calendarEnd']);
         $kalenderLiburMingguan = $weeklyOffDetails
@@ -164,8 +153,10 @@ class DashboardController extends Controller
             ->map(fn (Carbon $date) => (int) $date->format('d'))
             ->values()
             ->all();
+        $yearStart = now()->startOfYear()->toDateString();
+        $yearEnd = now()->endOfYear()->toDateString();
         $cutiTerpakaiTahunIni = Cuti::where('id_user', $user->id_user)
-            ->whereYear('tanggal_mulai', now()->year)
+            ->whereBetween('tanggal_mulai', [$yearStart, $yearEnd])
             ->whereIn('status', ['pending', 'approve'])
             ->count();
 
@@ -262,7 +253,7 @@ class DashboardController extends Controller
 
         return view('petugas.dashboard', [
             'user' => $user,
-            'absensiHariIni' => Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today())->first(),
+            'absensiHariIni' => Absensi::where('id_user', $user->id_user)->where('tanggal', today()->toDateString())->first(),
             'tugasHariIni' => Tugas::where('id_user', $user->id_user)
                 ->where('tanggal_mulai', '<=', today()->endOfDay())
                 ->where(function ($query) {
@@ -284,9 +275,9 @@ class DashboardController extends Controller
                 ->whereNull('acknowledged_at')
                 ->count(),
             'tugasLupaInput' => Tugas::where('id_user', $user->id_user)
-                ->whereRaw('DATE(created_at) > DATE(tanggal_mulai)')
+                ->where('is_late_input', true)
                 ->count(),
-            'kalender' => Kalender::whereDate('tanggal', '>=', today())->orderBy('tanggal')->limit(5)->get(),
+            'kalender' => Kalender::where('tanggal', '>=', today()->toDateString())->orderBy('tanggal')->limit(5)->get(),
             'cutiTerpakaiTahunIni' => $cutiTerpakaiTahunIni,
             'sisaCutiTahunIni' => max(12 - $cutiTerpakaiTahunIni, 0),
             'aktivitasTerbaru' => ActivityLog::where('id_user', $user->id_user)

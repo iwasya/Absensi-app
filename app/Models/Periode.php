@@ -28,8 +28,8 @@ class Periode extends Model
         return Cache::remember('periode:aktif:' . now()->toDateString(), 300, function () {
             return self::query()
                 ->where('status', 'aktif')
-                ->whereDate('tanggal_mulai', '<=', now()->toDateString())
-                ->whereDate('tanggal_selesai', '>=', now()->toDateString())
+                ->where('tanggal_mulai', '<=', now()->toDateString())
+                ->where('tanggal_selesai', '>=', now()->toDateString())
                 ->orderByDesc('id_periode')
                 ->first();
         });
