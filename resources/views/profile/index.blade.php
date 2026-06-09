@@ -193,6 +193,45 @@
         cursor: pointer;
     }
 
+    .profile-photo-mode {
+        display: grid;
+        gap: 10px;
+    }
+
+    .profile-photo-mode-label {
+        display: block;
+        font-weight: 700;
+    }
+
+    .profile-photo-choice {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .profile-photo-choice button {
+        min-height: 38px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--primary-border);
+        background: var(--panel-bg);
+        color: var(--primary2);
+        font-weight: 700;
+    }
+
+    .profile-photo-choice button.is-active {
+        background: var(--primary-soft);
+        border-color: var(--primary);
+    }
+
+    .profile-photo-panel {
+        display: none;
+    }
+
+    .profile-photo-panel.is-active {
+        display: block;
+    }
+
     .profile-help {
         margin: 7px 0 0;
         color: var(--muted);
@@ -257,6 +296,10 @@
         color: var(--muted);
         font-size: 12px;
         line-height: 1.45;
+    }
+
+    .profile-camera.profile-photo-panel:not(.is-active) {
+        display: none;
     }
 
     .profile-section {
@@ -486,16 +529,25 @@
                 <input type="hidden" name="username" value="{{ old('username', $user->username) }}">
                 <input type="hidden" name="email" value="{{ old('email', $user->email) }}">
 
-                <div>
-                    <label for="foto_profil">Foto Profil</label>
-                    <input type="file" id="foto_profil" name="foto_profil" accept="image/*">
-                    <p class="profile-help">Gunakan foto JPG atau PNG dengan ukuran maksimal 2MB.</p>
+                <div class="profile-photo-mode">
+                    <span class="profile-photo-mode-label">Foto Profil</span>
+                    <div class="profile-photo-choice" role="group" aria-label="Pilih sumber foto profil">
+                        <button type="button" id="profilePhotoFileMode" data-photo-mode="file">Pilih File</button>
+                        <button type="button" id="profilePhotoCameraMode" data-photo-mode="camera">Kamera Live</button>
+                    </div>
+
+                    <div class="profile-photo-panel" id="profilePhotoFilePanel">
+                        <label for="foto_profil">Upload File</label>
+                        <input type="file" id="foto_profil" name="foto_profil" accept="image/*">
+                        <p class="profile-help">Gunakan foto JPG atau PNG dengan ukuran maksimal 2MB.</p>
+                    </div>
+
                     @error('foto_profil')
                         <div class="field-error">{{ $message }}</div>
                     @enderror
                 </div>
 
-                <div class="profile-camera" id="profileCamera">
+                <div class="profile-camera profile-photo-panel" id="profileCamera">
                     <input type="hidden" id="foto_profil_live" name="foto_profil_live">
                     <div class="profile-camera-preview">
                         <video id="profileCameraVideo" playsinline muted></video>
@@ -630,6 +682,9 @@
     var cameraRetake = document.getElementById('profileCameraRetake');
     var cameraStatus = document.getElementById('profileCameraStatus');
     var profileFile = document.getElementById('foto_profil');
+    var filePanel = document.getElementById('profilePhotoFilePanel');
+    var fileModeButton = document.getElementById('profilePhotoFileMode');
+    var cameraModeButton = document.getElementById('profilePhotoCameraMode');
     var cameraStream = null;
 
     function setCameraStatus(message) {
@@ -642,7 +697,43 @@
         cameraStream = null;
     }
 
-    if (cameraWrap && cameraVideo && cameraCanvas && cameraPhoto && cameraInput && cameraStart && cameraCapture && cameraRetake) {
+    function clearLivePhoto() {
+        if (cameraInput) cameraInput.value = '';
+        if (cameraPhoto) cameraPhoto.removeAttribute('src');
+        if (cameraWrap) cameraWrap.classList.remove('has-capture');
+        if (cameraCapture) cameraCapture.disabled = true;
+        stopProfileCamera();
+    }
+
+    function setPhotoMode(mode) {
+        var isFile = mode === 'file';
+        var isCamera = mode === 'camera';
+
+        if (filePanel) filePanel.classList.toggle('is-active', isFile);
+        if (cameraWrap) cameraWrap.classList.toggle('is-active', isCamera);
+        if (fileModeButton) fileModeButton.classList.toggle('is-active', isFile);
+        if (cameraModeButton) cameraModeButton.classList.toggle('is-active', isCamera);
+
+        if (isFile) {
+            clearLivePhoto();
+            setCameraStatus('');
+        }
+
+        if (isCamera) {
+            if (profileFile) profileFile.value = '';
+            cameraStart.click();
+        }
+    }
+
+    if (cameraWrap && cameraVideo && cameraCanvas && cameraPhoto && cameraInput && cameraStart && cameraCapture && cameraRetake && fileModeButton && cameraModeButton) {
+        fileModeButton.addEventListener('click', function () {
+            setPhotoMode('file');
+        });
+
+        cameraModeButton.addEventListener('click', function () {
+            setPhotoMode('camera');
+        });
+
         cameraStart.addEventListener('click', function () {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 setCameraStatus('Browser tidak mendukung kamera.');
@@ -687,20 +778,14 @@
         });
 
         cameraRetake.addEventListener('click', function () {
-            cameraInput.value = '';
-            cameraPhoto.removeAttribute('src');
-            cameraWrap.classList.remove('has-capture');
+            clearLivePhoto();
             cameraStart.click();
         });
 
         if (profileFile) {
             profileFile.addEventListener('change', function () {
                 if (profileFile.files && profileFile.files.length) {
-                    cameraInput.value = '';
-                    cameraPhoto.removeAttribute('src');
-                    cameraWrap.classList.remove('has-capture');
-                    stopProfileCamera();
-                    cameraCapture.disabled = true;
+                    clearLivePhoto();
                     setCameraStatus('');
                 }
             });
