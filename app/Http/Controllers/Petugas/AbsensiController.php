@@ -9,12 +9,14 @@ use App\Models\Periode;
 use App\Models\Shift;
 use App\Models\User;
 use App\Services\AbsensiTidakAbsenService;
+use App\Services\FaceVerificationService;
 use App\Support\ActivityLogger;
 use App\Support\ImageOptimizer;
 use App\Support\QueryFilters;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -175,7 +177,7 @@ class AbsensiController extends Controller
         return $earthRadius * $c;
     }
 
-    private function processBase64Image(string $base64String, string $folder): ?string
+    private function decodeBase64Image(string $base64String): ?string
     {
         // Validate base64 format
         if (!preg_match('/^data:image\\/(jpeg|jpg|png|webp);base64,/', $base64String, $matches)) {
@@ -224,7 +226,50 @@ class AbsensiController extends Controller
             return null;
         }
 
-        return ImageOptimizer::storeBinary($imageBase64, $folder, 720, 720, 72);
+        return $imageBase64;
+    }
+
+    private function storeDecodedImage(string $imageBinary, string $folder): ?string
+    {
+        return ImageOptimizer::storeBinary($imageBinary, $folder, 720, 720, 72);
+    }
+
+    private function validateFaceMatchesProfile(User $user, string $imageBinary, string $jenisAbsen): ?string
+    {
+        $faceVerification = app(FaceVerificationService::class);
+        $result = $faceVerification->verify($user, $imageBinary);
+
+        if ($result['status'] === 'mismatched') {
+            $this->notifyFaceMismatch($user, $jenisAbsen, $result['confidence']);
+
+            return 'Foto tidak sesuai dengan foto profil. Gunakan wajah sendiri untuk absen.';
+        }
+
+        if ($faceVerification->shouldFailClosed($result)) {
+            return $result['reason'] ?: 'Verifikasi wajah belum bisa diproses. Coba lagi.';
+        }
+
+        return null;
+    }
+
+    private function notifyFaceMismatch(User $user, string $jenisAbsen, ?float $confidence = null): void
+    {
+        $confidenceText = $confidence !== null
+            ? ' Skor kecocokan: ' . number_format($confidence * 100, 1) . '%.'
+            : '';
+
+        Notifikasi::create([
+            'id_user' => $user->id_user,
+            'judul' => 'Foto Absensi Tidak Sesuai',
+            'pesan' => 'Foto absen ' . $jenisAbsen . ' tidak sesuai dengan foto profil kamu.' . $confidenceText,
+            'tipe' => 'absensi',
+            'status_baca' => false,
+            'reference_id' => $user->id_user,
+            'reference_type' => User::class,
+        ]);
+
+        Cache::forget("notifikasi:unread-count:{$user->id_user}");
+        Cache::forget("notifikasi:header:{$user->id_user}");
     }
 
     private function validateAssignedArea($user, ?float $latitude, ?float $longitude, ?float $accuracy = null): ?string
@@ -476,9 +521,19 @@ class AbsensiController extends Controller
 
         $foto = null;
         if ($request->filled('foto_masuk')) {
-            $foto = $this->processBase64Image($request->input('foto_masuk'), 'absensi');
-            if (!$foto) {
+            $fotoBinary = $this->decodeBase64Image($request->input('foto_masuk'));
+            if (! $fotoBinary) {
                 return back()->with('error', 'Format foto tidak valid. Hanya menerima JPEG, PNG, atau WebP.');
+            }
+
+            $faceError = $this->validateFaceMatchesProfile($user, $fotoBinary, 'masuk');
+            if ($faceError) {
+                return back()->with('error', $faceError);
+            }
+
+            $foto = $this->storeDecodedImage($fotoBinary, 'absensi');
+            if (! $foto) {
+                return back()->with('error', 'Foto gagal diproses.');
             }
         }
 
@@ -617,9 +672,19 @@ class AbsensiController extends Controller
 
         $fotoPath = $absensi->foto_pulang;
         if ($request->filled('foto_pulang')) {
-            $fotoPath = $this->processBase64Image($request->input('foto_pulang'), 'absensi');
-            if (!$fotoPath) {
+            $fotoBinary = $this->decodeBase64Image($request->input('foto_pulang'));
+            if (! $fotoBinary) {
                 return back()->with('error', 'Format foto tidak valid. Hanya menerima JPEG, PNG, atau WebP.');
+            }
+
+            $faceError = $this->validateFaceMatchesProfile($user, $fotoBinary, 'pulang');
+            if ($faceError) {
+                return back()->with('error', $faceError);
+            }
+
+            $fotoPath = $this->storeDecodedImage($fotoBinary, 'absensi');
+            if (! $fotoPath) {
+                return back()->with('error', 'Foto gagal diproses.');
             }
         }
 

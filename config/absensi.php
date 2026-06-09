@@ -27,4 +27,13 @@ return [
 
     // Batas jam absen otomatis tidak_absen (setelah jam ini, buat record tidak_absen)
     'batas_otomatis_tidak_absen' => '08:05:00',
+
+    'face_verification' => [
+        'enabled' => env('FACE_VERIFICATION_ENABLED', false),
+        'endpoint' => env('FACE_VERIFICATION_ENDPOINT'),
+        'token' => env('FACE_VERIFICATION_TOKEN'),
+        'threshold' => (float) env('FACE_VERIFICATION_THRESHOLD', 0.75),
+        'timeout' => (int) env('FACE_VERIFICATION_TIMEOUT', 8),
+        'fail_open' => env('FACE_VERIFICATION_FAIL_OPEN', true),
+    ],
 ];

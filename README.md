@@ -42,6 +42,35 @@ mysql -u root -p absensi_app < database/schema/mysql-schema.sql
 php artisan db:seed --class=ShiftSeeder
 ```
 
+## Verifikasi Wajah Absensi
+
+Fitur verifikasi wajah membandingkan foto absen dengan `foto_profil` user. Saat wajah tidak cocok, absen ditolak dan user menerima notifikasi "Foto Absensi Tidak Sesuai".
+
+Aktifkan melalui `.env`:
+
+```env
+FACE_VERIFICATION_ENABLED=true
+FACE_VERIFICATION_ENDPOINT=https://example.com/verify-face
+FACE_VERIFICATION_TOKEN=
+FACE_VERIFICATION_THRESHOLD=0.75
+FACE_VERIFICATION_TIMEOUT=8
+FACE_VERIFICATION_FAIL_OPEN=true
+```
+
+Endpoint menerima multipart `reference_image`, `candidate_image`, `threshold`, dan `user_id`. Respons JSON minimal salah satu dari:
+
+```json
+{"match": true, "confidence": 0.91}
+```
+
+atau:
+
+```json
+{"verified": true, "similarity": 91}
+```
+
+Jika `FACE_VERIFICATION_FAIL_OPEN=true`, absensi tetap berjalan saat layanan verifikasi tidak tersedia. Jika diset `false`, absensi ditolak ketika layanan verifikasi error.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
