@@ -56,19 +56,32 @@ class ProfileController extends Controller
                 Rule::unique('users', 'email')->ignore($user->id_user, 'id_user'),
             ],
             'foto_profil' => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:2048', 'dimensions:max_width=2000,max_height=2000'],
+            'foto_profil_live' => ['nullable', 'string'],
         ]);
 
         $user->nama = $validated['nama'];
         $user->username = $validated['username'];
         $user->email = $validated['email'];
 
-        if ($request->hasFile('foto_profil')) {
+        $livePhotoInput = $request->input('foto_profil_live');
+        $livePhoto = $this->decodeLivePhoto($livePhotoInput);
+
+        if ($livePhotoInput && $livePhoto === null) {
+            return back()
+                ->withErrors(['foto_profil' => 'Foto live tidak valid atau terlalu besar.'])
+                ->withInput();
+        }
+
+        if ($request->hasFile('foto_profil') || $livePhoto !== null) {
             // Hapus foto lama jika ada
             if ($user->foto_profil && Storage::disk('public')->exists($user->foto_profil)) {
                 Storage::disk('public')->delete($user->foto_profil);
             }
 
-            $path = ImageOptimizer::storeUploaded($request->file('foto_profil'), 'profil', 512, 512, 78);
+            $path = $livePhoto !== null
+                ? ImageOptimizer::storeBinary($livePhoto, 'profil', 512, 512, 78)
+                : ImageOptimizer::storeUploaded($request->file('foto_profil'), 'profil', 512, 512, 78);
+
             if (! $path) {
                 return back()->with('error', 'Foto profil gagal diproses.');
             }
@@ -92,5 +105,25 @@ class ProfileController extends Controller
         $user->save();
 
         return back()->with('success', 'Password berhasil diperbarui.');
+    }
+
+    private function decodeLivePhoto(?string $dataUrl): ?string
+    {
+        if (! $dataUrl) {
+            return null;
+        }
+
+        if (! preg_match('/^data:image\/(jpeg|jpg|png|webp);base64,/', $dataUrl)) {
+            return null;
+        }
+
+        $encoded = substr($dataUrl, strpos($dataUrl, ',') + 1);
+        $decoded = base64_decode($encoded, true);
+
+        if ($decoded === false || strlen($decoded) > 2 * 1024 * 1024) {
+            return null;
+        }
+
+        return $decoded;
     }
 }

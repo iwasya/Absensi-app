@@ -200,6 +200,65 @@
         line-height: 1.5;
     }
 
+    .profile-camera {
+        display: grid;
+        gap: 10px;
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 11px;
+        background: var(--bg-color);
+    }
+
+    .profile-camera-preview {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        border-radius: 9px;
+        background: #0f172a;
+    }
+
+    .profile-camera-preview video,
+    .profile-camera-preview canvas,
+    .profile-camera-preview img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+    }
+
+    .profile-camera-preview canvas,
+    .profile-camera-preview img,
+    .profile-camera:not(.has-capture) .profile-camera-retake,
+    .profile-camera.has-capture video,
+    .profile-camera.has-capture .profile-camera-capture,
+    .profile-camera.has-capture canvas,
+    .profile-camera:not(.has-capture) .profile-camera-photo {
+        display: none;
+    }
+
+    .profile-camera.has-capture .profile-camera-photo {
+        display: block;
+    }
+
+    .profile-camera-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .profile-camera-actions button {
+        min-height: 38px;
+        padding: 8px 10px;
+    }
+
+    .profile-camera-status {
+        min-height: 18px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
     .profile-section {
         display: grid;
         gap: 16px;
@@ -436,6 +495,21 @@
                     @enderror
                 </div>
 
+                <div class="profile-camera" id="profileCamera">
+                    <input type="hidden" id="foto_profil_live" name="foto_profil_live">
+                    <div class="profile-camera-preview">
+                        <video id="profileCameraVideo" playsinline muted></video>
+                        <canvas id="profileCameraCanvas"></canvas>
+                        <img id="profileCameraPhoto" class="profile-camera-photo" alt="Foto live profil">
+                    </div>
+                    <div class="profile-camera-actions">
+                        <button type="button" class="secondary-button" id="profileCameraStart">Buka Kamera</button>
+                        <button type="button" class="secondary-button profile-camera-capture" id="profileCameraCapture" disabled>Ambil Foto</button>
+                        <button type="button" class="secondary-button profile-camera-retake" id="profileCameraRetake">Ulangi</button>
+                    </div>
+                    <div class="profile-camera-status" id="profileCameraStatus"></div>
+                </div>
+
                 <button type="submit" class="profile-primary-button">Simpan Foto</button>
             </form>
         </aside>
@@ -544,6 +618,95 @@
             nikInput.type = isHidden ? 'text' : 'password';
             nikToggle.textContent = isHidden ? 'Sembunyi' : 'Lihat';
         });
+    }
+
+    var cameraWrap = document.getElementById('profileCamera');
+    var cameraVideo = document.getElementById('profileCameraVideo');
+    var cameraCanvas = document.getElementById('profileCameraCanvas');
+    var cameraPhoto = document.getElementById('profileCameraPhoto');
+    var cameraInput = document.getElementById('foto_profil_live');
+    var cameraStart = document.getElementById('profileCameraStart');
+    var cameraCapture = document.getElementById('profileCameraCapture');
+    var cameraRetake = document.getElementById('profileCameraRetake');
+    var cameraStatus = document.getElementById('profileCameraStatus');
+    var profileFile = document.getElementById('foto_profil');
+    var cameraStream = null;
+
+    function setCameraStatus(message) {
+        if (cameraStatus) cameraStatus.textContent = message || '';
+    }
+
+    function stopProfileCamera() {
+        if (!cameraStream) return;
+        cameraStream.getTracks().forEach(function (track) { track.stop(); });
+        cameraStream = null;
+    }
+
+    if (cameraWrap && cameraVideo && cameraCanvas && cameraPhoto && cameraInput && cameraStart && cameraCapture && cameraRetake) {
+        cameraStart.addEventListener('click', function () {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                setCameraStatus('Browser tidak mendukung kamera.');
+                return;
+            }
+
+            navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 720 } },
+                audio: false
+            }).then(function (stream) {
+                cameraStream = stream;
+                cameraVideo.srcObject = stream;
+                return cameraVideo.play();
+            }).then(function () {
+                cameraCapture.disabled = false;
+                cameraWrap.classList.remove('has-capture');
+                cameraInput.value = '';
+                setCameraStatus('Kamera siap.');
+            }).catch(function () {
+                setCameraStatus('Kamera tidak bisa dibuka. Pastikan izin kamera sudah diberikan.');
+            });
+        });
+
+        cameraCapture.addEventListener('click', function () {
+            if (!cameraVideo.videoWidth || !cameraVideo.videoHeight) {
+                setCameraStatus('Kamera belum siap.');
+                return;
+            }
+
+            cameraCanvas.width = cameraVideo.videoWidth;
+            cameraCanvas.height = cameraVideo.videoHeight;
+            cameraCanvas.getContext('2d').drawImage(cameraVideo, 0, 0, cameraCanvas.width, cameraCanvas.height);
+
+            var dataUrl = cameraCanvas.toDataURL('image/jpeg', 0.86);
+            cameraInput.value = dataUrl;
+            cameraPhoto.src = dataUrl;
+            if (profileFile) profileFile.value = '';
+            cameraWrap.classList.add('has-capture');
+            stopProfileCamera();
+            cameraCapture.disabled = true;
+            setCameraStatus('Foto live siap disimpan.');
+        });
+
+        cameraRetake.addEventListener('click', function () {
+            cameraInput.value = '';
+            cameraPhoto.removeAttribute('src');
+            cameraWrap.classList.remove('has-capture');
+            cameraStart.click();
+        });
+
+        if (profileFile) {
+            profileFile.addEventListener('change', function () {
+                if (profileFile.files && profileFile.files.length) {
+                    cameraInput.value = '';
+                    cameraPhoto.removeAttribute('src');
+                    cameraWrap.classList.remove('has-capture');
+                    stopProfileCamera();
+                    cameraCapture.disabled = true;
+                    setCameraStatus('');
+                }
+            });
+        }
+
+        window.addEventListener('beforeunload', stopProfileCamera);
     }
 </script>
 @endsection
