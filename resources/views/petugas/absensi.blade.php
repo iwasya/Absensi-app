@@ -294,6 +294,10 @@
     .btn-f-reset:hover { background: var(--border-color); color: var(--text-color); }
     .btn-f-print { background: #059669; color: #fff; }
     .btn-f-print:hover { background: #047857; color: #fff; }
+    button:disabled {
+        opacity: .5;
+        cursor: not-allowed;
+    }
 
     /* ── Table ── */
     .abs-table-wrap { overflow-x: auto; }
@@ -664,6 +668,7 @@
                     @csrf
                     <label style="margin-bottom:8px;">Foto Pulang</label>
                     <div class="camera-container" id="camera_wrap_pulang">
+                        <div class="face-status" id="face_status_pulang"></div>
                         <div class="cam-placeholder" id="cam_placeholder_pulang">
                             <svg fill="none" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="1.5"/></svg>
                             <p>Kamera belum aktif</p>
@@ -851,18 +856,53 @@
     var namaTempat = "{{ isset($tempatTugas) ? $tempatTugas->nama_tempat : '' }}";
     var jarakMaksMeter = {{ (int) $jarakMaksMeter }};
     var maxAccuracyMeter = Math.max(jarakMaksMeter, 100);
+    var submitBlockedByLocation = true;
+    var faceVerificationEnabled = @json((bool) config('absensi.face_verification.enabled'));
+    var faceVerificationFailOpen = @json((bool) config('absensi.face_verification.fail_open'));
+    var initialFaceState = faceVerificationEnabled ? 'idle' : 'verified';
+    var faceVerificationState = { masuk: initialFaceState, pulang: initialFaceState };
 
     function setSubmitDisabled(disabled) {
+        submitBlockedByLocation = disabled;
+        updateSubmitButtons();
+    }
+
+    function updateSubmitButtons() {
         ['form_masuk', 'form_pulang'].forEach(function (formId) {
             var form = document.getElementById(formId);
             if (!form) return;
+
+            var type = formId.replace('form_', '');
+            var faceBlocksSubmit = !canSubmitWithFace(type);
+            var disabled = submitBlockedByLocation || faceBlocksSubmit;
 
             form.querySelectorAll('button[type="submit"]').forEach(function (btn) {
                 btn.disabled      = disabled;
                 btn.style.opacity = disabled ? '0.5' : '';
                 btn.style.cursor  = disabled ? 'not-allowed' : '';
+                btn.title = faceBlocksSubmit
+                    ? 'Ambil foto dan tunggu sampai verifikasi wajah berhasil.'
+                    : '';
             });
         });
+    }
+
+    function canSubmitWithFace(type) {
+        if (!faceVerificationEnabled) {
+            return true;
+        }
+
+        var faceState = faceVerificationState[type] || initialFaceState;
+        if (faceState === 'verified') {
+            return true;
+        }
+
+        return faceVerificationFailOpen && (faceState === 'unavailable' || faceState === 'skipped');
+    }
+
+    function setFaceVerificationState(type, state) {
+        faceVerificationState[type] = state;
+        updateSubmitButtons();
     }
 
     function updateLocationFields(position) {
@@ -986,6 +1026,8 @@
                 btnCapture.style.display = 'inline-flex';
                 btnRetake.style.display  = 'none';
                 input.value = '';
+                setFaceVerificationState(type, 'idle');
+                showFaceStatus(type, '', '');
             } catch (err) {
                 alert('Akses kamera ditolak atau perangkat kamera tidak ditemukan.');
                 console.error(err);
@@ -1011,10 +1053,14 @@
             stream = null;
 
             showFaceStatus(type, 'processing', 'Menunggu verifikasi...');
+            setFaceVerificationState(type, 'processing');
             verifyFace(type, data);
         });
 
-        btnRetake.addEventListener('click', function () { btnOpen.click(); });
+        btnRetake.addEventListener('click', function () {
+            setFaceVerificationState(type, 'idle');
+            btnOpen.click();
+        });
 
         var form = document.getElementById('form_' + type);
         if (form) {
@@ -1022,6 +1068,12 @@
                 if (!input.value) {
                     e.preventDefault();
                     alert('Silakan ambil foto terlebih dahulu sebelum menyimpan absensi.');
+                    return;
+                }
+
+                if (!canSubmitWithFace(type)) {
+                    e.preventDefault();
+                    alert('Verifikasi wajah belum berhasil. Ambil ulang foto sampai status Terverifikasi.');
                     return;
                 }
 
@@ -1057,6 +1109,7 @@
 
         if (!token || !status) {
             showFaceStatus(type, 'unavailable', 'Verifikasi tidak tersedia');
+            setFaceVerificationState(type, 'unavailable');
             return;
         }
 
@@ -1072,19 +1125,24 @@
             return response.json().then(function (data) {
                 if (!response.ok || data.status === 'error') {
                     showFaceStatus(type, 'unavailable', data.message || 'Gagal verifikasi');
+                    setFaceVerificationState(type, 'unavailable');
                     return;
                 }
 
                 if (data.status === 'unavailable' || data.status === 'skipped') {
                     showFaceStatus(type, 'unavailable', data.reason || 'Verifikasi tidak tersedia');
+                    setFaceVerificationState(type, data.status);
                 } else if (data.is_verified) {
                     showFaceStatus(type, 'verified', 'Terverifikasi');
+                    setFaceVerificationState(type, 'verified');
                 } else {
                     showFaceStatus(type, 'failed', 'Tidak cocok');
+                    setFaceVerificationState(type, 'failed');
                 }
             });
         }).catch(function () {
             showFaceStatus(type, 'unavailable', 'Tidak bisa verifikasi');
+            setFaceVerificationState(type, 'unavailable');
         });
     }
 
