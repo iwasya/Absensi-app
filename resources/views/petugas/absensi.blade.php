@@ -1075,7 +1075,9 @@
                     return;
                 }
 
-                if (data.is_verified) {
+                if (data.status === 'unavailable' || data.status === 'skipped') {
+                    showFaceStatus(type, 'unavailable', data.reason || 'Verifikasi tidak tersedia');
+                } else if (data.is_verified) {
                     showFaceStatus(type, 'verified', 'Terverifikasi');
                 } else {
                     showFaceStatus(type, 'failed', 'Tidak cocok');

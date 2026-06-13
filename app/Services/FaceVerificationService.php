@@ -24,6 +24,11 @@ class FaceVerificationService
         }
 
         $referenceImageBinary = Storage::disk('public')->get($user->foto_profil);
+        $candidateImageBinary = $this->normalizeImageBinary($candidateImageBinary);
+        if ($candidateImageBinary === null) {
+            return $this->unavailable('Format foto absensi tidak valid.');
+        }
+
         $threshold = (float) config('absensi.face_verification.threshold', 0.75);
 
         try {
@@ -96,6 +101,29 @@ class FaceVerificationService
         }
 
         return null;
+    }
+
+    private function normalizeImageBinary(string $image): ?string
+    {
+        if (! str_starts_with($image, 'data:image/')) {
+            return $image;
+        }
+
+        if (! preg_match('/^data:image\/(?:jpeg|jpg|png|webp);base64,/', $image)) {
+            return null;
+        }
+
+        $parts = explode(';base64,', $image, 2);
+        if (count($parts) !== 2) {
+            return null;
+        }
+
+        $decoded = base64_decode($parts[1], true);
+        if ($decoded === false || $decoded === '') {
+            return null;
+        }
+
+        return $decoded;
     }
 
     private function skipped(string $reason): array

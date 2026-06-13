@@ -52,7 +52,7 @@ async def verify_face(
     candidate_path = _write_temp_image(candidate_bytes, candidate_image.filename)
 
     try:
-        verification = _verify_with_fallbacks(reference_path, candidate_path)
+        verification = _verify_with_fallbacks(reference_path, candidate_path, threshold)
     except FaceNotDetected as exc:
         return {
             "match": False,
@@ -87,7 +87,7 @@ class FaceNotDetected(ValueError):
     pass
 
 
-def _verify_with_fallbacks(reference_path: Path, candidate_path: Path) -> VerificationResult:
+def _verify_with_fallbacks(reference_path: Path, candidate_path: Path, threshold: float) -> VerificationResult:
     errors: list[str] = []
 
     for detector in DETECTOR_BACKENDS:
@@ -98,6 +98,7 @@ def _verify_with_fallbacks(reference_path: Path, candidate_path: Path) -> Verifi
                 model_name=MODEL_NAME,
                 detector_backend=detector,
                 enforce_detection=True,
+                threshold=threshold,
                 silent=True,
             )
 

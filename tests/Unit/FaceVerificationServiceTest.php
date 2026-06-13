@@ -50,6 +50,43 @@ class FaceVerificationServiceTest extends TestCase
         $this->assertSame(0.41, $result['confidence']);
     }
 
+    public function test_it_decodes_data_url_candidate_before_sending_to_face_service(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('profil/user.jpg', 'reference');
+
+        config([
+            'absensi.face_verification.enabled' => true,
+            'absensi.face_verification.endpoint' => 'https://face.test/verify',
+            'absensi.face_verification.threshold' => 0.75,
+            'absensi.face_verification.timeout' => 8,
+            'absensi.face_verification.token' => null,
+        ]);
+
+        Http::fake([
+            'face.test/verify' => Http::response([
+                'match' => true,
+                'confidence' => 0.93,
+            ]),
+        ]);
+
+        $user = new User([
+            'foto_profil' => 'profil/user.jpg',
+        ]);
+        $user->id_user = 12;
+
+        $result = app(FaceVerificationService::class)->verify(
+            $user,
+            'data:image/jpeg;base64,' . base64_encode('candidate-binary')
+        );
+
+        $this->assertSame('matched', $result['status']);
+        Http::assertSent(function ($request) {
+            return ! str_contains($request->body(), 'data:image/jpeg;base64')
+                && str_contains($request->body(), 'candidate-binary');
+        });
+    }
+
     public function test_it_treats_placeholder_endpoint_as_unavailable(): void
     {
         Storage::fake('public');
