@@ -196,6 +196,25 @@
     .camera-container video { width: 100%; max-height: 340px; object-fit: cover; display: block; }
     .camera-container img  { width: 100%; max-height: 340px; object-fit: cover; display: block; }
 
+    .face-status {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        z-index: 2;
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #fff;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+        display: none;
+    }
+    .face-status.processing { display: inline-flex; background: rgba(59, 130, 246, 0.92); }
+    .face-status.verified   { display: inline-flex; background: rgba(16, 185, 129, 0.92); }
+    .face-status.failed     { display: inline-flex; background: rgba(239, 68, 68, 0.92); }
+    .face-status.unavailable { display: inline-flex; background: rgba(120, 113, 108, 0.92); }
+
     .cam-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
     .btn-cam {
         display: inline-flex; align-items: center; gap: 6px;
@@ -512,6 +531,7 @@
                     @endif
                     <label style="margin-bottom:8px;">Foto Masuk</label>
                     <div class="camera-container" id="camera_wrap_masuk">
+                        <div class="face-status" id="face_status_masuk"></div>
                         <div class="cam-placeholder" id="cam_placeholder_masuk">
                             <svg fill="none" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="1.5"/></svg>
                             <p>Kamera belum aktif</p>
@@ -612,6 +632,7 @@
                     <input type="hidden" name="id_absensi" value="{{ $today->id_absensi }}">
                     <label style="margin-bottom:8px;">Foto Pulang</label>
                     <div class="camera-container" id="camera_wrap_pulang">
+                        <div class="face-status" id="face_status_pulang"></div>
                         <div class="cam-placeholder" id="cam_placeholder_pulang"><p>Kamera belum aktif</p></div>
                         <video id="video_pulang" width="100%" style="display:none;" autoplay playsinline></video>
                         <canvas id="canvas_pulang" style="display:none;"></canvas>
@@ -988,6 +1009,9 @@
             btnRetake.style.display  = 'inline-flex';
             stream.getTracks().forEach(function (t) { t.stop(); });
             stream = null;
+
+            showFaceStatus(type, 'processing', 'Menunggu verifikasi...');
+            verifyFace(type, data);
         });
 
         btnRetake.addEventListener('click', function () { btnOpen.click(); });
@@ -1016,6 +1040,50 @@
                 }
             });
         }
+    }
+
+    function showFaceStatus(type, state, text) {
+        var status = document.getElementById('face_status_' + type);
+        if (!status) return;
+
+        status.className = 'face-status ' + state;
+        status.textContent = text;
+    }
+
+    function verifyFace(type, imageBase64) {
+        var url = '{{ route('petugas.absensi.verify-face') }}';
+        var token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        var status = document.getElementById('face_status_' + type);
+
+        if (!token || !status) {
+            showFaceStatus(type, 'unavailable', 'Verifikasi tidak tersedia');
+            return;
+        }
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ foto: imageBase64, jenis: type })
+        }).then(function (response) {
+            return response.json().then(function (data) {
+                if (!response.ok || data.status === 'error') {
+                    showFaceStatus(type, 'unavailable', data.message || 'Gagal verifikasi');
+                    return;
+                }
+
+                if (data.is_verified) {
+                    showFaceStatus(type, 'verified', 'Terverifikasi');
+                } else {
+                    showFaceStatus(type, 'failed', 'Tidak cocok');
+                }
+            });
+        }).catch(function () {
+            showFaceStatus(type, 'unavailable', 'Tidak bisa verifikasi');
+        });
     }
 
     document.addEventListener('DOMContentLoaded', function () {

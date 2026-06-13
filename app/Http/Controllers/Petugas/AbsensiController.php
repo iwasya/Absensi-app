@@ -703,6 +703,31 @@ class AbsensiController extends Controller
         return back()->with('success', 'Absen pulang berhasil disimpan.');
     }
 
+    public function verifyFace(Request $request)
+    {
+        $validated = $request->validate([
+            'foto' => ['required', 'string'],
+            'jenis' => ['nullable', 'string', 'in:masuk,pulang'],
+        ]);
+
+        $user = $request->user();
+        $fotoBinary = $validated['foto'];
+
+        if (! $fotoBinary) {
+            return response()->json(['status' => 'error', 'message' => 'Foto tidak valid.'], 422);
+        }
+
+        $faceVerification = app(FaceVerificationService::class);
+        $result = $faceVerification->verify($user, $fotoBinary);
+
+        return response()->json([
+            'status' => $result['status'],
+            'confidence' => $result['confidence'],
+            'reason' => $result['reason'],
+            'is_verified' => $result['status'] === 'matched',
+        ]);
+    }
+
     public function requestPulangApproval(Request $request, int $id): RedirectResponse
     {
         $validated = $request->validate([

@@ -65,6 +65,7 @@ Route::middleware(['auth', 'prevent.back.history'])->group(function () {
         Route::get('/absensi/print', [AbsensiController::class, 'print'])->name('absensi.print');
         Route::post('/absensi/masuk', [AbsensiController::class, 'masuk'])->middleware('throttle:10,1')->name('absensi.masuk');
         Route::post('/absensi/pulang', [AbsensiController::class, 'pulang'])->middleware('throttle:10,1')->name('absensi.pulang');
+        Route::post('/absensi/verifikasi-wajah', [AbsensiController::class, 'verifyFace'])->middleware('throttle:10,1')->name('absensi.verify-face');
         Route::post('/absensi/request-masuk', [AbsensiController::class, 'requestMasukApprovalHariIni'])->middleware('throttle:5,1')->name('absensi.request-masuk-today');
         Route::post('/absensi/{id}/request-masuk', [AbsensiController::class, 'requestMasukApproval'])->middleware('throttle:5,1')->name('absensi.request-masuk');
         Route::post('/absensi/{id}/request-pulang', [AbsensiController::class, 'requestPulangApproval'])->middleware('throttle:5,1')->name('absensi.request-pulang');
