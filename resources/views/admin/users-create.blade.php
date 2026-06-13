@@ -397,7 +397,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('admin.users.store') }}">
+            <form method="POST" action="{{ route('admin.users.store') }}" enctype="multipart/form-data">
                 @csrf
                 
                 <!-- Identitas Dasar -->
@@ -429,6 +429,13 @@
                         <input id="email" name="email" type="email" placeholder="nama@perusahaan.com" value="{{ old('email') }}" aria-describedby="emailHelp emailError">
                         <div id="emailHelp" class="help-text">✓ Alamat email yang aktif dan valid</div>
                         @error('email')<div id="emailError" class="field-error">❌ {{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="form-control" style="grid-column: span 2;">
+                        <label for="foto_profil">Foto Profil</label>
+                        <input id="foto_profil" name="foto_profil" type="file" accept="image/jpeg,image/png" aria-describedby="fotoProfilHelp fotoProfilError">
+                        <div id="fotoProfilHelp" class="help-text">✓ Opsional - JPG atau PNG maksimal 2MB untuk pembanding verifikasi wajah</div>
+                        @error('foto_profil')<div id="fotoProfilError" class="field-error">❌ {{ $message }}</div>@enderror
                     </div>
                 </div>
 

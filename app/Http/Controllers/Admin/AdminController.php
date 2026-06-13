@@ -19,7 +19,9 @@ use App\Support\ImageOptimizer;
 use App\Support\QueryFilters;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -94,6 +96,7 @@ class AdminController extends Controller
             'username' => ['required', 'string', 'max:100', 'unique:users,username'],
             'email' => ['required', 'email', 'max:150', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
+            'foto_profil' => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:2048', 'dimensions:max_width=2000,max_height=2000'],
             'id_role' => ['required', 'exists:roles,id_role'],
             'id_tempat' => ['nullable', 'exists:tempat_tugas,id_tempat'],
             'nik' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+$/', function ($attribute, $value, $fail) {
@@ -110,23 +113,47 @@ class AdminController extends Controller
             'jabatan' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $user = User::create([
-            'nama' => $validated['nama'],
-            'username' => $validated['username'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'id_role' => $validated['id_role'],
-            'id_tempat' => $validated['id_tempat'] ?? null,
-            'regu' => $validated['regu'] ?? null,
-            'is_ketua_regu' => (bool) ($validated['is_ketua_regu'] ?? false),
-            'shift' => $validated['shift'] ?? null,
-            'status_aktif' => $validated['status_aktif'] ?? 'aktif',
-            'no_hp' => null,
-            'alamat' => $validated['alamat'] ?? null,
-            'jabatan' => $validated['jabatan'] ?? null,
-        ]);
+        $fotoProfilPath = null;
+        if ($request->hasFile('foto_profil')) {
+            $fotoProfilPath = ImageOptimizer::storeUploaded($request->file('foto_profil'), 'profil', 512, 512, 78);
 
-        $this->saveUserSensitiveFields($user, $validated);
+            if (! $fotoProfilPath) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['foto_profil' => 'Foto profil gagal diproses.']);
+            }
+        }
+
+        try {
+            $user = DB::transaction(function () use ($validated, $fotoProfilPath) {
+                $user = User::create([
+                    'nama' => $validated['nama'],
+                    'username' => $validated['username'],
+                    'email' => $validated['email'],
+                    'foto_profil' => $fotoProfilPath,
+                    'password' => Hash::make($validated['password']),
+                    'id_role' => $validated['id_role'],
+                    'id_tempat' => $validated['id_tempat'] ?? null,
+                    'regu' => $validated['regu'] ?? null,
+                    'is_ketua_regu' => (bool) ($validated['is_ketua_regu'] ?? false),
+                    'shift' => $validated['shift'] ?? null,
+                    'status_aktif' => $validated['status_aktif'] ?? 'aktif',
+                    'no_hp' => null,
+                    'alamat' => $validated['alamat'] ?? null,
+                    'jabatan' => $validated['jabatan'] ?? null,
+                ]);
+
+                $this->saveUserSensitiveFields($user, $validated);
+
+                return $user;
+            });
+        } catch (\Throwable $exception) {
+            if ($fotoProfilPath && Storage::disk('public')->exists($fotoProfilPath)) {
+                Storage::disk('public')->delete($fotoProfilPath);
+            }
+
+            throw $exception;
+        }
 
         ActivityLogger::log($request, 'Membuat user', 'users', $user->id_user, User::class);
 
