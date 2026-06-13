@@ -79,13 +79,30 @@ class AbsensiController extends Controller
         }
         $leaveInfo = $absensiTidakAbsen->leaveInfo($user, $activeDate);
 
+        $historyItems = $items
+            ->latest('tanggal')
+            ->latest('id_absensi')
+            ->paginate(5)
+            ->withQueryString();
+
+        $historyItems->getCollection()->each(function (Absensi $item) use ($absensiTidakAbsen, $user): void {
+            $historyHolidayInfo = $absensiTidakAbsen->holidayInfo($item->tanggal);
+            $historyWeeklyOffInfo = $absensiTidakAbsen->weeklyOffInfo($user, $item->tanggal);
+            if (! $historyHolidayInfo['is_holiday'] && $historyWeeklyOffInfo['is_holiday']) {
+                $historyHolidayInfo = $historyWeeklyOffInfo + ['event' => null];
+            }
+
+            $historyLeaveInfo = $absensiTidakAbsen->leaveInfo($user, $item->tanggal);
+
+            $item->setAttribute('is_history_holiday', (bool) $historyHolidayInfo['is_holiday']);
+            $item->setAttribute('history_holiday_reason', $historyHolidayInfo['reason'] ?? null);
+            $item->setAttribute('is_history_leave', $item->status === 'cuti' || (bool) $historyLeaveInfo['is_leave']);
+            $item->setAttribute('history_leave_reason', $historyLeaveInfo['reason'] ?? null);
+        });
+
         return view('petugas.absensi', [
             'today' => $today,
-            'items' => $items
-                ->latest('tanggal')
-                ->latest('id_absensi')
-                ->paginate(5)
-                ->withQueryString(),
+            'items' => $historyItems,
             'periodeAktif' => Periode::aktif(),
             'tempatTugas' => $user->tempatTugas,
             'jamMasukBuka' => $shiftWindow['jam_masuk_buka'],

@@ -782,7 +782,11 @@
                         <td>{{ $item->shift ?? '-' }}</td>
                         <td><span class="badge {{ $item->status }}">{{ $item->status }}</span></td>
                         <td>
-                            @if($item->approval_pulang_status === 'approved' && $item->jam_masuk && ! $item->jam_pulang)
+                            @if($item->is_history_leave)
+                                <span class="abs-time-nil" title="{{ $item->history_leave_reason ?: 'Cuti' }}">Cuti</span>
+                            @elseif($item->is_history_holiday)
+                                <span class="abs-time-nil" title="{{ $item->history_holiday_reason ?: 'Hari libur' }}">Libur</span>
+                            @elseif($item->approval_pulang_status === 'approved' && $item->jam_masuk && ! $item->jam_pulang)
                                 <div style="display:grid;gap:6px;min-width:190px;">
                                     <span class="badge approved">Pulang: approved</span>
                                     <a href="{{ route('petugas.absensi.index', ['open_absensi' => $item->id_absensi]) }}" class="btn-detail">Isi Pulang</a>
@@ -802,7 +806,7 @@
                                         <small class="muted">{{ $item->approval_masuk_reason }}</small>
                                     @endif
                                 </div>
-                            @elseif(!$item->jam_masuk && $item->tanggal->lt(today()) && ! in_array($item->status, ['cuti'], true))
+                            @elseif(!$item->jam_masuk && $item->tanggal->lt(today()))
                                 <form method="POST" action="{{ route('petugas.absensi.request-masuk', $item->id_absensi) }}" style="display:grid;gap:6px;min-width:190px;">
                                     @csrf
                                     <input name="approval_masuk_reason" placeholder="Alasan absen masuk terlewat" required>
