@@ -73,7 +73,11 @@ class FaceVerificationService
 
     public function shouldFailClosed(array $result): bool
     {
-        return $result['status'] === 'unavailable'
+        if (! config('absensi.face_verification.enabled')) {
+            return false;
+        }
+
+        return in_array($result['status'], ['unavailable', 'skipped'], true)
             && ! (bool) config('absensi.face_verification.fail_open', true);
     }
 
