@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import os
 import tempfile
 from dataclasses import dataclass
@@ -11,6 +13,9 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from PIL import Image
 
 app = FastAPI(title="Absensi Face Verification Service")
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("face-service")
 
 MAX_IMAGE_BYTES = int(os.getenv("MAX_IMAGE_BYTES", str(5 * 1024 * 1024)))
 MODEL_NAME = os.getenv("FACE_MODEL_NAME", "Facenet512")
@@ -71,6 +76,11 @@ async def verify_face(
     model_threshold = float(verification.payload.get("threshold", threshold))
     match = bool(verification.payload.get("verified", False))
     confidence = _confidence_from_distance(distance, model_threshold)
+
+    logger.info(
+        "Verify: user=%s detector=%s match=%s distance=%.4f model_threshold=%.4f confidence=%.4f",
+        user_id, verification.detector, match, distance, model_threshold, confidence,
+    )
 
     return {
         "match": match,
