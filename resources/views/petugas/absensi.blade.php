@@ -825,7 +825,6 @@
                             @else
                                 <span class="abs-time-nil">-</span>
                             @endif
-                            @endif
                         </td>
                         <td>
                             <a href="{{ route('absensi.detail', $item->id_absensi) }}" class="btn-detail">
