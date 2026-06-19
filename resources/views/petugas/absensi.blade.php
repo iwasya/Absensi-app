@@ -791,8 +791,18 @@
                                     <span class="badge approved">Pulang: approved</span>
                                     <a href="{{ route('petugas.absensi.index', ['open_absensi' => $item->id_absensi]) }}" class="btn-detail">Isi Pulang</a>
                                 </div>
+                            @elseif($item->approval_masuk_status === 'approved' && $item->status === 'akses_dibuka' && !$item->jam_masuk)
+                                <div style="display:grid;gap:6px;min-width:190px;">
+                                    <span class="badge approved">Masuk: approved</span>
+                                    <a href="{{ route('petugas.absensi.index', ['open_absensi' => $item->id_absensi]) }}" class="btn-detail">Isi Masuk</a>
+                                </div>
                             @elseif($item->approval_pulang_status)
-                                <span class="badge {{ $item->approval_pulang_status }}">{{ str_replace('_', ' ', $item->approval_pulang_status) }}</span>
+                                <div style="display:grid;gap:6px;min-width:190px;">
+                                    <span class="badge {{ $item->approval_pulang_status }}">Pulang: {{ str_replace('_', ' ', $item->approval_pulang_status) }}</span>
+                                    @if($item->approval_pulang_reason)
+                                        <small class="muted">{{ $item->approval_pulang_reason }}</small>
+                                    @endif
+                                </div>
                             @elseif($item->jam_masuk && !$item->jam_pulang && $item->tanggal->lt(today()))
                                 <form method="POST" action="{{ route('petugas.absensi.request-pulang', $item->id_absensi) }}" style="display:grid;gap:6px;min-width:190px;">
                                     @csrf
@@ -814,6 +824,7 @@
                                 </form>
                             @else
                                 <span class="abs-time-nil">-</span>
+                            @endif
                             @endif
                         </td>
                         <td>
