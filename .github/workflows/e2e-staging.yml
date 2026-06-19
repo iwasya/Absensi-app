@@ -1,0 +1,33 @@
+name: E2E Staging
+
+on:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run staging e2e tests
+        env:
+          STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          STAGING_PETUGAS_LOGIN: ${{ secrets.STAGING_PETUGAS_LOGIN }}
+          STAGING_PETUGAS_PASSWORD: ${{ secrets.STAGING_PETUGAS_PASSWORD }}
+          STAGING_TEST_LATITUDE: ${{ secrets.STAGING_TEST_LATITUDE }}
+          STAGING_TEST_LONGITUDE: ${{ secrets.STAGING_TEST_LONGITUDE }}
+        run: npm run test:e2e
