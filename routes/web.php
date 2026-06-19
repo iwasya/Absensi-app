@@ -55,6 +55,7 @@ Route::middleware(['auth', 'prevent.back.history'])->group(function () {
 
     Route::get('/absensi/{id}/detail', [\App\Http\Controllers\Petugas\AbsensiController::class, 'show'])->name('absensi.detail');
     Route::get('/absensi/{absensi}/foto/{type}', [\App\Http\Controllers\Petugas\AbsensiController::class, 'photo'])->whereIn('type', ['masuk', 'pulang'])->name('absensi.photo');
+    Route::get('/petugas/cuti/{id}/print', [CutiController::class, 'print'])->name('petugas.cuti.print');
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
     Route::post('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->middleware('throttle:10,1')->name('profile.update');
     Route::post('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->middleware('throttle:5,1')->name('profile.password');
@@ -76,7 +77,6 @@ Route::middleware(['auth', 'prevent.back.history'])->group(function () {
         Route::post('/approval-regu/{id}/reject', [AbsensiController::class, 'rejectPulangApprovalByKetua'])->middleware('throttle:30,1')->name('approval-regu.reject');
 
         Route::get('/cuti', [CutiController::class, 'index'])->name('cuti.index');
-        Route::get('/cuti/{id}/print', [CutiController::class, 'print'])->name('cuti.print');
         Route::post('/cuti', [CutiController::class, 'store'])->middleware('throttle:10,1')->name('cuti.store');
         Route::post('/cuti/{id}/pengganti/terima', [CutiController::class, 'acceptReplacement'])->middleware('throttle:20,1')->name('cuti.pengganti.terima');
         Route::post('/cuti/{id}/pengganti/tolak', [CutiController::class, 'rejectReplacement'])->middleware('throttle:20,1')->name('cuti.pengganti.tolak');

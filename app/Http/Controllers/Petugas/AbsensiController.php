@@ -386,7 +386,7 @@ class AbsensiController extends Controller
         }
 
         $todayAbsensi = Absensi::where('id_user', $user->id_user)
-            ->where('tanggal', today()->toDateString())
+            ->whereDate('tanggal', today()->toDateString())
             ->first();
 
         if ($todayAbsensi?->jam_masuk) {
@@ -398,7 +398,7 @@ class AbsensiController extends Controller
 
         if ($yesterdayWindow['is_overnight'] && now()->lessThanOrEqualTo($yesterdayWindow['pulang_tutup_at'])) {
             $overnightAbsensi = Absensi::where('id_user', $user->id_user)
-                ->where('tanggal', $yesterday->toDateString())
+                ->whereDate('tanggal', $yesterday->toDateString())
                 ->whereNotNull('jam_masuk')
                 ->whereNull('jam_pulang')
                 ->first();
@@ -484,7 +484,7 @@ class AbsensiController extends Controller
             $targetDate = $targetAbsensi->tanggal;
         }
 
-        $existing = $targetAbsensi ?: Absensi::where('id_user', $user->id_user)->where('tanggal', $targetDate->toDateString())->first();
+        $existing = $targetAbsensi ?: Absensi::where('id_user', $user->id_user)->whereDate('tanggal', $targetDate->toDateString())->first();
         $isLateAccess = $existing && $existing->status === 'akses_dibuka' && ! $existing->jam_masuk;
 
         $absensiTidakAbsen = app(AbsensiTidakAbsenService::class);
@@ -637,7 +637,7 @@ class AbsensiController extends Controller
             }
         }
 
-        $absensi = $targetAbsensi ?? Absensi::where('id_user', $user->id_user)->where('tanggal', today()->toDateString())->first();
+        $absensi = $targetAbsensi ?? Absensi::where('id_user', $user->id_user)->whereDate('tanggal', today()->toDateString())->first();
         $isApprovedForgottenCheckout = $absensi?->approval_pulang_status === 'approved' && ! $absensi?->jam_pulang;
 
         $holidayInfo = $absensiTidakAbsen->holidayInfo($targetDate);
@@ -663,6 +663,10 @@ class AbsensiController extends Controller
             return back()->with('error', 'Absen masuk dulu sebelum absen pulang.');
         }
 
+        if ($absensi->jam_pulang) {
+            return back()->with('error', 'Kamu sudah absen pulang hari ini.');
+        }
+
         $now = now();
         $shiftWindow = $this->shiftWindow($user, $targetDate);
         if ($now->lt($shiftWindow['pulang_buka_at']) && ! $isApprovedForgottenCheckout) {
@@ -681,10 +685,6 @@ class AbsensiController extends Controller
         );
         if ($areaError) {
             return back()->with('error', $areaError);
-        }
-
-        if ($absensi->jam_pulang) {
-            return back()->with('error', 'Kamu sudah absen pulang hari ini.');
         }
 
         $fotoPath = $absensi->foto_pulang;
