@@ -788,12 +788,12 @@
                                 <span class="abs-time-nil" title="{{ $item->history_holiday_reason ?: 'Hari libur' }}">Libur</span>
                             @elseif($item->approval_pulang_status === 'approved' && $item->jam_masuk && ! $item->jam_pulang)
                                 <div style="display:grid;gap:6px;min-width:190px;">
-                                    <span class="badge approved">Pulang: approved</span>
+                                    <span class="badge approved">Pulang: Approved</span>
                                     <a href="{{ route('petugas.absensi.index', ['open_absensi' => $item->id_absensi]) }}" class="btn-detail">Isi Pulang</a>
                                 </div>
                             @elseif($item->approval_masuk_status === 'approved' && $item->status === 'akses_dibuka' && !$item->jam_masuk)
                                 <div style="display:grid;gap:6px;min-width:190px;">
-                                    <span class="badge approved">Masuk: approved</span>
+                                    <span class="badge approved">Masuk: Approved</span>
                                     <a href="{{ route('petugas.absensi.index', ['open_absensi' => $item->id_absensi]) }}" class="btn-detail">Isi Masuk</a>
                                 </div>
                             @elseif($item->approval_pulang_status)
