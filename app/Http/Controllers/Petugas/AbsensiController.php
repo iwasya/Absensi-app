@@ -408,10 +408,6 @@ class AbsensiController extends Controller
             }
         }
 
-        if ($todayAbsensi?->status === 'akses_dibuka') {
-            return $todayAbsensi;
-        }
-
         $openedAbsensi = Absensi::where('id_user', $user->id_user)
             ->where(function ($query) {
                 $query->where(function ($masukQuery) {
@@ -435,6 +431,10 @@ class AbsensiController extends Controller
             return $openedAbsensi;
         }
 
+        if ($todayAbsensi?->status === 'akses_dibuka') {
+            return $todayAbsensi;
+        }
+
         return $todayAbsensi;
     }
 
@@ -456,7 +456,6 @@ class AbsensiController extends Controller
             && (bool) $absensi->jam_masuk
             && ! $absensi->jam_pulang;
     }
-
     public function masuk(Request $request): RedirectResponse
     {
         $validated = $request->validate([
