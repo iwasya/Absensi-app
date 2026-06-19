@@ -11,10 +11,10 @@
         ->map(fn ($part) => mb_substr($part, 0, 1))
         ->implode('');
     $approvalMasukText = $item->approval_masuk_status
-        ? ucfirst(str_replace('_', ' ', $item->approval_masuk_status))
+        ? (in_array($item->approval_masuk_status, ['approved', 'used']) ? 'Approved' : ucfirst(str_replace('_', ' ', $item->approval_masuk_status)))
         : 'Tidak ada';
     $approvalPulangText = $item->approval_pulang_status
-        ? ucfirst(str_replace('_', ' ', $item->approval_pulang_status))
+        ? (in_array($item->approval_pulang_status, ['approved', 'used']) ? 'Approved' : ucfirst(str_replace('_', ' ', $item->approval_pulang_status)))
         : 'Tidak ada';
 @endphp
 
