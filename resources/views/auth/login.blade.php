@@ -489,13 +489,13 @@
             @csrf
 
             <div class="form-group">
-                <label for="login">Email atau Username</label>
+                <label for="login">Email atau NIK</label>
                 <div class="input-wrap">
                     <svg fill="none" viewBox="0 0 16 16">
                         <path d="M2 4.5A1.5 1.5 0 013.5 3h9A1.5 1.5 0 0114 4.5v7A1.5 1.5 0 0112.5 13h-9A1.5 1.5 0 012 11.5v-7z" stroke="currentColor" stroke-width="1.3"/>
                         <path d="M2 5l6 4.5L14 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
-                    <input id="login" type="text" name="login" value="{{ old('login') }}" placeholder="Email atau username" required autofocus autocomplete="username">
+                    <input id="login" type="text" name="login" value="{{ old('login') }}" placeholder="Masukkan email atau NIK" required autofocus autocomplete="username">
                 </div>
                 @error('login')
                     <div class="error-msg">

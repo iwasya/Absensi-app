@@ -64,7 +64,7 @@ class AuthController extends Controller
         }
 
         return back()
-            ->withErrors(['login' => 'Email/Username/NIK atau password tidak sesuai.'])
+            ->withErrors(['login' => 'Email/NIK atau password tidak sesuai.'])
             ->onlyInput('login');
     }
 
