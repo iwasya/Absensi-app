@@ -21,8 +21,20 @@ class AuthTest extends TestCase
         $response->assertSee('Email atau NIK');
     }
 
+    public function test_initial_admin_is_created_by_migration(): void
+    {
+        $user = User::where('username', env('INITIAL_ADMIN_USERNAME', 'admin'))->first();
+
+        $this->assertNotNull($user);
+        $this->assertSame(env('INITIAL_ADMIN_EMAIL', 'admin@local.test'), $user->email);
+        $this->assertTrue(Hash::check(env('INITIAL_ADMIN_PASSWORD', 'Admin12345'), $user->password));
+        $this->assertTrue($user->isAdmin());
+    }
+
     public function test_register_page_is_accessible_when_no_users_exist(): void
     {
+        User::query()->delete();
+
         $response = $this->get('/register');
 
         $response->assertStatus(200);
@@ -32,6 +44,7 @@ class AuthTest extends TestCase
 
     public function test_first_user_can_register_as_admin(): void
     {
+        User::query()->delete();
         $role = Role::firstOrCreate(['nama_role' => 'Admin']);
 
         $response = $this->post('/register', [
