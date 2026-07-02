@@ -70,14 +70,18 @@ class AuthController extends Controller
 
     public function showRegister(): View
     {
+        abort_unless(User::count() === 0, 404);
+
         return view('auth.register', [
             'tempatTugas' => TempatTugas::orderBy('nama_tempat')->get(),
-            'isFirstUser' => User::count() === 0,
+            'isFirstUser' => true,
         ]);
     }
 
     public function register(Request $request): RedirectResponse
     {
+        abort_unless(User::count() === 0, 404);
+
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:150'],
             'username' => ['required', 'string', 'max:100', 'unique:users,username'],
@@ -86,9 +90,7 @@ class AuthController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
         ]);
 
-        $roleId = User::count() === 0
-            ? (QueryFilters::whereRoleAlias(Role::query(), ['admin'])->value('id_role') ?? 1)
-            : (QueryFilters::whereRoleAlias(Role::query(), ['petugas', 'karyawan'])->value('id_role') ?? 3);
+        $roleId = QueryFilters::whereRoleAlias(Role::query(), ['admin'])->value('id_role') ?? 1;
 
         $user = User::create([
             'nama' => $validated['nama'],

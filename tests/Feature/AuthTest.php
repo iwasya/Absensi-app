@@ -21,6 +21,59 @@ class AuthTest extends TestCase
         $response->assertSee('Email atau NIK');
     }
 
+    public function test_register_page_is_accessible_when_no_users_exist(): void
+    {
+        $response = $this->get('/register');
+
+        $response->assertStatus(200);
+        $response->assertViewIs('auth.register');
+        $response->assertSee('Akun pertama otomatis dibuat sebagai Admin Absensi');
+    }
+
+    public function test_first_user_can_register_as_admin(): void
+    {
+        $role = Role::firstOrCreate(['nama_role' => 'Admin']);
+
+        $response = $this->post('/register', [
+            'nama' => 'Admin Awal',
+            'username' => 'adminawal',
+            'email' => 'adminawal@example.test',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
+        ]);
+
+        $user = User::where('username', 'adminawal')->first();
+
+        $response->assertRedirect('/dashboard');
+        $this->assertNotNull($user);
+        $this->assertSame($role->id_role, $user->id_role);
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_register_is_closed_after_first_user_exists(): void
+    {
+        $role = Role::firstOrCreate(['nama_role' => 'Admin']);
+        User::create([
+            'nama' => 'Existing User',
+            'username' => 'existinguser',
+            'email' => 'existing@example.test',
+            'password' => Hash::make('Password123'),
+            'id_role' => $role->id_role,
+            'status_aktif' => 'aktif',
+        ]);
+
+        $this->get('/register')->assertNotFound();
+        $this->post('/register', [
+            'nama' => 'Blocked User',
+            'username' => 'blockeduser',
+            'email' => 'blocked@example.test',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
+        ])->assertNotFound();
+
+        $this->assertDatabaseMissing('users', ['username' => 'blockeduser']);
+    }
+
     public function test_user_can_login_with_email(): void
     {
         $role = Role::firstOrCreate(['nama_role' => 'Admin']);
