@@ -19,4 +19,5 @@ __pycache__/
 /.fleet
 /.idea
 /.vscode
-storage/framework/views
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
