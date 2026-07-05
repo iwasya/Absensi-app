@@ -76,7 +76,7 @@ FACE_VERIFICATION_ENDPOINT=http://127.0.0.1:8010/verify-face
 FACE_VERIFICATION_TOKEN=
 FACE_VERIFICATION_THRESHOLD=0.75
 FACE_VERIFICATION_TIMEOUT=12
-FACE_VERIFICATION_FAIL_OPEN=true
+FACE_VERIFICATION_FAIL_OPEN=false
 ```
 
 Endpoint menerima multipart `reference_image`, `candidate_image`, `threshold`, dan `user_id`. Respons JSON minimal salah satu dari:
@@ -91,7 +91,7 @@ atau:
 {"verified": true, "similarity": 91}
 ```
 
-Jika `FACE_VERIFICATION_FAIL_OPEN=true`, absensi tetap berjalan saat layanan verifikasi tidak tersedia. Jika diset `false`, absensi ditolak ketika layanan verifikasi error.
+Default `FACE_VERIFICATION_FAIL_OPEN=false`, jadi absensi ditolak ketika layanan verifikasi error atau foto profil pembanding belum tersedia. Set `true` hanya jika absensi harus tetap berjalan saat layanan verifikasi tidak tersedia.
 
 ## About Laravel
 

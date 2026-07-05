@@ -83,15 +83,23 @@ class FaceVerificationService
 
     private function matched(array $payload, ?float $confidence, float $threshold): bool
     {
+        $serviceMatched = null;
+
         if (array_key_exists('match', $payload)) {
-            return (bool) $payload['match'];
+            $serviceMatched = (bool) $payload['match'];
+        } elseif (array_key_exists('verified', $payload)) {
+            $serviceMatched = (bool) $payload['verified'];
         }
 
-        if (array_key_exists('verified', $payload)) {
-            return (bool) $payload['verified'];
+        if ($serviceMatched === false) {
+            return false;
         }
 
-        return $confidence !== null && $confidence >= $threshold;
+        if ($confidence !== null) {
+            return $confidence >= $threshold;
+        }
+
+        return $serviceMatched === true;
     }
 
     private function confidence(array $payload): ?float

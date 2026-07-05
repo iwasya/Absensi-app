@@ -34,6 +34,6 @@ return [
         'token' => env('FACE_VERIFICATION_TOKEN'),
         'threshold' => (float) env('FACE_VERIFICATION_THRESHOLD', 0.75),
         'timeout' => (int) env('FACE_VERIFICATION_TIMEOUT', 8),
-        'fail_open' => env('FACE_VERIFICATION_FAIL_OPEN', true),
+        'fail_open' => env('FACE_VERIFICATION_FAIL_OPEN', false),
     ],
 ];

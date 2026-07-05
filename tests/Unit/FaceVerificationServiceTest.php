@@ -50,6 +50,37 @@ class FaceVerificationServiceTest extends TestCase
         $this->assertSame(0.41, $result['confidence']);
     }
 
+    public function test_it_requires_confidence_to_meet_threshold_even_when_service_reports_match(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('profil/user.jpg', 'reference');
+
+        config([
+            'absensi.face_verification.enabled' => true,
+            'absensi.face_verification.endpoint' => 'https://face.test/verify',
+            'absensi.face_verification.threshold' => 0.80,
+            'absensi.face_verification.timeout' => 8,
+            'absensi.face_verification.token' => null,
+        ]);
+
+        Http::fake([
+            'face.test/verify' => Http::response([
+                'match' => true,
+                'confidence' => 0.65,
+            ]),
+        ]);
+
+        $user = new User([
+            'foto_profil' => 'profil/user.jpg',
+        ]);
+        $user->id_user = 12;
+
+        $result = app(FaceVerificationService::class)->verify($user, 'candidate');
+
+        $this->assertSame('mismatched', $result['status']);
+        $this->assertSame(0.65, $result['confidence']);
+    }
+
     public function test_it_decodes_data_url_candidate_before_sending_to_face_service(): void
     {
         Storage::fake('public');

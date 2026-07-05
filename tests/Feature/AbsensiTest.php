@@ -223,6 +223,38 @@ class AbsensiTest extends TestCase
         $response->assertSessionHasErrors('foto_masuk');
     }
 
+    public function test_absen_masuk_rejects_photo_that_does_not_match_profile(): void
+    {
+        config([
+            'absensi.face_verification.enabled' => true,
+            'absensi.face_verification.endpoint' => 'https://face.test/verify',
+            'absensi.face_verification.threshold' => 0.75,
+            'absensi.face_verification.fail_open' => false,
+            'absensi.jarak_maks_meter' => 1000,
+        ]);
+
+        Http::fake([
+            'face.test/verify' => Http::response([
+                'match' => false,
+                'confidence' => 0.41,
+            ]),
+        ]);
+
+        $response = $this->actingAs($this->petugas)->post('/petugas/absensi/masuk', [
+            'foto_masuk' => $this->validPhotoDataUrl(),
+            'latitude_masuk' => -6.2,
+            'longitude_masuk' => 106.8,
+            'lokasi_masuk' => 'Test Location',
+        ]);
+
+        $response->assertSessionHas('error', 'Foto tidak sesuai dengan foto profil. Gunakan wajah sendiri untuk absen.');
+
+        $this->assertDatabaseMissing('absensi', [
+            'id_user' => $this->petugas->id_user,
+            'tanggal' => today()->toDateString(),
+        ]);
+    }
+
     // ==================== FACE VERIFICATION ====================
 
     public function test_face_verification_returns_matched_for_valid_face(): void
@@ -360,6 +392,48 @@ class AbsensiTest extends TestCase
         ]);
 
         $response->assertSessionHas('error', 'Kamu sudah absen pulang hari ini.');
+    }
+
+    public function test_absen_pulang_rejects_photo_that_does_not_match_profile(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-15 17:00:00'));
+
+        config([
+            'absensi.face_verification.enabled' => true,
+            'absensi.face_verification.endpoint' => 'https://face.test/verify',
+            'absensi.face_verification.threshold' => 0.75,
+            'absensi.face_verification.fail_open' => false,
+            'absensi.jarak_maks_meter' => 1000,
+        ]);
+
+        $absensi = Absensi::create([
+            'id_user' => $this->petugas->id_user,
+            'id_periode' => Periode::aktif()->id_periode,
+            'tanggal' => today()->toDateString(),
+            'shift' => 'Pagi',
+            'jam_masuk' => '08:00:00',
+            'status' => 'hadir',
+        ]);
+
+        Http::fake([
+            'face.test/verify' => Http::response([
+                'match' => false,
+                'confidence' => 0.39,
+            ]),
+        ]);
+
+        $response = $this->actingAs($this->petugas)->post('/petugas/absensi/pulang', [
+            'foto_pulang' => $this->validPhotoDataUrl(),
+            'latitude_pulang' => -6.2,
+            'longitude_pulang' => 106.8,
+            'lokasi_pulang' => 'Test Location',
+        ]);
+
+        $response->assertSessionHas('error', 'Foto tidak sesuai dengan foto profil. Gunakan wajah sendiri untuk absen.');
+
+        $absensi->refresh();
+        $this->assertNull($absensi->jam_pulang);
+        $this->assertNull($absensi->foto_pulang);
     }
 
     // ==================== REQUEST APPROVAL ====================
