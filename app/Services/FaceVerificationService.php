@@ -95,11 +95,15 @@ class FaceVerificationService
             return false;
         }
 
+        if ($serviceMatched === true) {
+            return true;
+        }
+
         if ($confidence !== null) {
             return $confidence >= $threshold;
         }
 
-        return $serviceMatched === true;
+        return false;
     }
 
     private function confidence(array $payload): ?float

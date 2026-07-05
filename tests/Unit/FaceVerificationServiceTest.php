@@ -50,7 +50,7 @@ class FaceVerificationServiceTest extends TestCase
         $this->assertSame(0.41, $result['confidence']);
     }
 
-    public function test_it_requires_confidence_to_meet_threshold_even_when_service_reports_match(): void
+    public function test_it_trusts_explicit_match_from_face_verification_response(): void
     {
         Storage::fake('public');
         Storage::disk('public')->put('profil/user.jpg', 'reference');
@@ -77,7 +77,7 @@ class FaceVerificationServiceTest extends TestCase
 
         $result = app(FaceVerificationService::class)->verify($user, 'candidate');
 
-        $this->assertSame('mismatched', $result['status']);
+        $this->assertSame('matched', $result['status']);
         $this->assertSame(0.65, $result['confidence']);
     }
 
